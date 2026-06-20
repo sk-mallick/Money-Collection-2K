@@ -1,0 +1,138 @@
+<?php
+/**
+ * Database Seed / JSON Import Script
+ * Parses data from backend/data/*.json and populates the database.
+ */
+
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => false, 'error' => 'Access Denied: This script can only be run via CLI.']);
+    exit;
+}
+
+require_once __DIR__ . '/../includes/db.php';
+
+try {
+    $pdo = get_db();
+    echo "Connected to database successfully.\n";
+
+    // Disable foreign key checks to allow truncating/deleting easily
+    $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+    $pdo->exec("TRUNCATE TABLE `receipts`;");
+    $pdo->exec("TRUNCATE TABLE `students`;");
+    $pdo->exec("TRUNCATE TABLE `groups`;");
+    $pdo->exec("TRUNCATE TABLE `settings`;");
+    $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+    echo "Cleared old database tables.\n";
+
+    // 1. Load settings.json
+    $settingsPath = __DIR__ . '/../data/settings.json';
+    if (!file_exists($settingsPath)) {
+        throw new Exception("settings.json not found at: $settingsPath");
+    }
+    $settingsData = json_decode(file_get_contents($settingsPath), true);
+    if ($settingsData === null) {
+        throw new Exception("Failed to decode settings.json");
+    }
+
+    $stmtSettings = $pdo->prepare("INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`)");
+    foreach ($settingsData as $key => $value) {
+        if (is_bool($value)) {
+            $value = $value ? '1' : '0';
+        }
+        $stmtSettings->execute([$key, (string)$value]);
+    }
+    // Ensure activeMonths is present since it's required for some UI operations
+    if (!isset($settingsData['activeMonths'])) {
+        $stmtSettings->execute(['activeMonths', 'MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC,JAN,FEB']);
+    }
+    echo "Imported settings.\n";
+
+    // 2. Load groups.json
+    $groupsPath = __DIR__ . '/../data/groups.json';
+    if (!file_exists($groupsPath)) {
+        throw new Exception("groups.json not found at: $groupsPath");
+    }
+    $groupsData = json_decode(file_get_contents($groupsPath), true);
+    if ($groupsData === null) {
+        throw new Exception("Failed to decode groups.json");
+    }
+
+    $stmtGroup = $pdo->prepare("INSERT INTO `groups` (`id`, `class`, `timing`, `category`) VALUES (?, ?, ?, ?)");
+    foreach ($groupsData as $g) {
+        $stmtGroup->execute([
+            $g['id'],
+            $g['class'],
+            $g['timing'] ?? '',
+            $g['category']
+        ]);
+    }
+    echo "Imported " . count($groupsData) . " groups.\n";
+
+    // 3. Load students.json
+    $studentsPath = __DIR__ . '/../data/students.json';
+    if (!file_exists($studentsPath)) {
+        throw new Exception("students.json not found at: $studentsPath");
+    }
+    $studentsData = json_decode(file_get_contents($studentsPath), true);
+    if ($studentsData === null) {
+        throw new Exception("Failed to decode students.json");
+    }
+
+    $stmtStudent = $pdo->prepare("
+        INSERT INTO `students` (
+            `id`, `name`, `category`, `group_id`, `class`, `school`, 
+            `contact_no`, `father_no`, `mother_no`, `adm_date`, `dob`, 
+            `fee_per_month`, `notes`, `created_at`, `updated_at`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
+    $academicYear = $settingsData['academicYear'] ?? '2026-27';
+    $studentCount = 0;
+
+    foreach ($studentsData as $s) {
+        $dob = null;
+        if (isset($s['dob']) && $s['dob'] !== 'NIL' && !empty($s['dob'])) {
+            $dob = $s['dob'];
+        }
+        
+        $admDate = isset($s['admDate']) && !empty($s['admDate']) ? $s['admDate'] : date('Y-m-d');
+
+        // Parse created_at / updated_at timestamps
+        $createdAt = date('Y-m-d H:i:s');
+        $updatedAt = date('Y-m-d H:i:s');
+        if (isset($s['updatedAt'])) {
+            $time = strtotime($s['updatedAt']);
+            if ($time !== false) {
+                $updatedAt = date('Y-m-d H:i:s', $time);
+                $createdAt = date('Y-m-d H:i:s', $time);
+            }
+        }
+
+        $stmtStudent->execute([
+            $s['id'],
+            $s['name'],
+            $s['category'],
+            $s['group'] ?? null,
+            $s['class'] ?? '',
+            $s['school'] ?? '',
+            $s['contactNo'] ?? '',
+            $s['fatherNo'] ?? '',
+            $s['motherNo'] ?? '',
+            $admDate,
+            $dob,
+            $s['feePerMonth'] ?? 700,
+            $s['notes'] ?? '',
+            $createdAt,
+            $updatedAt
+        ]);
+        $studentCount++;
+    }
+
+    echo "Imported $studentCount students successfully!\n";
+
+} catch (Exception $e) {
+    echo "ERROR during import: " . $e->getMessage() . "\n";
+    exit(1);
+}

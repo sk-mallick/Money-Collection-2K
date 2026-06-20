@@ -1,0 +1,12 @@
+# Environment config
+.env
+
+# Build outputs
+dist/
+
+# Zip archives
+*.zip
+
+# Local OS metadata
+.DS_Store
+Thumbs.db

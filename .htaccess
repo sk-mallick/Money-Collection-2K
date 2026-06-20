@@ -1,0 +1,103 @@
+RewriteEngine On
+
+# ─── HTTPS Enforcement ────────────────────────────────
+# Skip HTTPS redirect and HSTS variable assignment for localhost / local testing
+RewriteCond %{HTTP_HOST} ^localhost$ [NC,OR]
+RewriteCond %{HTTP_HOST} ^127\.0\.0\.1$ [NC]
+RewriteRule ^ - [S=2]
+
+# Redirect all HTTP traffic to HTTPS (supports reverse proxies / InfinityFree)
+RewriteCond %{HTTPS} off [OR]
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Set SET_HSTS environment variable if HTTPS is active and not on localhost/127.0.0.1
+RewriteCond %{HTTPS} on [OR]
+RewriteCond %{HTTP:X-Forwarded-Proto} https
+RewriteCond %{HTTP_HOST} !^localhost$ [NC]
+RewriteCond %{HTTP_HOST} !^127\.0\.0\.1$ [NC]
+RewriteRule ^ - [E=SET_HSTS:1]
+
+# ─── Security Headers ────────────────────────────────
+<IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=SET_HSTS
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+</IfModule>
+
+# ─── Security ────────────────────────────────────────
+Options -Indexes
+
+# Block access to sensitive files and configs (Apache 2.4 syntax)
+<FilesMatch "\.(env|htaccess|md|sql|log|example)$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "^(package|package-lock|tsconfig|composer)\.json$">
+    Require all denied
+</FilesMatch>
+
+# Block access to backend includes
+RewriteRule ^backend/includes/ - [F,L]
+RewriteRule ^backend/database/ - [F,L]
+RewriteRule ^backend/data/ - [F,L]
+
+
+
+# ─── Static Assets Mapping ───────────────────────────
+# Direct requests for frontend assets in root to the built dist folder
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^assets/(.*)$ dist/assets/$1 [L]
+RewriteRule ^favicon\.svg$ dist/favicon.svg [L]
+RewriteRule ^favicon\.png$ dist/favicon.png [L]
+RewriteRule ^icons\.svg$ dist/icons.svg [L]
+RewriteRule ^manifest\.json$ dist/manifest.json [L]
+RewriteRule ^sw\.js$ dist/sw.js [L]
+
+# Support dist/ prefixed API/Auth endpoints
+RewriteRule ^dist/auth/(.*)$ backend/auth/$1.php [L,QSA]
+RewriteRule ^dist/api/(.*)$ backend/api/$1.php [L,QSA]
+
+# ─── API Routing ─────────────────────────────────────
+# Auth endpoints
+RewriteRule ^auth/login$ backend/auth/login.php [L,QSA]
+RewriteRule ^auth/verify$ backend/auth/verify.php [L,QSA]
+
+# API endpoints
+RewriteRule ^api/students$ backend/api/students.php [L,QSA]
+RewriteRule ^api/payments$ backend/api/payments.php [L,QSA]
+RewriteRule ^api/receipts$ backend/api/receipts.php [L,QSA]
+RewriteRule ^api/settings$ backend/api/settings.php [L,QSA]
+RewriteRule ^api/groups$ backend/api/groups.php [L,QSA]
+RewriteRule ^api/change-password$ backend/api/change_password.php [L,QSA]
+
+# ─── SPA Fallback ────────────────────────────────────
+# If the request is not a file or directory, serve the app index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !/backend/
+RewriteCond %{REQUEST_URI} !/auth/
+RewriteCond %{REQUEST_URI} !/api/
+RewriteRule ^(.*)$ index.php [L]
+
+# ─── Compression ─────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json
+</IfModule>
+
+# ─── Cache Control ───────────────────────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+</IfModule>
+
+# ─── Pass Authorization header to PHP ────────────────
+# InfinityFree / some Apache configs strip the Authorization header
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
