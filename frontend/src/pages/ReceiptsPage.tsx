@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { api } from '@/lib/api';
+import { api, fetchPaymentsDirect } from '@/lib/api';
 import { formatCurrency, formatDate, MONTH_SHORT, formatReceiptPeriod, notifyReceiptsChanged } from '@/lib/constants';
 import { generateReceiptPDF } from '@/lib/pdf';
 import type { Receipt } from '@/lib/constants';
@@ -68,9 +68,11 @@ export default function ReceiptsPage() {
 
   const handleDownload = async (receipt: Receipt) => {
     try {
-      await generateReceiptPDF(receipt);
+      const payments = await fetchPaymentsDirect(receipt.studentId, receipt.academicYear);
+      await generateReceiptPDF(receipt, payments);
       toast.success('Receipt downloaded');
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error('Failed to generate PDF');
     }
   };

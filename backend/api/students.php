@@ -46,7 +46,7 @@ function getStudents(PDO $pdo): void {
 
     // 3. Fetch all receipts for active students for the selected academic year
     $receiptsStmt = $pdo->prepare('
-        SELECT r.student_id, r.amt_paid, r.months, r.generated_on, r.academic_year 
+        SELECT r.student_id, r.amt_paid, r.prev_due, r.months, r.generated_on, r.academic_year 
         FROM receipts r
         INNER JOIN students s ON r.student_id = s.id
         WHERE r.academic_year = ? AND s.deleted_at IS NULL

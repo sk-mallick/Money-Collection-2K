@@ -29,10 +29,10 @@ function getPayments(PDO $pdo): void {
     
     if (empty($studentId) || $studentId === 'all') {
         if (!empty($academicYear)) {
-            $receiptsStmt = $pdo->prepare('SELECT student_id, amt_paid, months, generated_on, academic_year FROM receipts WHERE academic_year = ? ORDER BY generated_on ASC');
+            $receiptsStmt = $pdo->prepare('SELECT student_id, amt_paid, prev_due, months, generated_on, academic_year FROM receipts WHERE academic_year = ? ORDER BY generated_on ASC');
             $receiptsStmt->execute([$academicYear]);
         } else {
-            $receiptsStmt = $pdo->query('SELECT student_id, amt_paid, months, generated_on, academic_year FROM receipts ORDER BY generated_on ASC');
+            $receiptsStmt = $pdo->query('SELECT student_id, amt_paid, prev_due, months, generated_on, academic_year FROM receipts ORDER BY generated_on ASC');
         }
         $receipts = $receiptsStmt->fetchAll();
 
@@ -109,11 +109,19 @@ function submitPayment(PDO $pdo, array $user): void {
     if (!is_array($months) || empty($months)) {
         json_response(['success' => false, 'error' => 'At least one month must be selected for payment'], 400);
     }
-    $amtPaid = (int)$input['amtPaid'];
+    
+    // Split input total cash paid into prev due paid and current months paid portion
+    $totalPaidInput = (int)$input['amtPaid'];
+    $studentPrevDueInput = (int)($input['prevDue'] ?? 0);
+    $prevDuePaid = min($totalPaidInput, $studentPrevDueInput);
+    $amtPaidForMonths = max(0, $totalPaidInput - $prevDuePaid);
+    $totalRecv = $totalPaidInput;
+
     $receiptId = sanitize_string($input['receiptId'], 20);
-    $prevDue = (int)($input['prevDue'] ?? 0);
     $remainingAmount = (int)($input['remainingAmount'] ?? 0);
+    
     $nextDue = sanitize_string($input['nextDue'] ?? '', 100);
+    
     $notes = sanitize_string($input['notes'] ?? '', 500);
     $date = $input['date'] ?? date('Y-m-d');
     $academicYear = sanitize_string($input['academicYear'] ?? '2026-27', 10);
@@ -127,7 +135,6 @@ function submitPayment(PDO $pdo, array $user): void {
         json_response(['success' => false, 'error' => 'Student not found'], 404);
     }
 
-    $totalRecv = $amtPaid + $prevDue;
     $feePerMonth = (int)$student['fee_per_month'];
 
     // Sort months in academic order
@@ -184,7 +191,7 @@ function submitPayment(PDO $pdo, array $user): void {
     }
 
     // Sequential allocation
-    $remaining = $amtPaid;
+    $remaining = $amtPaidForMonths;
     $newTotals = [];
 
     foreach ($months as $month) {
@@ -255,8 +262,6 @@ function submitPayment(PDO $pdo, array $user): void {
                 $fullyPaidMonth = $monthNames[$m] ?? $m;
             }
         }
-        // If a month had a previous outstanding partial due, set remainingMonths to it.
-        // Otherwise, remainingMonths remains null (meaning we do not display the remaining balance line).
         $remainingMonths = $fullyPaidMonth;
     }
 
@@ -285,8 +290,8 @@ function submitPayment(PDO $pdo, array $user): void {
             $feePerMonth,
             $period,
             json_encode($months),
-            $amtPaid,
-            $prevDue,
+            $amtPaidForMonths,
+            $prevDuePaid,
             $totalRecv,
             $remainingAmount,
             $remainingMonths,
@@ -303,7 +308,7 @@ function submitPayment(PDO $pdo, array $user): void {
             'receipt' => [
                 'id' => $receiptId,
                 'period' => $period,
-                'amtPaid' => $amtPaid,
+                'amtPaid' => $totalPaidInput,
                 'totalRecv' => $totalRecv,
             ]
         ], 201);

@@ -18,7 +18,7 @@ INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ('seniorFee', '10
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ('academicYear', '2026-27') ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ('instituteName', 'EnglishJibi Classes') ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ('address', 'Duplex-37, In front of DAV School, Sailashree Vihar, Bhubaneswar') ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
-INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ('phone1', '+91 83289 22917') ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
+INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ('phone1', '+91 8328922917') ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ('phone2', '+91 7735812335') ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ('instagram', '@englishwithchiranjibisir') ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ('teacherName', 'Chiranjibi Sir') ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);

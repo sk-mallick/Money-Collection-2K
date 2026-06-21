@@ -13,6 +13,8 @@ import {
   MONTH_CALENDAR_MAP,
   getMonthLabelWithYear,
   MONTH_SHORT,
+  formatMonthNamesWithBrackets,
+  applyReceiptToPayments,
 } from '@/lib/constants';
 import { generateReceiptPDF } from '@/lib/pdf';
 import type { Student, Receipt } from '@/lib/constants';
@@ -34,6 +36,7 @@ export default function CollectPage() {
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
   const [amtPaid, setAmtPaid] = useState('');
   const [prevDue, setPrevDue] = useState('');
+  const [dbPrevDue, setDbPrevDue] = useState(0);
   const [nextDue, setNextDue] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -49,6 +52,15 @@ export default function CollectPage() {
       .filter(p => p.paid && (p.amount === 0 || p.amount >= (selected?.feePerMonth || 0)))
       .map(p => p.month)
   );
+
+  const selectedMonthsAlreadyPaidDues = selectedMonths.reduce((sum, m) => {
+    const pRecord = payments.find(p => p.month === m);
+    if (pRecord && pRecord.paid) {
+      if (pRecord.amount === 0) return sum;
+      return sum + Math.max(0, (selected?.feePerMonth || 0) - pRecord.amount);
+    }
+    return sum;
+  }, 0);
 
   const getSelectedMonthsDue = useCallback((months: string[]) => {
     if (!selected) return 0;
@@ -105,10 +117,13 @@ export default function CollectPage() {
 
   // 1. Automatically calculate Previous Dues (unless overridden by the user)
   useEffect(() => {
-    if (!selected || isPrevDueOverridden) return;
+    if (!selected) {
+      setDbPrevDue(0);
+      if (!isPrevDueOverridden) setPrevDue('');
+      return;
+    }
 
     const calculateDues = async () => {
-      // Fetch last receipt remaining amount from API
       let lastReceiptRemaining = 0;
       try {
         const studentReceipts = await fetchStudentReceipts(selected.id);
@@ -120,34 +135,32 @@ export default function CollectPage() {
         // Ignore — use 0 as fallback
       }
 
-      // Calculate how much of the selected months' unpaid dues are already in payments
-      const selectedMonthsAlreadyPaidDues = selectedMonths.reduce((sum, m) => {
-        const pRecord = payments.find(p => p.month === m);
-        if (pRecord && pRecord.paid) {
-          if (pRecord.amount === 0) return sum; // Waived
-          return sum + Math.max(0, selected.feePerMonth - pRecord.amount);
-        }
-        return sum;
-      }, 0);
-
-      const calculatedPrevDue = Math.max(0, lastReceiptRemaining - selectedMonthsAlreadyPaidDues);
-      setPrevDue(calculatedPrevDue.toString());
+      setDbPrevDue(lastReceiptRemaining);
+      if (!isPrevDueOverridden) {
+        setPrevDue(selectedMonths.length > 0 ? lastReceiptRemaining.toString() : '0');
+      }
     };
 
     calculateDues();
-  }, [selected, selectedMonths, payments, isPrevDueOverridden]);
+  }, [selected, isPrevDueOverridden, selectedMonths.length]);
 
   // 2. Automatically calculate Remaining Amount (unless overridden by the user)
   useEffect(() => {
     if (!selected || isRemainingOverridden) return;
 
+    if (selectedMonths.length === 0) {
+      setRemainingAmount('0');
+      return;
+    }
+
     const selectedMonthsDue = getSelectedMonthsDue(selectedMonths);
     const pDue = parseInt(prevDue, 10) || 0;
+    const adjustedMonthsDue = Math.max(0, selectedMonthsDue - Math.min(selectedMonthsAlreadyPaidDues, pDue));
     const pPaid = parseInt(amtPaid, 10) || 0;
-    const calcRemaining = (selectedMonthsDue + pDue) - pPaid;
+    const calcRemaining = (adjustedMonthsDue + pDue) - pPaid;
     const timer = setTimeout(() => setRemainingAmount(calcRemaining >= 0 ? calcRemaining.toString() : '0'), 0);
     return () => clearTimeout(timer);
-  }, [selected, selectedMonths, payments, amtPaid, prevDue, isRemainingOverridden, getSelectedMonthsDue]);
+  }, [selected, selectedMonths, payments, amtPaid, prevDue, isRemainingOverridden, selectedMonthsAlreadyPaidDues, getSelectedMonthsDue]);
 
   const handlePrevDueChange = (val: string) => {
     if (val === '') {
@@ -158,15 +171,23 @@ export default function CollectPage() {
     }
   };
 
-  // Sync Paid Amount to Total Amount on month/student selection change
+  // Sync Paid Amount to Total Amount + Previous Dues on month/student selection change
   useEffect(() => {
-    const total = getSelectedMonthsDue(selectedMonths);
+    if (selectedMonths.length === 0) {
+      setAmtPaid('');
+      setIsRemainingOverridden(false);
+      return;
+    }
+    const totalDue = getSelectedMonthsDue(selectedMonths);
+    const pDue = parseInt(prevDue, 10) || 0;
+    const adjustedTotalDue = Math.max(0, totalDue - Math.min(selectedMonthsAlreadyPaidDues, pDue));
+    const total = adjustedTotalDue + pDue;
     const timer = setTimeout(() => {
       setAmtPaid(total > 0 ? total.toString() : '');
       setIsRemainingOverridden(false);
     }, 0);
     return () => clearTimeout(timer);
-  }, [selectedMonths, selected, payments, getSelectedMonthsDue]);
+  }, [selectedMonths, selected, payments, prevDue, selectedMonthsAlreadyPaidDues, getSelectedMonthsDue]);
 
   const handleRemainingChange = (val: string) => {
     if (val === '') {
@@ -213,6 +234,7 @@ export default function CollectPage() {
     setSelectedMonths([]);
     setAmtPaid('');
     setPrevDue('');
+    setDbPrevDue(0);
     setRemainingAmount('');
     setIsRemainingOverridden(false);
     setIsPrevDueOverridden(false);
@@ -331,27 +353,37 @@ export default function CollectPage() {
       const firstMonth = getMonthLabelWithYear(sortedMonths[0], selectedYear);
       const lastMonth = getMonthLabelWithYear(sortedMonths[sortedMonths.length - 1], selectedYear);
       const period = sortedMonths.length === 1 ? firstMonth : `${firstMonth} – ${lastMonth}`;
-      const totalRecv = amount + prevDueAmt;
+      
+      const prevDuePaid = Math.min(amount, prevDueAmt);
+      const amtPaidForMonths = Math.max(0, amount - prevDuePaid);
+      const totalRecv = amount;
 
       // Compute remaining months locally for immediate PDF download
+      const receiptForPDF: Receipt = {
+        id: receiptId,
+        studentId: selected.id,
+        studentName: selected.name,
+        category: selected.category,
+        class: selected.class,
+        school: selected.school,
+        feePerMonth: selected.feePerMonth,
+        period,
+        months: sortedMonths,
+        amtPaid: amtPaidForMonths,
+        prevDue: prevDuePaid,
+        totalRecv,
+        remainingAmount: remainingAmt,
+        nextDue: nextDue.trim(),
+        notes: notes.trim(),
+        generatedOn: new Date().toISOString(),
+        generatedBy: 'Admin',
+        academicYear: selectedYear,
+        admDate: selected.admDate,
+      };
+
+      const updatedPayments = applyReceiptToPayments(payments, receiptForPDF, selected.feePerMonth, selected.admDate);
       let localRemainingMonths = '';
       if (remainingAmt > 0) {
-        let remainingAlloc = amount;
-        const localNewTotals: Record<string, number> = {};
-        for (const m of sortedMonths) {
-          const pRecord = payments.find(p => p.month === m);
-          const alreadyPaid = pRecord && pRecord.paid ? pRecord.amount : 0;
-          const due = pRecord && pRecord.paid && pRecord.amount === 0 ? 0 : Math.max(0, selected.feePerMonth - alreadyPaid);
-
-          if (remainingAlloc >= due) {
-            localNewTotals[m] = alreadyPaid + due;
-            remainingAlloc -= due;
-          } else {
-            localNewTotals[m] = alreadyPaid + remainingAlloc;
-            remainingAlloc = 0;
-          }
-        }
-
         const remainingMonthsList: string[] = [];
         const lastSelectedMonth = sortedMonths[sortedMonths.length - 1];
         const lastSelectedIndex = MONTH_CODES.indexOf(lastSelectedMonth as typeof MONTH_CODES[number]);
@@ -360,9 +392,9 @@ export default function CollectPage() {
         for (const m of monthsUpToLast) {
           if (isMonthNotJoined(selected.admDate, m)) continue;
 
-          const pRecord = payments.find(p => p.month === m);
-          const isPaid = sortedMonths.includes(m) ? true : (pRecord?.paid ?? false);
-          const amt = sortedMonths.includes(m) ? (localNewTotals[m] ?? 0) : (pRecord?.amount ?? 0);
+          const pRecord = updatedPayments.find(p => p.month === m);
+          const isPaid = pRecord?.paid ?? false;
+          const amt = pRecord?.amount ?? 0;
           const isWaived = isPaid && amt === 0;
 
           if (!isWaived) {
@@ -376,7 +408,7 @@ export default function CollectPage() {
         // Find the fully paid month when remainingAmt is 0
         let fullyPaidMonth = null;
         for (const m of sortedMonths) {
-          const pRecord = payments.find(p => p.month === m);
+          const pRecord = updatedPayments.find(p => p.month === m);
           const prevAmount = pRecord && pRecord.paid ? pRecord.amount : 0;
           if (prevAmount > 0 && prevAmount < selected.feePerMonth) {
             fullyPaidMonth = MONTH_SHORT[m] || m;
@@ -385,30 +417,10 @@ export default function CollectPage() {
         localRemainingMonths = fullyPaidMonth || '';
       }
 
-      const receiptForPDF: Receipt = {
-        id: receiptId,
-        studentId: selected.id,
-        studentName: selected.name,
-        category: selected.category,
-        class: selected.class,
-        school: selected.school,
-        feePerMonth: selected.feePerMonth,
-        period,
-        months: sortedMonths,
-        amtPaid: amount,
-        prevDue: prevDueAmt,
-        totalRecv,
-        remainingAmount: remainingAmt,
-        nextDue: nextDue.trim(),
-        notes: notes.trim(),
-        generatedOn: new Date().toISOString(),
-        generatedBy: 'Admin',
-        academicYear: selectedYear,
-        remainingMonths: localRemainingMonths,
-      };
+      receiptForPDF.remainingMonths = localRemainingMonths;
 
       // Generate PDF
-      await generateReceiptPDF(receiptForPDF);
+      await generateReceiptPDF(receiptForPDF, payments);
 
       toast.success(`Receipt ${receiptId} generated and downloaded`);
 
@@ -470,8 +482,8 @@ export default function CollectPage() {
             />
 
             <PaymentFormFields
-              selectedMonthsDue={getSelectedMonthsDue(selectedMonths)}
-              prevDue={prevDue}
+              selectedMonthsDue={selectedMonths.length > 0 ? Math.max(0, getSelectedMonthsDue(selectedMonths) - selectedMonthsAlreadyPaidDues) : 0}
+              prevDue={selectedMonths.length > 0 ? prevDue : '0'}
               handlePrevDueChange={handlePrevDueChange}
               isPrevDueOverridden={isPrevDueOverridden}
               amtPaid={amtPaid}

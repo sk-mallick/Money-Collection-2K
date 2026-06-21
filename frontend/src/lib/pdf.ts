@@ -1,7 +1,8 @@
 import jsPDF from 'jspdf';
-import type { Receipt } from './constants';
-import { formatDate, MONTH_SHORT, formatReceiptPeriod } from './constants';
+import type { Receipt, Payment } from './constants';
+import { formatDate, MONTH_SHORT, formatReceiptPeriod, MONTH_NAMES, MONTH_CODES, formatMonthNamesWithBrackets, applyReceiptToPayments } from './constants';
 import { fetchSettings } from './api';
+import logoUrl from '@/assets/logo.png';
 
 /**
  * Format currency for PDF (uses "Rs." prefix since jsPDF standard Helvetica font can't render the Unicode rupee symbol)
@@ -12,6 +13,85 @@ function pdfCurrency(amount: number): string {
     maximumFractionDigits: 0,
   }).format(amount);
   return `Rs. ${formatted}`;
+}
+
+/**
+ * Format the full date/time for the generation band
+ */
+function formatReceiptGeneratedTime(isoStr: string): string {
+  try {
+    const date = new Date(isoStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    
+    let hours = date.getHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${day}-${month}-${year} at ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+  } catch {
+    return isoStr;
+  }
+}
+
+/**
+ * Load an image URL and convert to Base64
+ */
+function loadImageBase64(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } else {
+        reject(new Error('Canvas context not available'));
+      }
+    };
+    img.onerror = () => {
+      reject(new Error(`Failed to load image: ${url}`));
+    };
+    img.src = url;
+  });
+}
+
+/**
+ * Helper to check if a month is before admission date
+ */
+function isMonthNotJoined(admDateStr: string | undefined, monthCode: string): boolean {
+  if (!admDateStr) return false;
+  const admDate = new Date(admDateStr);
+  const admYear = admDate.getFullYear();
+  const admMonth = admDate.getMonth() + 1; // 1-indexed
+  
+  const MONTH_CALENDAR_MAP: Record<string, { calendarMonth: number }> = {
+    MAR: { calendarMonth: 3 }, APR: { calendarMonth: 4 }, MAY: { calendarMonth: 5 },
+    JUN: { calendarMonth: 6 }, JUL: { calendarMonth: 7 }, AUG: { calendarMonth: 8 },
+    SEP: { calendarMonth: 9 }, OCT: { calendarMonth: 10 }, NOV: { calendarMonth: 11 },
+    DEC: { calendarMonth: 12 }, JAN: { calendarMonth: 1 }, FEB: { calendarMonth: 2 },
+  };
+  
+  const monthMeta = MONTH_CALENDAR_MAP[monthCode];
+  if (!monthMeta) return false;
+  
+  const academicYearStart = admMonth >= 3 ? admYear : admYear - 1;
+  const targetCalendarMonth = monthMeta.calendarMonth;
+  const targetYear = (monthCode === 'JAN' || monthCode === 'FEB') ? academicYearStart + 1 : academicYearStart;
+  
+  const targetDate = new Date(targetYear, targetCalendarMonth - 1, 1);
+  const comparisonAdmDate = new Date(admDate.getFullYear(), admDate.getMonth(), 1);
+  
+  return targetDate < comparisonAdmDate;
 }
 
 /**
@@ -29,432 +109,448 @@ function roundedRect(
   doc.roundedRect(x, y, w, h, r, r, style);
 }
 
+
 /**
- * Generate a professional, table-based PDF receipt
- * Visual design matches the grid-based zinc monochrome aesthetic from the React reference component
+ * Generate a colorful, professional PDF receipt matching the old Excel design
  */
-export async function generateReceiptPDF(receipt: Receipt): Promise<void> {
+export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] = []): Promise<void> {
   const settings = await fetchSettings();
   const doc = new jsPDF('p', 'mm', 'a4');
   
+  // Apply this receipt to payments to get the updated payments state for the PDF render
+  const updatedPayments = applyReceiptToPayments(payments, receipt, receipt.feePerMonth, receipt.admDate);
+  
   const pageWidth = 210;
-  const margin = 18;
-  const contentWidth = pageWidth - margin * 2; // 174mm
-  
-  // ─── Grid Geometry ───────────────────────────────────
-  const cardX = margin;
-  const cardY = 20;
-  const cardWidth = contentWidth;
-  const padding = 8;
-  const innerX = cardX + padding; // 26
-  const innerEndX = cardX + cardWidth - padding; // 184
-  const innerW = innerEndX - innerX; // 158
-  const centerX = pageWidth / 2; // 105
-  
-  let y = cardY + padding; // Starts at 28mm
+  const margin = 12;
+  const contentWidth = pageWidth - margin * 2; // 186mm
 
-  // ─── Color Palette (Zinc/Monochrome Theme) ───────────
-  const zinc900 = [24, 24, 27] as [number, number, number];    // Main text / titles
-  const zinc800 = [39, 39, 42] as [number, number, number];    // Table header / dark text
-  const zinc700 = [63, 63, 70] as [number, number, number];    // Secondary labels / bold subtext
-  const zinc500 = [113, 113, 122] as [number, number, number];  // Sub-labels / neutral text
-  const zinc400 = [161, 161, 170] as [number, number, number];  // Light labels / lines
-  const zinc300 = [212, 212, 216] as [number, number, number];  // Cell borders / dividers
-  const zinc100 = [244, 244, 245] as [number, number, number];  // Total bar / accent band bg
-  const zinc50  = [249, 249, 250] as [number, number, number];  // Table label cell bg
-  const white   = [255, 255, 255] as [number, number, number];
+  // Tables should not connect/touch the outer card border (3mm padding)
+  const leftColX = margin + 3; // 15mm
+  const halfColWidth = 88; // 88mm
+  const rightColX = leftColX + halfColWidth + 4; // 107mm
+  
+  // ─── Load Logo Image ──────────────────────────────────
+  let logoBase64 = '';
+  try {
+    logoBase64 = await loadImageBase64(logoUrl);
+  } catch (err) {
+    console.error('Failed to load logo image, using fallback rendering', err);
+  }
+
+  // ─── Colors (Vibrant/Original matching Excel) ────────
+  const redColor = [220, 38, 38] as [number, number, number];       // Separator Band, Money Receipt, Next Due header
+  const blueColor = [0, 153, 224] as [number, number, number];      // Student Profile & Month Grid headers
+  const greenColor = [0, 176, 80] as [number, number, number];     // Fees Details header
+  const yellowColor = [255, 192, 0] as [number, number, number];    // Footer generation band
+  const blackColor = [0, 0, 0] as [number, number, number];
+  const whiteColor = [255, 255, 255] as [number, number, number];
+  
+  const borderLight = [0, 0, 0] as [number, number, number];        // Sharp black borders
+  const borderDark = [0, 0, 0] as [number, number, number];
+  
+  const labelBgColor = [255, 242, 204] as [number, number, number]; // Light yellow/orange cell backgrounds (matching Excel)
+  const highlightBgColor = [255, 242, 204] as [number, number, number]; // Light yellow box inner bg
+  const highlightGreenBg = [240, 253, 250] as [number, number, number]; // Soft teal highlight for Total Received
 
   // ─── 1. HEADER SECTION ───────────────────────────────
+  const logoSize = 27;
+  const logoX = pageWidth - margin - logoSize - 4;
+  const logoY = 13;
+  const headerCenterX = leftColX + (logoX - leftColX) / 2;
+
+  // Title / Institute Name
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(27);
   
-  // Institute Name (Uppercase, bold, size 12)
-  doc.setFontSize(12);
-  doc.setTextColor(...zinc900);
-  const instituteName = (settings.instituteName || receipt.school || 'INSTITUTE NAME').toUpperCase();
-  doc.text(instituteName, centerX, y + 3.5, { align: 'center' });
-  y += 6.5;
-
-  // Address (Medium, size 8, zinc-500)
-  if (settings.address) {
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...zinc500);
-    doc.text(settings.address, centerX, y + 2.5, { align: 'center' });
-    y += 5.5;
-  }
-
-  // Phone Numbers (Medium, size 8, zinc-500)
-  const phones = [settings.phone1, settings.phone2].filter(Boolean).join('  |  ');
-  if (phones) {
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...zinc500);
-    doc.text(`Phone: ${phones}`, centerX, y + 2.5, { align: 'center' });
-    y += 6.5;
-  }
-
-  // Header bottom border (zinc-800, thick 0.6mm border-b-2)
-  doc.setDrawColor(...zinc800);
-  doc.setLineWidth(0.6);
-  doc.line(innerX, y, innerEndX, y);
-  y += 4.5;
-
-  // ─── 2. "FEE RECEIPT" LABEL BAND ─────────────────────
-  // Clean zinc-100 rounded strip
-  doc.setFillColor(...zinc100);
-  roundedRect(doc, innerX, y, innerW, 5.5, 0.5, 'F');
-  
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc800);
-  // Wide-spaced letter design to mimic "tracking-widest"
-  doc.text('F E E   R E C E I P T', centerX, y + 3.8, { align: 'center' });
-  y += 5.5 + 4.5;
-
-  // ─── 3. META INFO ROW ────────────────────────────────
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc700);
-  
-  // Left: Receipt No
-  doc.text(`Receipt No: ${receipt.id}`, innerX, y);
-  
-  // Right: Date
-  doc.text(`Date: ${formatDate(receipt.generatedOn)}`, innerEndX, y, { align: 'right' });
-  y += 5.5;
-
-  // ─── 4. STUDENT DETAILS TABLE ────────────────────────
-  const tableY = y;
-  const col1W = 35;
-  const col2W = 83;
-  const col3W = 40;
-  const rowH = 7.2;
-
-  const x1 = innerX;
-  const x2 = x1 + col1W; // 61
-  const x3 = x2 + col2W; // 144
-  const x4 = x3 + col3W; // 184
-
-  // Draw background fills for label cells
-  doc.setFillColor(...zinc50);
-  doc.rect(x1, tableY, col1W, rowH, 'F');              // Student Name label bg
-  doc.rect(x3, tableY, col3W, rowH * 2, 'F');          // Student ID rowspan bg
-  doc.rect(x1, tableY + rowH, col1W, rowH, 'F');       // Class label bg
-  doc.rect(x1, tableY + rowH * 2, col1W, rowH, 'F');   // Category label bg
-  doc.rect(x3, tableY + rowH * 2, col3W, rowH, 'F');   // Fee/Month label bg
-  doc.rect(x1, tableY + rowH * 3, col1W, rowH, 'F');   // School label bg
-
-  // Grid Borders
-  doc.setDrawColor(...zinc300);
-  doc.setLineWidth(0.25);
-  doc.rect(x1, tableY, innerW, rowH * 4, 'S');         // Outer table border
-  
-  // Vertical splitters
-  doc.line(x2, tableY, x2, tableY + rowH * 4);
-  doc.line(x3, tableY, x3, tableY + rowH * 4);
-  
-  // Horizontal splitters
-  doc.line(x1, tableY + rowH, x3, tableY + rowH);      // Row 1 bottom (only to X3)
-  doc.line(x1, tableY + rowH * 2, x4, tableY + rowH * 2); // Row 2 bottom
-  doc.line(x1, tableY + rowH * 3, x4, tableY + rowH * 3); // Row 3 bottom
-
-  // Text inside student details
-  doc.setFontSize(8.5);
-  const textYOffset = 4.8;
-
-  // Row 1
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc700);
-  doc.text('Student Name', x1 + 2.5, tableY + textYOffset);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc900);
-  doc.text(receipt.studentName, x2 + 2.5, tableY + textYOffset);
-
-  // Student ID rowspan cell
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc700);
-  doc.text('Student ID', x3 + 2.5, tableY + 4.2);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc900);
-  doc.setFontSize(9);
-  doc.text(receipt.studentId, x3 + 2.5, tableY + 9.5);
-
-  // Row 2
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc700);
-  doc.text('Class', x1 + 2.5, tableY + rowH + textYOffset);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc900);
-  doc.text(receipt.class || '-', x2 + 2.5, tableY + rowH + textYOffset);
-
-  // Row 3
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc700);
-  doc.text('Category', x1 + 2.5, tableY + rowH * 2 + textYOffset);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc900);
-  doc.text(receipt.category, x2 + 2.5, tableY + rowH * 2 + textYOffset);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc700);
-  doc.text('Fee/Month', x3 + 2.5, tableY + rowH * 2 + textYOffset);
-
-  // Row 4
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc700);
-  doc.text('School', x1 + 2.5, tableY + rowH * 3 + textYOffset);
-  
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc900);
-  doc.text(receipt.school || '-', x2 + 2.5, tableY + rowH * 3 + textYOffset, { maxWidth: col2W - 5 });
-
-  doc.text(pdfCurrency(receipt.feePerMonth), x3 + 2.5, tableY + rowH * 3 + textYOffset);
-
-  y = tableY + rowH * 4 + 5.5; // Update Y position after table
-
-  // ─── 5. PAYMENT DETAILS TABLE ────────────────────────
-  const payX1 = innerX;
-  const payX2 = payX1 + 123; // 149
-  const payX3 = innerEndX;   // 184
-  const headerH = 7;
-  const descRowH = 13.5;
-  const prevDueRowH = 7.2;
-  const totalRowH = 8.5;
-  const remainingRowH = 7.2;
-
-  const totalFee = receipt.months.length * receipt.feePerMonth;
-  const adjustedAmount = totalFee - receipt.amtPaid - (receipt.remainingAmount || 0);
-  const hasAdjustment = adjustedAmount > 0;
-  const adjustedRowH = 7.2;
-
-  const hasPrevDue = receipt.prevDue > 0;
-  const hasRemaining = receipt.remainingAmount !== undefined && (receipt.remainingAmount > 0 || (receipt.remainingAmount === 0 && !!receipt.remainingMonths));
-  const payTableH = headerH + descRowH + (hasAdjustment ? adjustedRowH : 0) + (hasPrevDue ? prevDueRowH : 0) + totalRowH + (hasRemaining ? remainingRowH : 0);
-
-  // Header Row Background (zinc-800)
-  doc.setFillColor(...zinc800);
-  doc.rect(payX1, y, innerW, headerH, 'F');
-
-  // Header Text
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...white);
-  doc.text('DESCRIPTION', payX1 + 3, y + 4.8);
-  doc.text('AMOUNT', payX3 - 3, y + 4.8, { align: 'right' });
-
-  // Description Row Text
-  const monthsStr = receipt.months.map(m => MONTH_SHORT[m] || m).join(', ');
-  
-  // Line 1: Fee for [period]
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc900);
-  doc.text('Fee for: ', payX1 + 3, y + headerH + 4.5);
-  const feeLabelW = doc.getTextWidth('Fee for: ');
-  doc.setFont('helvetica', 'bold');
-  doc.text(formatReceiptPeriod(receipt), payX1 + 3 + feeLabelW, y + headerH + 4.5);
-
-  // Line 2: Months description
-  doc.setFontSize(7.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc500);
-  doc.text(`Months: ${monthsStr || '—'}`, payX1 + 3, y + headerH + 8.5);
-
-  // Line 3: Multiplier string
-  doc.text(`${receipt.months.length} month${receipt.months.length > 1 ? 's' : ''} x ${pdfCurrency(receipt.feePerMonth)}/month`, payX1 + 3, y + headerH + 11.8);
-
-  // Description Row Amount (Total Fee)
-  doc.setFontSize(9.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc900);
-  doc.text(pdfCurrency(totalFee), payX3 - 3, y + headerH + 7.8, { align: 'right' });
-
-  // Adjusted Row (previously paid) & Previous Back-Dues Row
-  let currentPayY = y + headerH + descRowH;
-  if (hasAdjustment) {
-    // Label
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...zinc700);
-    doc.text('Adjusted (Previously Paid)', payX1 + 3, currentPayY + 4.8);
-
-    // Value
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...zinc900);
-    doc.text(`-${pdfCurrency(adjustedAmount)}`, payX3 - 3, currentPayY + 4.8, { align: 'right' });
+  const rawTitle = (settings.instituteName || receipt.school || 'ENGLISHJIBI CLASSES').toUpperCase();
+  if (rawTitle === 'ENGLISHJIBI CLASSES') {
+    const part1 = "ENGLISH";
+    const part2 = "JIBI";
+    const part3 = " CLASSES";
     
-    currentPayY += adjustedRowH;
-  }
-  if (hasPrevDue) {
-    // Label
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...zinc700);
-    doc.text('Previous Back-Dues', payX1 + 3, currentPayY + 4.8);
-
-    // Value
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...zinc900);
-    doc.text(pdfCurrency(receipt.prevDue), payX3 - 3, currentPayY + 4.8, { align: 'right' });
+    const w1 = doc.getTextWidth(part1);
+    const w2 = doc.getTextWidth(part2);
+    const w3 = doc.getTextWidth(part3);
     
-    currentPayY += prevDueRowH;
-  }
-
-  // Total Received Row (zinc-100)
-  doc.setFillColor(...zinc100);
-  doc.rect(payX1, currentPayY, innerW, totalRowH, 'F');
-
-  // Label
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc900);
-  doc.text('Total Received', payX1 + 3, currentPayY + 5.5);
-
-  // Value
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text(pdfCurrency(receipt.totalRecv), payX3 - 3, currentPayY + 5.5, { align: 'right' });
-
-  // Remaining Balance Row (if any)
-  if (hasRemaining) {
-    const remainingY = currentPayY + totalRowH;
+    const totalWidth = w1 + w2 + w3;
+    const titleStartX = headerCenterX - totalWidth / 2;
     
-    // Draw thin horizontal separator line
-    doc.setDrawColor(...zinc300);
-    doc.setLineWidth(0.25);
-    doc.line(payX1, remainingY, payX3, remainingY);
-
-    const isPaidOff = receipt.remainingAmount === 0;
-
-    if (isPaidOff) {
-      // Light green background fill
-      doc.setFillColor(240, 253, 244);
-      doc.rect(payX1, remainingY, innerW, remainingRowH, 'F');
-
-      const greenLabel = `Remaining Balance (Fully Paid for ${receipt.remainingMonths})`;
-
-      // Label in green
-      doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(21, 128, 61); // Dark green text
-      doc.text(greenLabel, payX1 + 3, remainingY + 4.8);
-
-      // Value in green
-      doc.setFont('helvetica', 'bold');
-      doc.text(pdfCurrency(0), payX3 - 3, remainingY + 4.8, { align: 'right' });
-    } else {
-      // Light red background fill
-      doc.setFillColor(254, 242, 242);
-      doc.rect(payX1, remainingY, innerW, remainingRowH, 'F');
-
-      // Label in red
-      doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(185, 28, 28); // Dark red text
-      const remainingLabel = receipt.remainingMonths ? `Remaining Balance (${receipt.remainingMonths})` : 'Remaining Balance';
-      doc.text(remainingLabel, payX1 + 3, remainingY + 4.8);
-
-      // Value in red
-      doc.setFont('helvetica', 'bold');
-      doc.text(pdfCurrency(receipt.remainingAmount!), payX3 - 3, remainingY + 4.8, { align: 'right' });
-    }
+    doc.setTextColor(...blackColor);
+    doc.text(part1, titleStartX, 22);
+    
+    doc.setTextColor(...redColor);
+    doc.text(part2, titleStartX + w1, 22);
+    
+    doc.setTextColor(...blackColor);
+    doc.text(part3, titleStartX + w1 + w2, 22);
+  } else {
+    doc.setTextColor(...blackColor);
+    doc.text(rawTitle, headerCenterX, 22, { align: 'center' });
   }
-
-  // Table Borders & Grid Lines
-  doc.setDrawColor(...zinc300);
-  doc.setLineWidth(0.25);
-  doc.rect(payX1, y, innerW, payTableH, 'S'); // Outer border
-
-  // Horizontal cell borders
-  doc.line(payX1, y + headerH, payX3, y + headerH);
-  doc.line(payX1, y + headerH + descRowH, payX3, y + headerH + descRowH);
   
-  let gridLineY = y + headerH + descRowH;
-  if (hasAdjustment) {
-    doc.line(payX1, gridLineY + adjustedRowH, payX3, gridLineY + adjustedRowH);
-    gridLineY += adjustedRowH;
-  }
-  if (hasPrevDue) {
-    doc.line(payX1, gridLineY + prevDueRowH, payX3, gridLineY + prevDueRowH);
-  }
-
-  // Vertical grid splitter
-  doc.line(payX2, y, payX2, y + payTableH);
-
-  y += payTableH + 5.5; // Update Y position after payment table
-
-  // ─── 6. DUES & NOTES SECTION ─────────────────────────
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-
-  if (receipt.nextDue) {
-    doc.setTextColor(...zinc700);
-    doc.text('Next Dues:', innerX, y + 3);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...zinc500);
-    doc.text(receipt.nextDue, innerX + 18, y + 3);
-    y += 4.5;
-  }
-
-  if (receipt.notes) {
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...zinc700);
-    doc.text('Notes:', innerX, y + 3);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...zinc500);
-    
-    // Auto-wrap note content
-    const notesLines = doc.splitTextToSize(receipt.notes, innerW - 15) as string[];
-    doc.text(notesLines, innerX + 12, y + 3);
-    y += 4.5 + (notesLines.length - 1) * 3.5;
-  }
-
-  y += 2; // Spacing before footer
-
-  // ─── 7. FOOTER / SIGNATURES SECTION ──────────────────
-  // Left: Generation Details
-  doc.setFontSize(7.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc500);
-  doc.text(`Generated: ${formatDate(receipt.generatedOn)}`, innerX, y + 3);
-  doc.text(`By: ${receipt.generatedBy}`, innerX, y + 6.5);
-
-  // Right: Signature Line
-  const sigLineW = 24;
-  const sigLineX = innerEndX - sigLineW;
-  doc.setDrawColor(...zinc300);
-  doc.setLineWidth(0.25);
-  doc.line(sigLineX, y + 3, innerEndX, y + 3);
-
-  // Signature Text
-  doc.setFontSize(7.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...zinc500);
-  const sigTextX = sigLineX + sigLineW / 2;
-  doc.text('Authorized Signature', sigTextX, y + 6.5, { align: 'center' });
-
-  // ─── 8. OUTER CARD BOUNDARY ──────────────────────────
-  const cardEndY = y + 10.5;
-  const cardH = cardEndY - cardY;
+  // Tagline
+  doc.setFont('helvetica', 'bolditalic');
+  doc.setFontSize(10.0);
+  doc.setTextColor(80, 80, 80);
+  doc.text('Your Child  Our Responsibility', headerCenterX, 27.5, { align: 'center' });
   
-  doc.setDrawColor(...zinc300);
+  // Address
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.0);
+  doc.setTextColor(...blackColor);
+  const address = settings.address || 'Duplex - 37, In front of DAV School, Sailashree Vihar, BBSR.';
+  doc.text(address, headerCenterX, 32.5, { align: 'center' });
+  
+  // Phone & Social
+  const phone1 = settings.phone1 || '+91 8328922917';
+  const phone2 = settings.phone2 || '+91 7735812335';
+  const contactText = `Telegram: @englishwithchiranjibisir   |   Phone: ${phone1} / ${phone2}`;
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.0);
+  doc.setTextColor(...blackColor);
+  doc.text(contactText, headerCenterX, 37.5, { align: 'center' });
+
+  // Draw Logo in Top-Right
+  if (logoBase64) {
+    doc.addImage(logoBase64, 'PNG', logoX, logoY, logoSize, logoSize);
+  } else {
+    // Draw circular fallback logo
+    doc.setFillColor(10, 37, 83);
+    doc.circle(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 'F');
+    doc.setTextColor(...whiteColor);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('EJ', logoX + logoSize / 2, logoY + logoSize / 2 + 2, { align: 'center' });
+  }
+
+  // ─── 2. SEPARATOR BAND ───────────────────────────────
+  doc.setFillColor(...redColor);
+  doc.rect(margin, 43, contentWidth, 3.5, 'F');
+
+  // ─── 3. "MONEY RECEIPT" LABEL ────────────────────────
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.setTextColor(...redColor);
+  doc.text('MONEY RECEIPT', pageWidth / 2, 54, { align: 'center' });
+
+  // ─── 4. TWO-COLUMN LAYOUT (PROFILE & FEES) ───────────
+  const topColumnsY = 57;
+
+  // 4a. Left: Student's Profile
+  doc.setFillColor(...blueColor);
+  doc.setDrawColor(...borderDark);
   doc.setLineWidth(0.35);
-  roundedRect(doc, cardX, cardY, cardWidth, cardH, 2.5, 'S');
+  doc.rect(leftColX, topColumnsY, halfColWidth, 7.5, 'FD');
+  
+  doc.setFontSize(11.0);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...whiteColor);
+  doc.text("Student's Profile", leftColX + halfColWidth / 2, topColumnsY + 5.2, { align: 'center' });
 
-  // ─── 9. BOTTOM WATERMARK (OUTSIDE CARD) ──────────────
-  doc.setFontSize(7);
+  // Profile Table Grid
+  const profileRowH = 6.2;
+  const labelColW = 38;
+  const valColW = halfColWidth - labelColW;
+  
+  const profileFields = [
+    { label: 'STUDENT ID', value: receipt.studentId },
+    { label: 'STUDENT NAME', value: receipt.studentName },
+    { label: 'TUITION GROUP', value: receipt.category.toUpperCase() },
+    { label: 'CLASS', value: receipt.class || '-' },
+    { label: 'SCHOOL', value: receipt.school || '-' },
+    { label: 'ADMISSION DATE', value: receipt.admDate ? formatDate(receipt.admDate) : '-' }
+  ];
+
+  profileFields.forEach((field, i) => {
+    const rowY = topColumnsY + 7.5 + (i * profileRowH);
+    
+    // Draw cells
+    doc.setDrawColor(...borderLight);
+    doc.setLineWidth(0.25);
+    
+    // Draw label cell bg
+    doc.setFillColor(...labelBgColor);
+    doc.rect(leftColX, rowY, labelColW, profileRowH, 'F');
+    
+    // Draw borders
+    doc.rect(leftColX, rowY, labelColW, profileRowH, 'S');
+    doc.rect(leftColX + labelColW, rowY, valColW, profileRowH, 'S');
+    
+    // Label Text (no colon, regular weight)
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.8);
+    doc.setTextColor(...blackColor);
+    doc.text(field.label, leftColX + 3, rowY + 4.3);
+    
+    // Value Text (bold, size 9.5)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...blackColor);
+    doc.text(String(field.value), leftColX + labelColW + 3, rowY + 4.3);
+  });
+
+  // 4b. Right: Fees Details
+  doc.setFillColor(...greenColor);
+  doc.setDrawColor(...borderDark);
+  doc.setLineWidth(0.35);
+  doc.rect(rightColX, topColumnsY, halfColWidth, 7.5, 'FD');
+  
+  doc.setFontSize(11.0);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...whiteColor);
+  doc.text("Fees Details", rightColX + halfColWidth / 2, topColumnsY + 5.2, { align: 'center' });
+
+  // Period / Months Title row inside Fees Details
+  const periodY = topColumnsY + 7.5;
+  const periodH = 9.5;
+  doc.setDrawColor(...borderLight);
+  doc.setLineWidth(0.25);
+  doc.rect(rightColX, periodY, halfColWidth, periodH, 'S');
+  
+  doc.setFontSize(12.0);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...blackColor);
+  const formattedPeriod = formatMonthNamesWithBrackets(formatReceiptPeriod(receipt));
+  doc.text(formattedPeriod.toUpperCase(), rightColX + halfColWidth / 2, periodY + 6, { align: 'center' });
+
+  // Fees details fields
+  const feesFields = [
+    { label: 'Amount Paid', value: pdfCurrency(receipt.amtPaid) },
+    { label: 'Previous Dues', value: pdfCurrency(receipt.prevDue) },
+    { label: 'Remaining Balance', value: receipt.remainingAmount !== undefined ? pdfCurrency(receipt.remainingAmount) : 'Rs. 0' },
+    { label: 'TOTAL RECEIVED', value: pdfCurrency(receipt.totalRecv), isHighlight: true }
+  ];
+
+  const feesRowH = 6.8;
+  feesFields.forEach((field, i) => {
+    const rowY = periodY + periodH + (i * feesRowH);
+    
+    // Set cell borders
+    doc.setDrawColor(...borderLight);
+    doc.setLineWidth(0.25);
+    
+    if (field.isHighlight) {
+      // Highlight background
+      doc.setFillColor(...highlightGreenBg);
+      doc.rect(rightColX, rowY, halfColWidth - 30, feesRowH, 'FD');
+      doc.rect(rightColX + halfColWidth - 30, rowY, 30, feesRowH, 'FD');
+      
+      // Highlight text
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(...greenColor);
+      doc.text(field.label, rightColX + 2.5, rowY + 4.7);
+      doc.text(field.value, rightColX + halfColWidth - 2.5, rowY + 4.7, { align: 'right' });
+    } else {
+      // Normal row
+      doc.rect(rightColX, rowY, halfColWidth - 30, feesRowH, 'S');
+      doc.rect(rightColX + halfColWidth - 30, rowY, 30, feesRowH, 'S');
+      
+      // Normal text
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9.2);
+      doc.setTextColor(...blackColor);
+      doc.text(field.label, rightColX + 2.5, rowY + 4.7);
+      
+      // Bold value
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...blackColor);
+      doc.text(field.value, rightColX + halfColWidth - 2.5, rowY + 4.7, { align: 'right' });
+    }
+  });
+
+  // ─── 5. BOTTOM SECTION (MONTH TABLE & NEXT DUE) ──────
+  const bottomY = 107;
+
+  // 5a. Left: Month / Status Table
+  doc.setFillColor(...blueColor);
+  doc.setDrawColor(...borderDark);
+  doc.setLineWidth(0.35);
+  
+  // Draw two header columns instead of one merged box
+  const monthRowH = 6.5;
+  const monthColW = 38;
+  const statusColW = halfColWidth - monthColW;
+  
+  doc.rect(leftColX, bottomY, monthColW, 7.5, 'FD');
+  doc.rect(leftColX + monthColW, bottomY, statusColW, 7.5, 'FD');
+  
+  // Table header text
+  doc.setFontSize(11.0);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...whiteColor);
+  doc.text("MONTH", leftColX + monthColW / 2, bottomY + 5.2, { align: 'center' });
+  doc.text("STATUS", leftColX + monthColW + statusColW / 2, bottomY + 5.2, { align: 'center' });
+
+  // Month Table Rows (12 months)
+  MONTH_CODES.forEach((monthCode, i) => {
+    const rowY = bottomY + 7.5 + (i * monthRowH);
+    const monthName = MONTH_NAMES[monthCode].toUpperCase();
+    
+    // Determine status
+    let statusText = '';
+    let isDue = false;
+    let isPaidText = false;
+    let isNaText = false;
+
+    const isNotJoinedYet = isMonthNotJoined(receipt.admDate, monthCode);
+    if (isNotJoinedYet) {
+      statusText = 'NA';
+      isNaText = true;
+    } else {
+      // Find month in payments
+      const paymentRec = updatedPayments.find(p => p.month === monthCode);
+      if (paymentRec && paymentRec.paid) {
+        const amt = paymentRec.amount;
+        if (amt >= receipt.feePerMonth) {
+          statusText = 'PAID';
+          isPaidText = true;
+        } else if (amt > 0) {
+          statusText = `Rs. ${receipt.feePerMonth - amt} DUE`;
+          isDue = true;
+        } else if (amt === 0) {
+          statusText = 'NA';
+          isNaText = true;
+        }
+      } else if (receipt.months.includes(monthCode)) {
+        // If it's part of the current receipt months
+        if (receipt.amtPaid === 0 && receipt.totalRecv === 0) {
+          statusText = 'NA';
+          isNaText = true;
+        } else {
+          const isPaidOff = receipt.remainingAmount === 0;
+          if (isPaidOff) {
+            statusText = 'PAID';
+            isPaidText = true;
+          } else {
+            // If this specific month is partially paid
+            statusText = receipt.remainingMonths?.includes(MONTH_SHORT[monthCode])
+              ? `Rs. ${receipt.remainingAmount} DUE`
+              : 'PAID';
+            if (statusText.includes('DUE')) {
+              isDue = true;
+            } else {
+              isPaidText = true;
+            }
+          }
+        }
+      }
+    }
+
+    // Set borders
+    doc.setDrawColor(...borderLight);
+    doc.setLineWidth(0.25);
+    doc.rect(leftColX, rowY, monthColW, monthRowH, 'S');
+    doc.rect(leftColX + monthColW, rowY, statusColW, monthRowH, 'S');
+    
+    // Draw month name
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.0);
+    doc.setTextColor(...blackColor);
+    doc.text(monthName, leftColX + 4, rowY + 4.5);
+    
+    // Draw status with color
+    doc.setFontSize(10.0);
+    if (isPaidText) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...greenColor); // Vibrant green matching Excel
+    } else if (isDue) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...redColor); // Vibrant red matching Excel
+    } else if (isNaText) {
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(120, 120, 120); // Muted gray
+    } else {
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...blackColor);
+    }
+    
+    doc.text(statusText, leftColX + monthColW + statusColW / 2, rowY + 4.5, { align: 'center' });
+  });
+
+  // 5b. Right: Next Payment Due By
+  doc.setFillColor(...redColor);
+  doc.setDrawColor(...borderDark);
+  doc.setLineWidth(0.35);
+  doc.rect(rightColX, bottomY, halfColWidth, 7.5, 'FD');
+  
+  doc.setFontSize(11.0);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...whiteColor);
+  doc.text("NEXT PAYMENT DUE BY", rightColX + halfColWidth / 2, bottomY + 5.2, { align: 'center' });
+
+  // Due Outer Body Box (encloses due highlight, notes, and signatures to match the left column height)
+  const dueBoxY = bottomY + 7.5;
+  doc.setDrawColor(...borderLight);
+  doc.setLineWidth(0.25);
+  doc.rect(rightColX, dueBoxY, halfColWidth, 78.0, 'S');
+  
+  // Highlight background inside due box (light yellow/orange matching Excel)
+  doc.setFillColor(...highlightBgColor);
+  doc.rect(rightColX + 4, dueBoxY + 4, halfColWidth - 8, 17, 'F');
+  doc.setDrawColor(...redColor);
+  doc.setLineWidth(0.35);
+  doc.rect(rightColX + 4, dueBoxY + 4, halfColWidth - 8, 17, 'S');
+  
+  // Directly render the nextDue value inside the highlighted box
+  doc.setFontSize(15.0);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...redColor);
+  const formattedNextDue = formatMonthNamesWithBrackets(receipt.nextDue || 'N/A');
+  doc.text(formattedNextDue.toUpperCase(), rightColX + halfColWidth / 2, dueBoxY + 14.5, { align: 'center' });
+
+  // Note guidelines
+  const noteBoxY = dueBoxY + 25 + 5;
+  doc.setFont('helvetica', 'bolditalic');
+  doc.setFontSize(8.5);
+  doc.setTextColor(80, 80, 80);
+  doc.text('Please pay the fees before the due date.', rightColX + 4, noteBoxY);
+  doc.text('Keep this receipt for future reference.', rightColX + 4, noteBoxY + 4);
+  doc.text('Fees once paid are non-refundable.', rightColX + 4, noteBoxY + 8);
+
+  // 5c. Right Bottom: Signatures
+  const sigY = noteBoxY + 22;
+  doc.setLineWidth(0.25);
+  doc.setDrawColor(...blackColor);
+  
+  // Teacher's Sign Line
+  doc.line(rightColX + 4, sigY, rightColX + 39, sigY);
+  // Parent's Sign Line
+  doc.line(rightColX + halfColWidth - 39, sigY, rightColX + halfColWidth - 4, sigY);
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(...blackColor);
+  doc.text('* CHIRANJIBI SIR *', rightColX + 21.5, sigY - 2.5, { align: 'center' });
+  
+  doc.text("Teacher's Sign", rightColX + 21.5, sigY + 3.5, { align: 'center' });
+  doc.text("Parent's Sign", rightColX + halfColWidth - 21.5, sigY + 3.5, { align: 'center' });
+
+  // Generation Disclaimer
   doc.setFont('helvetica', 'italic');
-  doc.setTextColor(...zinc400);
-  doc.text(
-    'This is a computer-generated receipt and does not require a physical signature.',
-    centerX,
-    cardEndY + 8,
-    { align: 'center' }
-  );
+  doc.setFontSize(8.0);
+  doc.setTextColor(100, 100, 100);
+  doc.text('This is a computer-generated receipt.', rightColX + halfColWidth / 2, sigY + 11, { align: 'center' });
+  doc.text('No signature is required if not collected in person.', rightColX + halfColWidth / 2, sigY + 14.5, { align: 'center' });
+
+  // ─── 6. OUTER CARD BORDER ───────────────────────────
+  doc.setDrawColor(...blackColor);
+  doc.setLineWidth(0.65);
+  doc.rect(margin, 10, contentWidth, 194.0, 'S');
+
+  // ─── 7. FOOTER GENERATION BAND ──────────────────────
+  const footerY = 195;
+  doc.setFillColor(...yellowColor);
+  doc.setDrawColor(...blackColor);
+  doc.setLineWidth(0.35);
+  doc.rect(leftColX, footerY, 180, 6.0, 'F');
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(...blackColor);
+  const genTimeText = `RECEIPT IS GENERATED ON : ${formatReceiptGeneratedTime(receipt.generatedOn)}`;
+  doc.text(genTimeText, pageWidth / 2, footerY + 4.3, { align: 'center' });
 
   // ─── SAVE FILE ───────────────────────────────────────
   const firstMonth = MONTH_SHORT[receipt.months[0]] || receipt.months[0];

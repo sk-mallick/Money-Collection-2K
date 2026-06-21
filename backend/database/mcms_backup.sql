@@ -220,7 +220,7 @@ CREATE TABLE `settings` (
 
 LOCK TABLES `settings` WRITE;
 /*!40000 ALTER TABLE `settings` DISABLE KEYS */;
-INSERT INTO `settings` VALUES ('academicYear','2026-27'),('activeMonths','MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC,JAN,FEB'),('address','Duplex-37, In front of DAV School, Sailashree Vihar, Bhubaneswar'),('instagram','@englishwithchiranjibisir'),('instituteName','EnglishJibi Classes'),('feeJunior','1000'),('paymentGatewayEnabled','0'),('phone1','+91 83289 22917'),('phone2','+91 7735812335'),('razorpayKeyId',''),('feeSenior','1000'),('teacherName','Chirinjibi Sir'),('adminName','Chirinjibi Sir'),('upiId','');
+INSERT INTO `settings` VALUES ('academicYear','2026-27'),('activeMonths','MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC,JAN,FEB'),('address','Duplex-37, In front of DAV School, Sailashree Vihar, Bhubaneswar'),('instagram','@englishwithchiranjibisir'),('instituteName','EnglishJibi Classes'),('feeJunior','1000'),('paymentGatewayEnabled','0'),('phone1','+91 8328922917'),('phone2','+91 7735812335'),('razorpayKeyId',''),('feeSenior','1000'),('teacherName','Chirinjibi Sir'),('adminName','Chirinjibi Sir'),('upiId','');
 /*!40000 ALTER TABLE `settings` ENABLE KEYS */;
 UNLOCK TABLES;
 

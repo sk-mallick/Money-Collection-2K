@@ -187,7 +187,7 @@ function compute_payments_for_student(PDO $pdo, string $studentId, string $acade
     $feePerMonth = (int)$student['fee_per_month'];
 
     // 2. Fetch all receipts for this student and year in chronological order
-    $receiptsStmt = $pdo->prepare('SELECT amt_paid, months, generated_on FROM receipts WHERE student_id = ? AND academic_year = ? ORDER BY generated_on ASC');
+    $receiptsStmt = $pdo->prepare('SELECT amt_paid, prev_due, months, generated_on FROM receipts WHERE student_id = ? AND academic_year = ? ORDER BY generated_on ASC');
     $receiptsStmt->execute([$studentId, $academicYear]);
     $receipts = $receiptsStmt->fetchAll();
 
@@ -206,6 +206,36 @@ function allocate_receipts_to_months(array $receipts, int $feePerMonth, string $
     $paymentsState = [];
     $monthOrder = ["MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB"];
 
+    // Fetch student's admission date to find their starting month index
+    $admAcademicIndex = 0;
+    try {
+        $pdo = get_db();
+        $stmt = $pdo->prepare('SELECT adm_date FROM students WHERE id = ?');
+        $stmt->execute([$studentId]);
+        $admDate = $stmt->fetchColumn();
+        if (!empty($admDate)) {
+            $admTime = strtotime($admDate);
+            $admMonth = (int)date('n', $admTime);
+            $admYear = (int)date('Y', $admTime);
+            $admAcademicYear = ($admMonth >= 3) ? $admYear : ($admYear - 1);
+            
+            $parts = explode('-', $academicYear);
+            $selectedAcademicYear = (int)($parts[0] ?? 2026);
+            
+            if ($admAcademicYear > $selectedAcademicYear) {
+                $admAcademicIndex = 12;
+            } else if ($admAcademicYear === $selectedAcademicYear) {
+                $calendarToAcademic = [
+                    3 => 0, 4 => 1, 5 => 2, 6 => 3, 7 => 4, 8 => 5,
+                    9 => 6, 10 => 7, 11 => 8, 12 => 9, 1 => 10, 2 => 11
+                ];
+                $admAcademicIndex = $calendarToAcademic[$admMonth] ?? 0;
+            }
+        }
+    } catch (Exception $e) {
+        // Fallback to 0 if database or query fails
+    }
+
     foreach ($receipts as $receipt) {
         $months = is_string($receipt['months']) ? (json_decode($receipt['months'], true) ?: []) : ($receipt['months'] ?: []);
         if (empty($months)) continue;
@@ -215,6 +245,37 @@ function allocate_receipts_to_months(array $receipts, int $feePerMonth, string $
             return array_search($a, $monthOrder) - array_search($b, $monthOrder);
         });
 
+        // 1. Allocate prev_due chronologically to unpaid/partially paid months before or equal to the last month of the receipt
+        $prevDueRemaining = (int)($receipt['prev_due'] ?? 0);
+        if ($prevDueRemaining > 0) {
+            $lastMonth = $months[count($months) - 1];
+            $lastMonthIndex = array_search($lastMonth, $monthOrder);
+            if ($lastMonthIndex !== false) {
+                for ($i = $admAcademicIndex; $i <= $lastMonthIndex; $i++) {
+                    if ($prevDueRemaining <= 0) break;
+                    
+                    $m = $monthOrder[$i];
+                    $alreadyPaid = $paymentsState[$m]['amount'] ?? 0;
+                    $due = max(0, $feePerMonth - $alreadyPaid);
+                    
+                    if ($due > 0) {
+                        $alloc = min($prevDueRemaining, $due);
+                        $prevDueRemaining -= $alloc;
+                        
+                        $paymentsState[$m] = [
+                            'student_id' => $studentId,
+                            'month' => $m,
+                            'paid' => true,
+                            'amount' => $alreadyPaid + $alloc,
+                            'date' => substr($receipt['generated_on'], 0, 10),
+                            'academic_year' => $academicYear
+                        ];
+                    }
+                }
+            }
+        }
+
+        // 2. Allocate amt_paid to the months of the receipt
         $remaining = (int)$receipt['amt_paid'];
 
         foreach ($months as $month) {

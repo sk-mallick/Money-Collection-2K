@@ -55,6 +55,7 @@ export interface Receipt {
   generatedBy: string;
   academicYear?: string;
   remainingMonths?: string;
+  admDate?: string;
 }
 
 export interface Settings {
@@ -253,4 +254,108 @@ export function formatReceiptPeriod(receipt: Receipt): string {
     const yr = new Date(receipt.generatedOn).getFullYear().toString().slice(-2);
     return `${receipt.period} ${yr}`;
   }
+}
+
+export function formatMonthNamesWithBrackets(str: string): string {
+  return str;
+}
+
+export function applyReceiptToPayments(
+  payments: Payment[],
+  receipt: Receipt,
+  feePerMonth: number,
+  admDate?: string
+): Payment[] {
+  const monthOrder = ["MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB"];
+  const updatedPayments = payments.map(p => ({ ...p }));
+  const getPayment = (month: string) => {
+    let p = updatedPayments.find(pay => pay.month === month);
+    if (!p) {
+      p = {
+        studentId: receipt.studentId,
+        month,
+        paid: false,
+        amount: 0,
+        date: (receipt.generatedOn || '').substring(0, 10),
+        academicYear: receipt.academicYear
+      };
+      updatedPayments.push(p);
+    }
+    return p;
+  };
+
+  const months = receipt.months || [];
+  if (months.length === 0) return updatedPayments;
+
+  const sortedMonths = [...months].sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
+
+  const isBeforeAdmission = (m: string) => {
+    if (!admDate) return false;
+    const date = new Date(admDate);
+    const admYear = date.getFullYear();
+    const admMonth = date.getMonth() + 1;
+
+    const MONTH_CALENDAR_MAP: Record<string, { calendarMonth: number }> = {
+      MAR: { calendarMonth: 3 }, APR: { calendarMonth: 4 }, MAY: { calendarMonth: 5 },
+      JUN: { calendarMonth: 6 }, JUL: { calendarMonth: 7 }, AUG: { calendarMonth: 8 },
+      SEP: { calendarMonth: 9 }, OCT: { calendarMonth: 10 }, NOV: { calendarMonth: 11 },
+      DEC: { calendarMonth: 12 }, JAN: { calendarMonth: 1 }, FEB: { calendarMonth: 2 },
+    };
+
+    const monthMeta = MONTH_CALENDAR_MAP[m];
+    if (!monthMeta) return false;
+
+    const academicYearStart = admMonth >= 3 ? admYear : admYear - 1;
+    const targetCalendarMonth = monthMeta.calendarMonth;
+    const targetYear = (m === 'JAN' || m === 'FEB') ? academicYearStart + 1 : academicYearStart;
+
+    const targetDate = new Date(targetYear, targetCalendarMonth - 1, 1);
+    const comparisonAdmDate = new Date(date.getFullYear(), date.getMonth(), 1);
+
+    return targetDate < comparisonAdmDate;
+  };
+
+  // 1. Allocate prevDue
+  let prevDueRemaining = receipt.prevDue || 0;
+  if (prevDueRemaining > 0) {
+    const lastMonthIndex = monthOrder.indexOf(sortedMonths[sortedMonths.length - 1]);
+    if (lastMonthIndex !== -1) {
+      for (let i = 0; i <= lastMonthIndex; i++) {
+        if (prevDueRemaining <= 0) break;
+        const m = monthOrder[i];
+        if (isBeforeAdmission(m)) continue;
+
+        const p = getPayment(m);
+        const alreadyPaid = p.amount;
+        const due = Math.max(0, feePerMonth - alreadyPaid);
+        if (due > 0) {
+          const alloc = Math.min(prevDueRemaining, due);
+          prevDueRemaining -= alloc;
+          p.amount = alreadyPaid + alloc;
+          p.paid = true;
+        }
+      }
+    }
+  }
+
+  // 2. Allocate amtPaid
+  let remaining = receipt.amtPaid || 0;
+  for (const m of sortedMonths) {
+    const p = getPayment(m);
+    const alreadyPaid = p.amount;
+    const due = Math.max(0, feePerMonth - alreadyPaid);
+    const alloc = Math.min(remaining, due);
+    remaining -= alloc;
+    p.amount = alreadyPaid + alloc;
+    p.paid = true;
+  }
+
+  if (remaining > 0 && sortedMonths.length > 0) {
+    const lastMonth = sortedMonths[sortedMonths.length - 1];
+    const p = getPayment(lastMonth);
+    p.amount += remaining;
+    p.paid = true;
+  }
+
+  return updatedPayments;
 }

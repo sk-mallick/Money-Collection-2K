@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getMonthLabelWithYear, formatCurrency, formatReceiptPeriod } from '../lib/constants';
+import { getMonthLabelWithYear, formatCurrency, formatReceiptPeriod, applyReceiptToPayments } from '../lib/constants';
 import { getAdmAcademicIndex } from '../hooks/useStudents';
 import type { Receipt } from '../lib/constants';
 
@@ -97,6 +97,42 @@ describe('Financial Calculations & Formatter Unit Tests', () => {
         academicYear: '2026-27',
       };
       expect(formatReceiptPeriod(receipt)).toBe('Mar 26 – Apr 26');
+    });
+  });
+
+  describe('applyReceiptToPayments', () => {
+    it('correctly allocates prevDue to the selected month itself if it is the first month in the receipt', () => {
+      const payments = [
+        { studentId: '123', month: 'MAR', paid: true, amount: 1000, date: '' },
+        { studentId: '123', month: 'APR', paid: true, amount: 1000, date: '' },
+        { studentId: '123', month: 'MAY', paid: true, amount: 500, date: '' },
+        { studentId: '123', month: 'JUN', paid: false, amount: 0, date: '' },
+        { studentId: '123', month: 'JUL', paid: false, amount: 0, date: '' },
+      ];
+      const receipt: Receipt = {
+        id: 'JR-260605-A3',
+        studentId: '123',
+        studentName: 'Test Student',
+        category: 'Junior',
+        class: '5th',
+        school: 'School',
+        feePerMonth: 1000,
+        period: 'May 26',
+        months: ['MAY'],
+        amtPaid: 0,
+        prevDue: 500,
+        totalRecv: 500,
+        nextDue: 'June',
+        notes: '',
+        generatedOn: '2026-06-05T10:00:00Z',
+        generatedBy: 'Admin',
+        academicYear: '2026-27',
+      };
+
+      const updated = applyReceiptToPayments(payments, receipt, 1000, '2026-03-01');
+      const mayPayment = updated.find(p => p.month === 'MAY');
+      expect(mayPayment?.amount).toBe(1000);
+      expect(mayPayment?.paid).toBe(true);
     });
   });
 });

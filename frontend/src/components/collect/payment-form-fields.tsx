@@ -69,6 +69,7 @@ export function PaymentFormFields({
             type="number"
             min={0}
             placeholder="0"
+            disabled={selectedMonthsLength === 0}
             value={prevDue}
             onChange={e => handlePrevDueChange(e.target.value)}
             className={
@@ -83,6 +84,7 @@ export function PaymentFormFields({
             type="number"
             min={0}
             placeholder="Enter paid amount"
+            disabled={selectedMonthsLength === 0}
             value={amtPaid}
             onChange={e => setAmtPaid(e.target.value)}
           />
@@ -100,6 +102,7 @@ export function PaymentFormFields({
             id="remainingAmount"
             type="number"
             placeholder="0"
+            disabled={selectedMonthsLength === 0}
             value={remainingAmount}
             onChange={e => handleRemainingChange(e.target.value)}
             className={
@@ -112,6 +115,7 @@ export function PaymentFormFields({
           <Input
             id="nextDue"
             placeholder="e.g. July onwards"
+            disabled={selectedMonthsLength === 0}
             value={nextDue}
             onChange={e => setNextDue(e.target.value)}
           />
@@ -121,6 +125,7 @@ export function PaymentFormFields({
           <Input
             id="payNotes"
             placeholder="Optional remarks"
+            disabled={selectedMonthsLength === 0}
             value={notes}
             onChange={e => setNotes(e.target.value)}
           />

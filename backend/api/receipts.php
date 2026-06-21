@@ -28,10 +28,10 @@ function getReceipts(PDO $pdo): void {
     $studentId = query_param('studentId');
 
     if (!empty($studentId)) {
-        $stmt = $pdo->prepare('SELECT * FROM receipts WHERE student_id = ? ORDER BY generated_on DESC');
+        $stmt = $pdo->prepare('SELECT r.*, s.adm_date FROM receipts r LEFT JOIN students s ON r.student_id = s.id WHERE r.student_id = ? ORDER BY r.generated_on DESC');
         $stmt->execute([$studentId]);
     } else {
-        $stmt = $pdo->query('SELECT * FROM receipts ORDER BY generated_on DESC');
+        $stmt = $pdo->query('SELECT r.*, s.adm_date FROM receipts r LEFT JOIN students s ON r.student_id = s.id ORDER BY r.generated_on DESC');
     }
 
     $receipts = $stmt->fetchAll();

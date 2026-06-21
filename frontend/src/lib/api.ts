@@ -94,6 +94,7 @@ interface ServerReceipt {
   generated_by: string;
   academic_year?: string;
   remaining_months?: string | null;
+  adm_date?: string | null;
 }
 
 interface ServerGroup {
@@ -157,6 +158,7 @@ function mapServerReceipt(r: ServerReceipt): Receipt {
     generatedBy: r.generated_by,
     academicYear: r.academic_year || '2026-27',
     remainingMonths: r.remaining_months || '',
+    admDate: r.adm_date || undefined,
   };
 }
 
