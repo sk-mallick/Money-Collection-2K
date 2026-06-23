@@ -12,38 +12,7 @@
         "admDate": "2026-03-01",
         "dob": "2016-03-10",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -59,44 +28,7 @@
         "admDate": "2026-03-01",
         "dob": "2016-01-18",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -112,26 +44,7 @@
         "admDate": "2026-03-01",
         "dob": "2015-09-09",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -147,32 +60,7 @@
         "admDate": "2026-03-01",
         "dob": "2016-04-29",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -188,44 +76,7 @@
         "admDate": "2026-03-01",
         "dob": "2015-05-27",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -241,38 +92,7 @@
         "admDate": "2026-05-01",
         "dob": "2015-07-23",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -288,14 +108,7 @@
         "admDate": "2026-03-01",
         "dob": "2017-04-07",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -311,26 +124,7 @@
         "admDate": "2026-03-01",
         "dob": "2015-04-27",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -346,32 +140,7 @@
         "admDate": "2026-03-01",
         "dob": "2015-08-15",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -387,26 +156,7 @@
         "admDate": "2026-04-01",
         "dob": "2017-01-05",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -422,44 +172,7 @@
         "admDate": "2026-04-01",
         "dob": "2016-07-14",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -475,26 +188,7 @@
         "admDate": "2026-04-01",
         "dob": "2015-12-24",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -510,38 +204,7 @@
         "admDate": "2026-05-01",
         "dob": "2017-02-12",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -557,38 +220,7 @@
         "admDate": "2026-05-01",
         "dob": "2017-03-04",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -604,44 +236,7 @@
         "admDate": "2026-03-01",
         "dob": "2016-05-06",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -657,44 +252,7 @@
         "admDate": "2026-03-01",
         "dob": "2016-10-15",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -710,44 +268,7 @@
         "admDate": "2026-03-01",
         "dob": "2016-07-01",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -763,44 +284,7 @@
         "admDate": "2026-03-01",
         "dob": "NIL",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -816,44 +300,7 @@
         "admDate": "2026-03-01",
         "dob": "2016-08-24",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -869,44 +316,7 @@
         "admDate": "2026-03-01",
         "dob": "2016-09-23",
         "feePerMonth": 1000,
-        "payments": {
-            "MAY": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-05-01",
-                "na": true
-            },
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -922,44 +332,7 @@
         "admDate": "2026-03-01",
         "dob": "2016-07-03",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -975,26 +348,7 @@
         "admDate": "2026-03-01",
         "dob": "2017-03-01",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1010,44 +364,7 @@
         "admDate": "2026-03-01",
         "dob": "2016-08-29",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1063,44 +380,7 @@
         "admDate": "2026-03-01",
         "dob": "2016-06-24",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1116,67 +396,7 @@
         "admDate": "2026-03-01",
         "dob": "2017-06-01",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
-        "notes": ""
-    },
-    {
-        "id": "F12",
-        "name": "Priyanshi Das",
-        "category": "Junior",
-        "group": "F",
-        "class": "3rd",
-        "school": "St.Xaviar",
-        "fatherNo": "9658101514",
-        "motherNo": "8908138248",
-        "contactNo": "NIL",
-        "admDate": "2026-03-01",
-        "dob": "2018-04-14",
-        "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1192,44 +412,7 @@
         "admDate": "2026-03-01",
         "dob": "2017-01-12",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1245,44 +428,7 @@
         "admDate": "2026-04-01",
         "dob": "2017-07-26",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1298,44 +444,7 @@
         "admDate": "2026-04-01",
         "dob": "2017-09-15",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1351,44 +460,7 @@
         "admDate": "2026-04-01",
         "dob": "2016-12-21",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1404,26 +476,7 @@
         "admDate": "2026-04-01",
         "dob": "2017-02-12",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1439,67 +492,7 @@
         "admDate": "2026-04-01",
         "dob": "2017-07-11",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
-        "notes": ""
-    },
-    {
-        "id": "F19",
-        "name": "Dibyansh Pani",
-        "category": "Junior",
-        "group": "F",
-        "class": "4th",
-        "school": "DAV",
-        "fatherNo": "9337274790",
-        "motherNo": "7809356466",
-        "contactNo": "NIL",
-        "admDate": "2026-04-01",
-        "dob": "2017-01-20",
-        "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1515,38 +508,7 @@
         "admDate": "2026-05-01",
         "dob": "2016-10-14",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1562,32 +524,7 @@
         "admDate": "2026-04-01",
         "dob": "2017-04-28",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1603,32 +540,7 @@
         "admDate": "2026-04-01",
         "dob": "2017-12-14",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1644,32 +556,7 @@
         "admDate": "2026-04-01",
         "dob": "2018-02-07",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1685,44 +572,7 @@
         "admDate": "2026-04-01",
         "dob": "2018-12-17",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1738,26 +588,7 @@
         "admDate": "2026-04-01",
         "dob": "2017-08-11",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1773,44 +604,7 @@
         "admDate": "2026-04-01",
         "dob": "2017-05-24",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1826,44 +620,7 @@
         "admDate": "2026-06-01",
         "dob": "2017-07-04",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-05-01",
-                "na": true
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1879,26 +636,7 @@
         "admDate": "2026-06-01",
         "dob": "2017-07-04",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-05-01",
-                "na": true
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1914,32 +652,7 @@
         "admDate": "2026-04-01",
         "dob": "2018-02-22",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -1955,44 +668,7 @@
         "admDate": "2026-06-01",
         "dob": "2017-12-20",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-05-01",
-                "na": true
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2008,50 +684,23 @@
         "admDate": "2026-07-01",
         "dob": "2017-10-29",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-05-01",
-                "na": true
-            },
-            "JUN": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-06-01",
-                "na": true
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
+        "notes": ""
+    },
+    {
+        "id": "K12",
+        "name": "Aarnav Parida",
+        "category": "Junior",
+        "group": "K",
+        "class": "3rd",
+        "school": "DAV",
+        "fatherNo": "9937116027",
+        "motherNo": "7682966214",
+        "contactNo": "NIL",
+        "admDate": "2026-04-01",
+        "dob": "2017-06-25",
+        "feePerMonth": 1000,
+        "payments": {},
         "notes": ""
     },
     {
@@ -2067,38 +716,7 @@
         "admDate": "2026-05-01",
         "dob": "2014-09-01",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2114,44 +732,7 @@
         "admDate": "2026-05-01",
         "dob": "2015-05-12",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-08-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2167,44 +748,7 @@
         "admDate": "2026-03-01",
         "dob": "2014-01-18",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2220,44 +764,7 @@
         "admDate": "2026-03-01",
         "dob": "2013-09-12",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2273,44 +780,7 @@
         "admDate": "2026-03-01",
         "dob": "2014-05-18",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2326,44 +796,7 @@
         "admDate": "2026-03-01",
         "dob": "2015-08-19",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2379,44 +812,7 @@
         "admDate": "2026-03-01",
         "dob": "2015-04-08",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2432,73 +828,7 @@
         "admDate": "2026-03-01",
         "dob": "2015-10-02",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
-        "notes": ""
-    },
-    {
-        "id": "A09",
-        "name": "Sibansi Behera",
-        "category": "Senior",
-        "group": "A",
-        "class": "6th",
-        "school": "ODM",
-        "fatherNo": "7749013157",
-        "motherNo": "898410169",
-        "contactNo": "NIL",
-        "admDate": "2026-03-01",
-        "dob": "2015-08-24",
-        "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2514,44 +844,7 @@
         "admDate": "2026-03-01",
         "dob": "2014-06-14",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2567,44 +860,7 @@
         "admDate": "2026-03-01",
         "dob": "2014-08-29",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2620,44 +876,7 @@
         "admDate": "2026-04-01",
         "dob": "2014-03-16",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2670,47 +889,10 @@
         "fatherNo": "9438066366",
         "motherNo": "9438732879",
         "contactNo": "9438732879",
-        "admDate": "2026-05-02",
+        "admDate": "2026-06-01",
         "dob": "2013-12-17",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-05-01",
-                "na": true
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2726,44 +908,7 @@
         "admDate": "2026-04-01",
         "dob": "2014-01-04",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2779,38 +924,7 @@
         "admDate": "2026-05-01",
         "dob": "2015-07-15",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2826,32 +940,7 @@
         "admDate": "2026-07-01",
         "dob": "2014-05-04",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2867,38 +956,7 @@
         "admDate": "2026-05-01",
         "dob": "2014-08-05",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2914,44 +972,7 @@
         "admDate": "2026-06-01",
         "dob": "2015-01-01",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-05-01",
-                "na": true
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -2967,32 +988,7 @@
         "admDate": "2025-04-01",
         "dob": "2014-10-14",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3008,50 +1004,7 @@
         "admDate": "2026-04-01",
         "dob": "2010-10-24",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3067,50 +1020,7 @@
         "admDate": "2026-04-01",
         "dob": "2010-11-15",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3126,50 +1036,7 @@
         "admDate": "2026-04-01",
         "dob": "2011-05-06",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3185,50 +1052,7 @@
         "admDate": "2026-04-01",
         "dob": "2012-01-01",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3244,50 +1068,7 @@
         "admDate": "2026-04-01",
         "dob": "2012-03-13",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3303,32 +1084,7 @@
         "admDate": "2026-04-01",
         "dob": "2011-07-01",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3341,53 +1097,10 @@
         "fatherNo": "9776432655",
         "motherNo": "9937884275",
         "contactNo": "NIL",
-        "admDate": "2026-01-04",
+        "admDate": "2026-04-01",
         "dob": "2011-11-20",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3403,38 +1116,7 @@
         "admDate": "2026-05-01",
         "dob": "2012-01-16",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3450,56 +1132,7 @@
         "admDate": "2026-05-01",
         "dob": "2011-05-05",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-08-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-08-01",
-                "na": false
-            },
-            "OCT": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-08-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3515,62 +1148,7 @@
         "admDate": "2026-05-01",
         "dob": "2010-10-18",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-08-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-08-01",
-                "na": false
-            },
-            "OCT": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-08-01",
-                "na": false
-            },
-            "NOV": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-11-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3586,56 +1164,7 @@
         "admDate": "2026-05-01",
         "dob": "2011-04-11",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-08-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-08-01",
-                "na": false
-            },
-            "OCT": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-08-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3651,38 +1180,7 @@
         "admDate": "2026-05-01",
         "dob": "2012-04-02",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3698,26 +1196,7 @@
         "admDate": "2026-03-01",
         "dob": "2012-01-06",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3733,38 +1212,7 @@
         "admDate": "2026-03-01",
         "dob": "2012-03-20",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3780,32 +1228,7 @@
         "admDate": "2026-03-01",
         "dob": "2011-12-26",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3821,44 +1244,7 @@
         "admDate": "2026-04-01",
         "dob": "2012-12-30",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3874,44 +1260,7 @@
         "admDate": "2026-04-01",
         "dob": "2013-12-18",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3927,26 +1276,7 @@
         "admDate": "2026-04-01",
         "dob": "2014-05-20",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -3962,32 +1292,7 @@
         "admDate": "2026-04-01",
         "dob": "2014-06-27",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4000,23 +1305,10 @@
         "fatherNo": "9040000520",
         "motherNo": "6289374665",
         "contactNo": "NIL",
-        "admDate": "2026-01-04",
+        "admDate": "2026-04-01",
         "dob": "2013-03-16",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4029,29 +1321,10 @@
         "fatherNo": "7735722963",
         "motherNo": "8260781631",
         "contactNo": "NIL",
-        "admDate": "2026-01-04",
+        "admDate": "2026-04-01",
         "dob": "2013-11-19",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4067,32 +1340,7 @@
         "admDate": "2026-04-01",
         "dob": "2014-12-23",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4108,50 +1356,7 @@
         "admDate": "2026-07-01",
         "dob": "2013-12-17",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-05-01",
-                "na": true
-            },
-            "JUN": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-06-01",
-                "na": true
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4167,44 +1372,7 @@
         "admDate": "2026-04-01",
         "dob": "2010-10-29",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4220,50 +1388,7 @@
         "admDate": "2026-04-01",
         "dob": "2011-11-13",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4279,32 +1404,7 @@
         "admDate": "2026-04-01",
         "dob": "2011-03-06",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4320,50 +1420,7 @@
         "admDate": "2026-04-01",
         "dob": "2010-08-15",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4379,50 +1436,7 @@
         "admDate": "2026-04-01",
         "dob": "2011-07-10",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4438,50 +1452,7 @@
         "admDate": "2026-04-01",
         "dob": "2011-09-24",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "SEP": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4497,38 +1468,7 @@
         "admDate": "2026-04-01",
         "dob": "2013-02-22",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4544,38 +1484,7 @@
         "admDate": "2026-04-01",
         "dob": "2012-11-02",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4591,32 +1500,7 @@
         "admDate": "2026-04-01",
         "dob": "2012-06-20",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4632,44 +1516,7 @@
         "admDate": "2026-04-01",
         "dob": "2012-09-04",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4685,38 +1532,7 @@
         "admDate": "2026-05-01",
         "dob": "2012-04-25",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4732,26 +1548,7 @@
         "admDate": "2026-04-01",
         "dob": "2013-02-18",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4767,44 +1564,7 @@
         "admDate": "2026-03-01",
         "dob": "2012-10-03",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4820,44 +1580,7 @@
         "admDate": "2026-03-01",
         "dob": "2013-05-15",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4873,26 +1596,7 @@
         "admDate": "2026-04-01",
         "dob": "2012-10-31",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4908,38 +1612,7 @@
         "admDate": "2026-05-01",
         "dob": "NIL",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4955,38 +1628,7 @@
         "admDate": "2026-05-01",
         "dob": "NIL",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -4999,35 +1641,10 @@
         "fatherNo": "9678447260",
         "motherNo": "9678447260",
         "contactNo": "NIL",
-        "admDate": "2026-03-01",
+        "admDate": "2026-04-01",
         "dob": "2014-10-25",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5043,44 +1660,7 @@
         "admDate": "2026-03-01",
         "dob": "2014-01-29",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5096,44 +1676,7 @@
         "admDate": "2026-03-01",
         "dob": "2014-04-17",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5149,26 +1692,7 @@
         "admDate": "2026-03-01",
         "dob": "2014-05-22",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5184,26 +1708,7 @@
         "admDate": "2026-03-01",
         "dob": "2014-01-13",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5219,44 +1724,7 @@
         "admDate": "2026-03-01",
         "dob": "2013-10-04",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-03-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-06-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5272,44 +1740,7 @@
         "admDate": "2026-04-01",
         "dob": "2014-05-22",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5325,44 +1756,7 @@
         "admDate": "2026-04-01",
         "dob": "2014-04-03",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5378,32 +1772,7 @@
         "admDate": "2026-04-01",
         "dob": "2013-12-16",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5419,26 +1788,7 @@
         "admDate": "2026-04-01",
         "dob": "2013-10-12",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5454,32 +1804,7 @@
         "admDate": "2026-04-01",
         "dob": "2013-09-02",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5495,44 +1820,7 @@
         "admDate": "2026-04-01",
         "dob": "2013-12-31",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-04-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            },
-            "AUG": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-07-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     },
     {
@@ -5548,38 +1836,7 @@
         "admDate": "2026-05-01",
         "dob": "2013-12-02",
         "feePerMonth": 1000,
-        "payments": {
-            "MAR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-03-01",
-                "na": true
-            },
-            "APR": {
-                "paid": false,
-                "amount": 0,
-                "date": "2026-04-01",
-                "na": true
-            },
-            "MAY": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUN": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            },
-            "JUL": {
-                "paid": true,
-                "amount": 1000,
-                "date": "2026-05-01",
-                "na": false
-            }
-        },
+        "payments": {},
         "notes": ""
     }
 ]
