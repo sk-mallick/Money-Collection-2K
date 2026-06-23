@@ -68,3 +68,5 @@
 {"timestamp":"2026-06-23 09:34:15","level":"INFO","message":"Successful login","context":{"username":"admin"},"ip":"127.0.0.1","uri":"\/Money%20Collection%202K\/auth\/login"}
 {"timestamp":"2026-06-23 09:34:37","level":"WARNING","message":"Failed login attempt","context":{"ip":"127.0.0.1","username":"admin"},"ip":"127.0.0.1","uri":"\/Money%20Collection%202K\/auth\/login"}
 {"timestamp":"2026-06-23 09:34:37","level":"INFO","message":"Successful login","context":{"username":"admin"},"ip":"127.0.0.1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-06-23 09:51:10","level":"WARNING","message":"Failed login attempt","context":{"ip":"127.0.0.1","username":"admin"},"ip":"127.0.0.1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-06-23 09:51:11","level":"INFO","message":"Successful login","context":{"username":"admin"},"ip":"127.0.0.1","uri":"\/Money%20Collection%202K\/auth\/login"}

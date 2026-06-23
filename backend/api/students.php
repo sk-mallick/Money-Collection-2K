@@ -246,9 +246,17 @@ function deleteStudent(PDO $pdo): void {
 
     $pdo->beginTransaction();
     try {
-        // Soft delete: set deleted_at to current timestamp
-        $stmt = $pdo->prepare('UPDATE students SET deleted_at = NOW(), updated_at = NOW() WHERE id = ? AND deleted_at IS NULL');
-        $stmt->execute([$id]);
+        // Generate a unique 10-character ID to free the original ID for reuse
+        $deletedId = '';
+        do {
+            $deletedId = 'DEL' . substr(md5(uniqid(mt_rand(), true)), 0, 7);
+            $check = $pdo->prepare('SELECT id FROM students WHERE id = ?');
+            $check->execute([$deletedId]);
+        } while ($check->fetch());
+
+        // Soft delete and rename ID. ON UPDATE CASCADE automatically updates associated payments and receipts.
+        $stmt = $pdo->prepare('UPDATE students SET id = ?, deleted_at = NOW(), updated_at = NOW() WHERE id = ? AND deleted_at IS NULL');
+        $stmt->execute([$deletedId, $id]);
 
         if ($stmt->rowCount() === 0) {
             $pdo->rollBack();
@@ -262,8 +270,8 @@ function deleteStudent(PDO $pdo): void {
             $adminId,
             'DELETE',
             'student',
-            $id,
-            "Soft deleted student: $id"
+            $deletedId,
+            "Soft deleted and renamed student: $id -> $deletedId"
         ]);
 
         $pdo->commit();

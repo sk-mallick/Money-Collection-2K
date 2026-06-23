@@ -68,7 +68,7 @@ try {
         VALUES (?, 'ROLLOVER', 'settings', 'academicYear', ?)
     ");
     $logStmt->execute([
-        $user['id'] ?? null,
+        $user['sub'] ?? null,
         "Rolled over system from academic year $currentYear to $nextYear."
     ]);
 
