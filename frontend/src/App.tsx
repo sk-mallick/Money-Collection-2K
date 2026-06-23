@@ -13,7 +13,8 @@ import {
   ReceiptsPageLoading, 
   DuesPageLoading, 
   SettingsPageLoading,
-  AboutPageLoading
+  AboutPageLoading,
+  GroupsPageLoading
 } from '@/components/loading-skeletons';
 import { getApiBase } from '@/lib/constants';
 
@@ -22,6 +23,9 @@ function DynamicSuspenseFallback() {
   
   if (path.includes('/students')) {
     return <StudentsPageLoading />;
+  }
+  if (path.includes('/groups')) {
+    return <GroupsPageLoading />;
   }
   if (path.includes('/collect')) {
     return <CollectPageLoading />;

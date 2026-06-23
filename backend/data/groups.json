@@ -1,68 +1,68 @@
 [
-  {
-    "id": "A",
-    "class": "6th & 7th",
-    "timing": "Mon, Wed",
-    "category": "Senior"
-  },
-  {
-    "id": "B",
-    "class": "10th",
-    "timing": "Tue, Thu",
-    "category": "Senior"
-  },
-  {
-    "id": "C",
-    "class": "5th",
-    "timing": "Mon, Wed",
-    "category": "Junior"
-  },
-  {
-    "id": "D",
-    "class": "9th",
-    "timing": "Tue, Thu",
-    "category": "Senior"
-  },
-  {
-    "id": "E",
-    "class": "8th",
-    "timing": "Mon, Wed",
-    "category": "Senior"
-  },
-  {
-    "id": "F",
-    "class": "4th",
-    "timing": "Tue, Thu",
-    "category": "Junior"
-  },
-  {
-    "id": "G",
-    "class": "10th",
-    "timing": "Mon, Wed",
-    "category": "Senior"
-  },
-  {
-    "id": "H",
-    "class": "9th",
-    "timing": "Tue, Thu",
-    "category": "Senior"
-  },
-  {
-    "id": "I",
-    "class": "8th",
-    "timing": "Mon, Wed",
-    "category": "Senior"
-  },
-  {
-    "id": "J",
-    "class": "7th",
-    "timing": "Tue, Thu",
-    "category": "Senior"
-  },
-  {
-    "id": "K",
-    "class": "3rd",
-    "timing": "Mon, Wed",
-    "category": "Junior"
-  }
+    {
+        "id": "A",
+        "class": "6th & 7th",
+        "timing": "Mon, Wed",
+        "category": "Senior"
+    },
+    {
+        "id": "B",
+        "class": "10th",
+        "timing": "Tue, Thu",
+        "category": "Senior"
+    },
+    {
+        "id": "C",
+        "class": "5th",
+        "timing": "Mon, Wed",
+        "category": "Junior"
+    },
+    {
+        "id": "D",
+        "class": "9th",
+        "timing": "Tue, Thu",
+        "category": "Senior"
+    },
+    {
+        "id": "E",
+        "class": "7th & 8th",
+        "timing": "Mon, Wed",
+        "category": "Senior"
+    },
+    {
+        "id": "F",
+        "class": "3rd & 4th",
+        "timing": "Tue, Thu",
+        "category": "Junior"
+    },
+    {
+        "id": "G",
+        "class": "10th",
+        "timing": "Mon, Wed",
+        "category": "Senior"
+    },
+    {
+        "id": "H",
+        "class": "9th",
+        "timing": "Tue, Thu",
+        "category": "Senior"
+    },
+    {
+        "id": "I",
+        "class": "8th",
+        "timing": "Mon, Wed",
+        "category": "Senior"
+    },
+    {
+        "id": "J",
+        "class": "7th",
+        "timing": "Tue, Thu",
+        "category": "Senior"
+    },
+    {
+        "id": "K",
+        "class": "2nd & 3rd",
+        "timing": "Mon, Wed",
+        "category": "Junior"
+    }
 ]

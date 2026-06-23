@@ -1,7 +1,7 @@
 <?php
 /**
  * Database Seed / JSON Import Script
- * Parses data from backend/data/*.json and populates the database.
+ * Parses data from backend/data/*.json and populates the database (excluding payments).
  */
 
 if (php_sapi_name() !== 'cli') {
@@ -88,8 +88,41 @@ try {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
 
+    $stmtReceipt = $pdo->prepare('
+        INSERT INTO `receipts` (
+            `id`, `student_id`, `student_name`, `category`, `class`, `school`, `fee_per_month`, 
+            `period`, `months`, `amt_paid`, `prev_due`, `total_recv`, `remaining_amount`, `remaining_months`, `next_due`, `notes`, `generated_on`, `generated_by`, `academic_year`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ');
+
     $academicYear = $settingsData['academicYear'] ?? '2026-27';
     $studentCount = 0;
+    $receiptCount = 0;
+
+    $monthOrder = ["MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB"];
+    $monthNames = [
+        'MAR' => 'Mar', 'APR' => 'Apr', 'MAY' => 'May', 'JUN' => 'Jun',
+        'JUL' => 'Jul', 'AUG' => 'Aug', 'SEP' => 'Sep', 'OCT' => 'Oct',
+        'NOV' => 'Nov', 'DEC' => 'Dec', 'JAN' => 'Jan', 'FEB' => 'Feb',
+    ];
+
+    // Helper for formatting period label
+    $getPeriodString = function($months, $acYear) use ($monthNames) {
+        $parts = explode('-', $acYear);
+        $startYearStr = $parts[0] ?? '2026';
+        $endYearStr = $parts[1] ?? '27';
+        $startSuffix = substr($startYearStr, -2);
+        $endSuffix = strlen($endYearStr) === 4 ? substr($endYearStr, -2) : $endYearStr;
+        
+        $getMonthYearSuffix = function($monthCode) use ($startSuffix, $endSuffix) {
+            $isNextYear = $monthCode === 'JAN' || $monthCode === 'FEB';
+            return $isNextYear ? $endSuffix : $startSuffix;
+        };
+        
+        $firstMonth = ($monthNames[$months[0]] ?? $months[0]) . ' ' . $getMonthYearSuffix($months[0]);
+        $lastMonth = ($monthNames[$months[count($months) - 1]] ?? $months[count($months) - 1]) . ' ' . $getMonthYearSuffix($months[count($months) - 1]);
+        return count($months) === 1 ? $firstMonth : "$firstMonth – $lastMonth";
+    };
 
     foreach ($studentsData as $s) {
         $dob = null;
@@ -128,9 +161,67 @@ try {
             $updatedAt
         ]);
         $studentCount++;
+
+        // Import payments and generate receipts
+        if (isset($s['payments']) && (is_array($s['payments']) || is_object($s['payments']))) {
+            $paymentsList = (array)$s['payments'];
+            
+            // Group paid months by payment date
+            $paymentsByDate = [];
+            foreach ($paymentsList as $mCode => $pData) {
+                if (isset($pData['paid']) && $pData['paid']) {
+                    $pDate = $pData['date'] ?? $admDate;
+                    $paymentsByDate[$pDate][$mCode] = $pData;
+                }
+            }
+
+            foreach ($paymentsByDate as $pDate => $monthsGroup) {
+                // Sort months of this receipt chronologically
+                $mCodes = array_keys($monthsGroup);
+                usort($mCodes, function($a, $b) use ($monthOrder) {
+                    return array_search($a, $monthOrder) - array_search($b, $monthOrder);
+                });
+
+                // Generate Receipt
+                $totalPaid = 0;
+                foreach ($mCodes as $m) {
+                    $totalPaid += (int)$monthsGroup[$m]['amount'];
+                }
+
+                $prefix = ($s['category'] === 'Senior') ? 'SR' : 'JR';
+                $datePart = date('ymd', strtotime($pDate));
+                $uniqueHash = strtoupper(substr(md5($s['id'] . $pDate . json_encode($mCodes)), 0, 4));
+                $receiptId = "$prefix-$datePart-$uniqueHash";
+                $periodStr = $getPeriodString($mCodes, $academicYear);
+
+                $stmtReceipt->execute([
+                    $receiptId,
+                    $s['id'],
+                    $s['name'],
+                    $s['category'],
+                    $s['class'] ?? '',
+                    $s['school'] ?? '',
+                    $s['feePerMonth'] ?? 700,
+                    $periodStr,
+                    json_encode($mCodes),
+                    $totalPaid,
+                    0, // prev_due
+                    $totalPaid, // total_recv
+                    0, // remaining_amount
+                    null, // remaining_months
+                    '', // next_due
+                    '', // notes
+                    $pDate . ' 12:00:00', // generated_on
+                    'Admin',
+                    $academicYear
+                ]);
+                $receiptCount++;
+            }
+        }
     }
 
     echo "Imported $studentCount students successfully!\n";
+    echo "Generated $receiptCount receipts successfully!\n";
 
 } catch (Exception $e) {
     echo "ERROR during import: " . $e->getMessage() . "\n";

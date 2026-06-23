@@ -1,6 +1,9 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+
 
 // Backwards-compatible / Fallback loaders
 export function PageLoading() {
@@ -556,3 +559,68 @@ export function AboutPageLoading() {
   );
 }
 
+// 7. Groups Page loading state
+export function GroupsPageLoading() {
+  return (
+    <div className="space-y-6 text-left p-4 md:p-6">
+      {/* Top Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Groups</h1>
+          <p className="text-muted-foreground text-sm">
+            0 groups configured
+          </p>
+        </div>
+        <Button className="hidden sm:flex items-center cursor-pointer" disabled>
+          <Plus className="mr-1.5 h-4 w-4" /> Add Group
+        </Button>
+        <Button size="sm" className="flex sm:hidden items-center cursor-pointer px-3 h-9 text-xs" disabled>
+          <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Group
+        </Button>
+      </div>
+
+      {/* Card Grid */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, idx) => (
+          <Card key={idx} className="overflow-hidden flex flex-col justify-between pb-3 border bg-card/45 backdrop-blur-md">
+            <div>
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                {/* Left: icon + title/desc */}
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 rounded-lg bg-accent animate-pulse shrink-0" />
+                  <div className="space-y-1.5 min-w-0">
+                    <div className="h-4 w-20 rounded-md bg-accent animate-pulse" />
+                    <div className="h-3 w-14 rounded-md bg-accent animate-pulse" />
+                  </div>
+                </div>
+                {/* Right: badge + menu */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="h-5 w-14 rounded-full bg-accent animate-pulse" />
+                  <div className="h-7 w-7 rounded-md bg-accent animate-pulse" />
+                </div>
+              </CardHeader>
+              <CardContent className="pb-2 space-y-2">
+                {/* "Classes On" info row */}
+                <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border">
+                  <div className="flex items-center space-x-1.5">
+                    <div className="h-3.5 w-3.5 rounded-sm bg-accent animate-pulse shrink-0" />
+                    <div className="h-3 w-[72px] rounded-md bg-accent animate-pulse" />
+                  </div>
+                  <div className="h-3 w-20 rounded-md bg-accent animate-pulse" />
+                </div>
+                {/* "Students" info row */}
+                <div className="flex items-center justify-between p-2 rounded-lg bg-muted/20 border">
+                  <div className="flex items-center space-x-1.5">
+                    <div className="h-3.5 w-3.5 rounded-sm bg-accent animate-pulse shrink-0" />
+                    <div className="h-3 w-[58px] rounded-md bg-accent animate-pulse" />
+                  </div>
+                  <div className="h-3 w-6 rounded-md bg-accent animate-pulse" />
+                </div>
+              </CardContent>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
