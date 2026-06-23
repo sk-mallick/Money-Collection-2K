@@ -151,7 +151,7 @@ INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ('upiId', NULL) O
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES ('activeMonths', 'MAR,APR,MAY,JUN,JUL,AUG,SEP,OCT,NOV,DEC,JAN,FEB') ON DUPLICATE KEY UPDATE `setting_value` = VALUES(`setting_value`);
 
 -- ─── SEED ADMINS ────────────────────────────────────
-INSERT INTO `admins` (`id`, `username`, `password_hash`, `name`) VALUES (1, 'admin', '$2y$10$k/k6dQczSlxjo94alvBIrOZ3mUBZxMRuerrR10lsmiCelhFl7DDry', 'Chirinjibi Sir') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+INSERT INTO `admins` (`id`, `username`, `password_hash`, `name`) VALUES (1, '18102024', '$2y$10$xinMjTkvwA551wxEzJhOHufqTAdcsfVKHAcWatOm80q44LNVFr/3m', 'Chirinjibi Sir') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 INSERT INTO `admins` (`username`, `password_hash`, `name`) VALUES ('subham', '$2y$10$jwtDmmF2kLlfXQHVwEUlD.pBdgee8IvIyV8K7u4DF9IfJQUM37f2e', 'Subham Sir') ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
 -- ─── SEED GROUPS ────────────────────────────────────
