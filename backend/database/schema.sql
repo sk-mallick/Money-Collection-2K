@@ -58,6 +58,23 @@ CREATE TABLE `students` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
+-- ─── PAYMENTS TABLE ─────────────────────────────────
+DROP TABLE IF EXISTS `payments`;
+CREATE TABLE `payments` (
+  `id`            INT AUTO_INCREMENT PRIMARY KEY,
+  `student_id`    VARCHAR(10) NOT NULL,
+  `month`         VARCHAR(10) NOT NULL,
+  `paid`          TINYINT(1) NOT NULL DEFAULT 0,
+  `amount`        INT NOT NULL DEFAULT 0,
+  `date`          DATE DEFAULT NULL,
+  `academic_year` VARCHAR(10) NOT NULL DEFAULT '2026-27',
+  UNIQUE KEY `uk_student_month_year` (`student_id`, `month`, `academic_year`),
+  KEY `idx_payments_student` (`student_id`),
+  KEY `idx_payments_month` (`month`),
+  CONSTRAINT `fk_payment_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
 -- ─── RECEIPTS TABLE ─────────────────────────────────
 DROP TABLE IF EXISTS `receipts`;
 CREATE TABLE `receipts` (
@@ -111,6 +128,7 @@ CREATE TABLE `audit_logs` (
 CREATE INDEX `idx_receipts_student` ON `receipts`(`student_id`);
 CREATE INDEX `idx_receipts_generated` ON `receipts`(`generated_on`);
 CREATE INDEX `idx_students_deleted` ON `students`(`deleted_at`);
+CREATE INDEX `idx_payments_year_paid` ON `payments`(`academic_year`, `paid`);
 
 -- ============================================================
 -- DATA SEEDING
