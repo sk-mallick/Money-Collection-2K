@@ -54,3 +54,5 @@
 {"timestamp":"2026-06-20 15:24:18","level":"INFO","message":"Successful login","context":{"username":"admin"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
 {"timestamp":"2026-06-20 15:45:22","level":"INFO","message":"Successful login","context":{"username":"admin"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
 {"timestamp":"2026-06-20 15:45:42","level":"INFO","message":"Successful login","context":{"username":"admin"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-06-23 07:59:44","level":"ERROR","message":"Database connection failed","context":{"error":"SQLSTATE[HY000] [2006] MySQL server has gone away","host":"127.0.0.1","db":"mcms_db"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-06-23 07:59:55","level":"INFO","message":"Successful login","context":{"username":"admin"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}

@@ -115,12 +115,13 @@ function roundedRect(
  */
 export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] = []): Promise<void> {
   const settings = await fetchSettings();
-  const doc = new jsPDF('p', 'mm', 'a4');
+  const doc = new jsPDF('p', 'mm', [210, 210]);
   
   // Apply this receipt to payments to get the updated payments state for the PDF render
   const updatedPayments = applyReceiptToPayments(payments, receipt, receipt.feePerMonth, receipt.admDate);
   
   const pageWidth = 210;
+  const pageHeight = 210;
   const margin = 12;
   const contentWidth = pageWidth - margin * 2; // 186mm
 
@@ -153,14 +154,14 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   const highlightGreenBg = [240, 253, 250] as [number, number, number]; // Soft teal highlight for Total Received
 
   // ─── 1. HEADER SECTION ───────────────────────────────
-  const logoSize = 27;
+  const logoSize = 26;
   const logoX = pageWidth - margin - logoSize - 4;
-  const logoY = 13;
+  const logoY = 14;
   const headerCenterX = leftColX + (logoX - leftColX) / 2;
 
   // Title / Institute Name
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(27);
+  doc.setFontSize(24);
   
   const rawTitle = (settings.instituteName || receipt.school || 'ENGLISHJIBI CLASSES').toUpperCase();
   if (rawTitle === 'ENGLISHJIBI CLASSES') {
@@ -176,30 +177,30 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
     const titleStartX = headerCenterX - totalWidth / 2;
     
     doc.setTextColor(...blackColor);
-    doc.text(part1, titleStartX, 22);
+    doc.text(part1, titleStartX, 24);
     
     doc.setTextColor(...redColor);
-    doc.text(part2, titleStartX + w1, 22);
+    doc.text(part2, titleStartX + w1, 24);
     
     doc.setTextColor(...blackColor);
-    doc.text(part3, titleStartX + w1 + w2, 22);
+    doc.text(part3, titleStartX + w1 + w2, 24);
   } else {
     doc.setTextColor(...blackColor);
-    doc.text(rawTitle, headerCenterX, 22, { align: 'center' });
+    doc.text(rawTitle, headerCenterX, 24, { align: 'center' });
   }
   
   // Tagline
   doc.setFont('helvetica', 'bolditalic');
-  doc.setFontSize(10.0);
+  doc.setFontSize(9.0);
   doc.setTextColor(80, 80, 80);
-  doc.text('Your Child  Our Responsibility', headerCenterX, 27.5, { align: 'center' });
+  doc.text('Your Child  Our Responsibility', headerCenterX, 29.5, { align: 'center' });
   
   // Address
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.0);
+  doc.setFontSize(8.0);
   doc.setTextColor(...blackColor);
   const address = settings.address || 'Duplex - 37, In front of DAV School, Sailashree Vihar, BBSR.';
-  doc.text(address, headerCenterX, 32.5, { align: 'center' });
+  doc.text(address, headerCenterX, 34, { align: 'center' });
   
   // Phone & Social
   const phone1 = settings.phone1 || '+91 8328922917';
@@ -207,9 +208,9 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   const contactText = `Telegram: @englishwithchiranjibisir   |   Phone: ${phone1} / ${phone2}`;
   
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.0);
+  doc.setFontSize(8.0);
   doc.setTextColor(...blackColor);
-  doc.text(contactText, headerCenterX, 37.5, { align: 'center' });
+  doc.text(contactText, headerCenterX, 39, { align: 'center' });
 
   // Draw Logo in Top-Right
   if (logoBase64) {
@@ -220,22 +221,22 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
     doc.circle(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 'F');
     doc.setTextColor(...whiteColor);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.text('EJ', logoX + logoSize / 2, logoY + logoSize / 2 + 2, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text('EJ', logoX + logoSize / 2, logoY + logoSize / 2 + 1.5, { align: 'center' });
   }
 
   // ─── 2. SEPARATOR BAND ───────────────────────────────
   doc.setFillColor(...redColor);
-  doc.rect(margin, 43, contentWidth, 3.5, 'F');
+  doc.rect(margin, 44, contentWidth, 3.5, 'F');
 
   // ─── 3. "MONEY RECEIPT" LABEL ────────────────────────
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
+  doc.setFontSize(14);
   doc.setTextColor(...redColor);
-  doc.text('MONEY RECEIPT', pageWidth / 2, 54, { align: 'center' });
+  doc.text('MONEY RECEIPT', pageWidth / 2, 56, { align: 'center' });
 
   // ─── 4. TWO-COLUMN LAYOUT (PROFILE & FEES) ───────────
-  const topColumnsY = 57;
+  const topColumnsY = 60;
 
   // 4a. Left: Student's Profile
   doc.setFillColor(...blueColor);
@@ -243,13 +244,13 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   doc.setLineWidth(0.35);
   doc.rect(leftColX, topColumnsY, halfColWidth, 7.5, 'FD');
   
-  doc.setFontSize(11.0);
+  doc.setFontSize(10.0);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...whiteColor);
   doc.text("Student's Profile", leftColX + halfColWidth / 2, topColumnsY + 5.2, { align: 'center' });
 
   // Profile Table Grid
-  const profileRowH = 6.2;
+  const profileRowH = 5.6;
   const labelColW = 38;
   const valColW = halfColWidth - labelColW;
   
@@ -279,15 +280,15 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
     
     // Label Text (no colon, regular weight)
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.8);
+    doc.setFontSize(8.5);
     doc.setTextColor(...blackColor);
-    doc.text(field.label, leftColX + 3, rowY + 4.3);
+    doc.text(field.label, leftColX + 3, rowY + 4.0);
     
-    // Value Text (bold, size 9.5)
+    // Value Text (bold, size 9.0)
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
+    doc.setFontSize(9.0);
     doc.setTextColor(...blackColor);
-    doc.text(String(field.value), leftColX + labelColW + 3, rowY + 4.3);
+    doc.text(String(field.value), leftColX + labelColW + 3, rowY + 4.0);
   });
 
   // 4b. Right: Fees Details
@@ -296,23 +297,23 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   doc.setLineWidth(0.35);
   doc.rect(rightColX, topColumnsY, halfColWidth, 7.5, 'FD');
   
-  doc.setFontSize(11.0);
+  doc.setFontSize(10.0);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...whiteColor);
   doc.text("Fees Details", rightColX + halfColWidth / 2, topColumnsY + 5.2, { align: 'center' });
 
   // Period / Months Title row inside Fees Details
   const periodY = topColumnsY + 7.5;
-  const periodH = 9.5;
+  const periodH = 9.0;
   doc.setDrawColor(...borderLight);
   doc.setLineWidth(0.25);
   doc.rect(rightColX, periodY, halfColWidth, periodH, 'S');
   
-  doc.setFontSize(12.0);
+  doc.setFontSize(10.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...blackColor);
   const formattedPeriod = formatMonthNamesWithBrackets(formatReceiptPeriod(receipt));
-  doc.text(formattedPeriod.toUpperCase(), rightColX + halfColWidth / 2, periodY + 6, { align: 'center' });
+  doc.text(formattedPeriod.toUpperCase(), rightColX + halfColWidth / 2, periodY + 6.0, { align: 'center' });
 
   // Fees details fields
   const feesFields = [
@@ -322,7 +323,7 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
     { label: 'TOTAL RECEIVED', value: pdfCurrency(receipt.totalRecv), isHighlight: true }
   ];
 
-  const feesRowH = 6.8;
+  const feesRowH = 6.1;
   feesFields.forEach((field, i) => {
     const rowY = periodY + periodH + (i * feesRowH);
     
@@ -338,10 +339,10 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
       
       // Highlight text
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10.5);
+      doc.setFontSize(10.0);
       doc.setTextColor(...greenColor);
-      doc.text(field.label, rightColX + 2.5, rowY + 4.7);
-      doc.text(field.value, rightColX + halfColWidth - 2.5, rowY + 4.7, { align: 'right' });
+      doc.text(field.label, rightColX + 2.5, rowY + 4.3);
+      doc.text(field.value, rightColX + halfColWidth - 2.5, rowY + 4.3, { align: 'right' });
     } else {
       // Normal row
       doc.rect(rightColX, rowY, halfColWidth - 30, feesRowH, 'S');
@@ -349,19 +350,19 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
       
       // Normal text
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9.2);
+      doc.setFontSize(8.5);
       doc.setTextColor(...blackColor);
-      doc.text(field.label, rightColX + 2.5, rowY + 4.7);
+      doc.text(field.label, rightColX + 2.5, rowY + 4.3);
       
       // Bold value
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...blackColor);
-      doc.text(field.value, rightColX + halfColWidth - 2.5, rowY + 4.7, { align: 'right' });
+      doc.text(field.value, rightColX + halfColWidth - 2.5, rowY + 4.3, { align: 'right' });
     }
   });
 
   // ─── 5. BOTTOM SECTION (MONTH TABLE & NEXT DUE) ──────
-  const bottomY = 107;
+  const bottomY = 106;
 
   // 5a. Left: Month / Status Table
   doc.setFillColor(...blueColor);
@@ -369,7 +370,7 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   doc.setLineWidth(0.35);
   
   // Draw two header columns instead of one merged box
-  const monthRowH = 6.5;
+  const monthRowH = 6.25;
   const monthColW = 38;
   const statusColW = halfColWidth - monthColW;
   
@@ -377,7 +378,7 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   doc.rect(leftColX + monthColW, bottomY, statusColW, 7.5, 'FD');
   
   // Table header text
-  doc.setFontSize(11.0);
+  doc.setFontSize(10.0);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...whiteColor);
   doc.text("MONTH", leftColX + monthColW / 2, bottomY + 5.2, { align: 'center' });
@@ -446,12 +447,12 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
     
     // Draw month name
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10.0);
+    doc.setFontSize(9.0);
     doc.setTextColor(...blackColor);
-    doc.text(monthName, leftColX + 4, rowY + 4.5);
+    doc.text(monthName, leftColX + 4, rowY + 4.0);
     
     // Draw status with color
-    doc.setFontSize(10.0);
+    doc.setFontSize(9.0);
     if (isPaidText) {
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...greenColor); // Vibrant green matching Excel
@@ -466,7 +467,7 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
       doc.setTextColor(...blackColor);
     }
     
-    doc.text(statusText, leftColX + monthColW + statusColW / 2, rowY + 4.5, { align: 'center' });
+    doc.text(statusText, leftColX + monthColW + statusColW / 2, rowY + 4.0, { align: 'center' });
   });
 
   // 5b. Right: Next Payment Due By
@@ -475,7 +476,7 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   doc.setLineWidth(0.35);
   doc.rect(rightColX, bottomY, halfColWidth, 7.5, 'FD');
   
-  doc.setFontSize(11.0);
+  doc.setFontSize(10.0);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...whiteColor);
   doc.text("NEXT PAYMENT DUE BY", rightColX + halfColWidth / 2, bottomY + 5.2, { align: 'center' });
@@ -484,33 +485,33 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   const dueBoxY = bottomY + 7.5;
   doc.setDrawColor(...borderLight);
   doc.setLineWidth(0.25);
-  doc.rect(rightColX, dueBoxY, halfColWidth, 78.0, 'S');
+  doc.rect(rightColX, dueBoxY, halfColWidth, 75.0, 'S');
   
   // Highlight background inside due box (light yellow/orange matching Excel)
   doc.setFillColor(...highlightBgColor);
-  doc.rect(rightColX + 4, dueBoxY + 4, halfColWidth - 8, 17, 'F');
+  doc.rect(rightColX + 4, dueBoxY + 4, halfColWidth - 8, 15, 'F');
   doc.setDrawColor(...redColor);
   doc.setLineWidth(0.35);
-  doc.rect(rightColX + 4, dueBoxY + 4, halfColWidth - 8, 17, 'S');
+  doc.rect(rightColX + 4, dueBoxY + 4, halfColWidth - 8, 15, 'S');
   
   // Directly render the nextDue value inside the highlighted box
-  doc.setFontSize(15.0);
+  doc.setFontSize(14.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...redColor);
   const formattedNextDue = formatMonthNamesWithBrackets(receipt.nextDue || 'N/A');
-  doc.text(formattedNextDue.toUpperCase(), rightColX + halfColWidth / 2, dueBoxY + 14.5, { align: 'center' });
+  doc.text(formattedNextDue.toUpperCase(), rightColX + halfColWidth / 2, dueBoxY + 13.0, { align: 'center' });
 
   // Note guidelines
-  const noteBoxY = dueBoxY + 25 + 5;
+  const noteBoxY = dueBoxY + 23;
   doc.setFont('helvetica', 'bolditalic');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8.0);
   doc.setTextColor(80, 80, 80);
   doc.text('Please pay the fees before the due date.', rightColX + 4, noteBoxY);
-  doc.text('Keep this receipt for future reference.', rightColX + 4, noteBoxY + 4);
-  doc.text('Fees once paid are non-refundable.', rightColX + 4, noteBoxY + 8);
+  doc.text('Keep this receipt for future reference.', rightColX + 4, noteBoxY + 4.0);
+  doc.text('Fees once paid are non-refundable.', rightColX + 4, noteBoxY + 8.0);
 
   // 5c. Right Bottom: Signatures
-  const sigY = noteBoxY + 22;
+  const sigY = dueBoxY + 54;
   doc.setLineWidth(0.25);
   doc.setDrawColor(...blackColor);
   
@@ -520,7 +521,7 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   doc.line(rightColX + halfColWidth - 39, sigY, rightColX + halfColWidth - 4, sigY);
   
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8.0);
   doc.setTextColor(...blackColor);
   doc.text('* CHIRANJIBI SIR *', rightColX + 21.5, sigY - 2.5, { align: 'center' });
   
@@ -529,34 +530,34 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
 
   // Generation Disclaimer
   doc.setFont('helvetica', 'italic');
-  doc.setFontSize(8.0);
+  doc.setFontSize(7.5);
   doc.setTextColor(100, 100, 100);
-  doc.text('This is a computer-generated receipt.', rightColX + halfColWidth / 2, sigY + 11, { align: 'center' });
-  doc.text('No signature is required if not collected in person.', rightColX + halfColWidth / 2, sigY + 14.5, { align: 'center' });
+  doc.text('This is a computer-generated receipt.', rightColX + halfColWidth / 2, sigY + 10.0, { align: 'center' });
+  doc.text('No signature is required if not collected in person.', rightColX + halfColWidth / 2, sigY + 13.5, { align: 'center' });
 
   // ─── 6. OUTER CARD BORDER ───────────────────────────
   doc.setDrawColor(...blackColor);
   doc.setLineWidth(0.65);
-  doc.rect(margin, 10, contentWidth, 194.0, 'S');
+  doc.rect(margin, 12, contentWidth, 186.0, 'S');
 
   // ─── 7. FOOTER GENERATION BAND ──────────────────────
-  const footerY = 195;
+  const footerY = 190;
   doc.setFillColor(...yellowColor);
   doc.setDrawColor(...blackColor);
   doc.setLineWidth(0.35);
-  doc.rect(leftColX, footerY, 180, 6.0, 'F');
+  doc.rect(leftColX, footerY, 180, 5.5, 'F');
   
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9.5);
+  doc.setFontSize(8.5);
   doc.setTextColor(...blackColor);
   const genTimeText = `RECEIPT IS GENERATED ON : ${formatReceiptGeneratedTime(receipt.generatedOn)}`;
-  doc.text(genTimeText, pageWidth / 2, footerY + 4.3, { align: 'center' });
+  doc.text(genTimeText, pageWidth / 2, footerY + 4.0, { align: 'center' });
 
   // ─── SAVE FILE ───────────────────────────────────────
   const firstMonth = MONTH_SHORT[receipt.months[0]] || receipt.months[0];
   const lastMonth = MONTH_SHORT[receipt.months[receipt.months.length - 1]] || receipt.months[receipt.months.length - 1];
   const safeName = receipt.studentName.replace(/\s+/g, '_');
-  const fileName = `${receipt.id}-${receipt.studentId}-${safeName}-${firstMonth}-${lastMonth}.pdf`;
+  const fileName = `${receipt.studentId}-${safeName}-${firstMonth}-${lastMonth}.pdf`;
 
   doc.save(fileName);
 }
