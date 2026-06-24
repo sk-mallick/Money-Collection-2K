@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react"
+import { useNavigate } from "react-router-dom"
 import { Plus, EllipsisVertical, Pencil, Trash2, Calendar, Users, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,7 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 const CLASSES = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"]
 
 export default function GroupsPage() {
+  const navigate = useNavigate()
   const { groups, loading } = useGroups()
   const { students } = useStudents()
   const { invalidate } = useInvalidate()
@@ -410,7 +412,18 @@ export default function GroupsPage() {
                       {group.timing || "None"}
                     </span>
                   </div>
-                  <div className="text-xs text-muted-foreground flex items-center justify-between p-2 rounded-lg border border-border/50 bg-muted/40">
+                  <div
+                    onClick={() => navigate(`/students?group=${group.id}`)}
+                    className="text-xs text-muted-foreground flex items-center justify-between p-2 rounded-lg border border-border/50 bg-muted/40 cursor-pointer hover:bg-muted/70 hover:border-primary/20 transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`/students?group=${group.id}`);
+                      }
+                    }}
+                  >
                     <div className="flex items-center space-x-1.5 min-w-0">
                       <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span className="font-medium shrink-0">Students:</span>

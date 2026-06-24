@@ -143,6 +143,7 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   const blueColor = [0, 153, 224] as [number, number, number];      // Student Profile & Month Grid headers
   const greenColor = [0, 176, 80] as [number, number, number];     // Fees Details header
   const yellowColor = [255, 192, 0] as [number, number, number];    // Footer generation band
+  const orangeColor = [217, 119, 6] as [number, number, number];    // N/A (Waiver) header/status
   const blackColor = [0, 0, 0] as [number, number, number];
   const whiteColor = [255, 255, 255] as [number, number, number];
   
@@ -394,10 +395,11 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
     let isDue = false;
     let isPaidText = false;
     let isNaText = false;
+    let isWaiverText = false;
 
     const isNotJoinedYet = isMonthNotJoined(receipt.admDate, monthCode);
     if (isNotJoinedYet) {
-      statusText = 'NA';
+      statusText = 'NOT JOINED';
       isNaText = true;
     } else {
       // Find month in payments
@@ -411,14 +413,14 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
           statusText = `Rs. ${receipt.feePerMonth - amt} DUE`;
           isDue = true;
         } else if (amt === 0) {
-          statusText = 'NA';
-          isNaText = true;
+          statusText = 'N/A (WAIVER)';
+          isWaiverText = true;
         }
       } else if (receipt.months.includes(monthCode)) {
         // If it's part of the current receipt months
         if (receipt.amtPaid === 0 && receipt.totalRecv === 0) {
-          statusText = 'NA';
-          isNaText = true;
+          statusText = 'N/A (WAIVER)';
+          isWaiverText = true;
         } else {
           const isPaidOff = receipt.remainingAmount === 0;
           if (isPaidOff) {
@@ -459,6 +461,9 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
     } else if (isDue) {
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...redColor); // Vibrant red matching Excel
+    } else if (isWaiverText) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...orangeColor); // Vibrant orange/amber for Waiver
     } else if (isNaText) {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(120, 120, 120); // Muted gray
