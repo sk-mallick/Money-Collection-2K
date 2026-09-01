@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getMonthLabelWithYear, formatCurrency, formatReceiptPeriod, applyReceiptToPayments } from '../lib/constants';
 import { getAdmAcademicIndex } from '../hooks/useStudents';
+import { getReceiptFeesBreakdown } from '../lib/pdf';
 import type { Receipt } from '../lib/constants';
 
 describe('Financial Calculations & Formatter Unit Tests', () => {
@@ -133,6 +134,110 @@ describe('Financial Calculations & Formatter Unit Tests', () => {
       const mayPayment = updated.find(p => p.month === 'MAY');
       expect(mayPayment?.amount).toBe(1000);
       expect(mayPayment?.paid).toBe(true);
+    });
+  });
+
+  describe('getReceiptFeesBreakdown', () => {
+    it('produces only non-zero rows for admission fee payment with TOTAL RECEIVED at the end', () => {
+      const receipt: Receipt = {
+        id: 'SR-260901-A20',
+        studentId: 'A20',
+        studentName: 'ENGLISHJIBI CLASSES',
+        category: 'Senior',
+        class: '6th',
+        school: 'KPS',
+        feePerMonth: 1000,
+        period: 'Sep 26 – Nov 26',
+        months: ['SEP', 'OCT', 'NOV'],
+        amtPaid: 3000,
+        admissionFee: 500,
+        prevDue: 0,
+        remainingAmount: 0,
+        totalRecv: 3500,
+        nextDue: 'N/A',
+        notes: '',
+        generatedOn: '2026-09-01T10:00:00Z',
+        generatedBy: 'Admin',
+        academicYear: '2026-27',
+      };
+
+      const breakdown = getReceiptFeesBreakdown(receipt);
+      expect(breakdown).toHaveLength(3);
+      
+      expect(breakdown[0].label).toBe('Amount Paid');
+      expect(breakdown[0].value).toBe('Rs. 3,000');
+      
+      expect(breakdown[1].label).toBe('Admission Fee');
+      expect(breakdown[1].value).toBe('Rs. 500');
+
+      expect(breakdown[2].label).toBe('TOTAL RECEIVED');
+      expect(breakdown[2].value).toBe('Rs. 3,500');
+      expect(breakdown[2].isHighlight).toBe(true);
+    });
+
+    it('produces 3 rows with an empty middle row when only Amount Paid is present', () => {
+      const receipt: Receipt = {
+        id: 'JR-260601-A1',
+        studentId: 'A1',
+        studentName: 'John Doe',
+        category: 'Junior',
+        class: '5th',
+        school: 'School',
+        feePerMonth: 1000,
+        period: 'Jun 26 – Aug 26',
+        months: ['JUN', 'JUL', 'AUG'],
+        amtPaid: 3000,
+        prevDue: 0,
+        remainingAmount: 0,
+        totalRecv: 3000,
+        nextDue: 'Sep',
+        notes: '',
+        generatedOn: '2026-06-01T10:00:00Z',
+        generatedBy: 'Admin',
+      };
+
+      const breakdown = getReceiptFeesBreakdown(receipt);
+      expect(breakdown).toHaveLength(3);
+      expect(breakdown[0].label).toBe('Amount Paid');
+      expect(breakdown[0].value).toBe('Rs. 3,000');
+
+      expect(breakdown[1].label).toBe('');
+      expect(breakdown[1].value).toBe('');
+
+      expect(breakdown[2].label).toBe('TOTAL RECEIVED');
+      expect(breakdown[2].value).toBe('Rs. 3,000');
+      expect(breakdown[2].isHighlight).toBe(true);
+    });
+
+    it('handles all four non-zero components (Amount Paid, Admission, Prev Due, Remaining) correctly', () => {
+      const receipt: Receipt = {
+        id: 'SR-260901-A2',
+        studentId: 'A2',
+        studentName: 'Jane Doe',
+        category: 'Senior',
+        class: '7th',
+        school: 'School',
+        feePerMonth: 1000,
+        period: 'Sep 26 – Nov 26',
+        months: ['SEP', 'OCT', 'NOV'],
+        amtPaid: 3000,
+        admissionFee: 500,
+        prevDue: 500,
+        remainingAmount: 500,
+        totalRecv: 3500,
+        nextDue: 'Dec',
+        notes: '',
+        generatedOn: '2026-09-01T10:00:00Z',
+        generatedBy: 'Admin',
+      };
+
+      const breakdown = getReceiptFeesBreakdown(receipt);
+      expect(breakdown).toHaveLength(5);
+      expect(breakdown[0].label).toBe('Amount Paid');
+      expect(breakdown[1].label).toBe('Admission Fee');
+      expect(breakdown[2].label).toBe('Previous Dues');
+      expect(breakdown[3].label).toBe('Remaining Balance');
+      expect(breakdown[4].label).toBe('TOTAL RECEIVED');
     });
   });
 });

@@ -7,12 +7,75 @@ import logoUrl from '@/assets/logo.png';
 /**
  * Format currency for PDF (uses "Rs." prefix since jsPDF standard Helvetica font can't render the Unicode rupee symbol)
  */
-function pdfCurrency(amount: number): string {
+export function pdfCurrency(amount: number): string {
   const formatted = new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
   return `Rs. ${formatted}`;
+}
+
+export interface FeeBreakdownRow {
+  label: string;
+  value: string;
+  isHighlight?: boolean;
+}
+
+/**
+ * Build a structured, professional fees breakdown for receipt PDF.
+ * Only includes rows with non-zero amounts (e.g. Amount Paid, Admission Fee, Previous Dues, Remaining Balance).
+ * The last row is always TOTAL RECEIVED.
+ */
+export function getReceiptFeesBreakdown(receipt: Receipt): FeeBreakdownRow[] {
+  const rows: FeeBreakdownRow[] = [];
+
+  // 1. Amount Paid (core payment amount for selected months)
+  const amtPaid = receipt.amtPaid ?? 0;
+  rows.push({
+    label: 'Amount Paid',
+    value: pdfCurrency(amtPaid),
+  });
+
+  // 2. Admission Fee (only if > 0)
+  if (receipt.admissionFee && receipt.admissionFee > 0) {
+    rows.push({
+      label: 'Admission Fee',
+      value: pdfCurrency(receipt.admissionFee),
+    });
+  }
+
+  // 3. Previous Dues (only if > 0)
+  if (receipt.prevDue && receipt.prevDue > 0) {
+    rows.push({
+      label: 'Previous Dues',
+      value: pdfCurrency(receipt.prevDue),
+    });
+  }
+
+  // 4. Remaining Balance (only if > 0)
+  if (receipt.remainingAmount !== undefined && receipt.remainingAmount > 0) {
+    rows.push({
+      label: 'Remaining Balance',
+      value: pdfCurrency(receipt.remainingAmount),
+    });
+  }
+
+  // If only 1 item exists (e.g. Amount Paid), insert an empty row in between for balanced aesthetic proportion
+  if (rows.length === 1) {
+    rows.push({
+      label: '',
+      value: '',
+    });
+  }
+
+  // 5. TOTAL RECEIVED (always last)
+  rows.push({
+    label: 'TOTAL RECEIVED',
+    value: pdfCurrency(receipt.totalRecv),
+    isHighlight: true,
+  });
+
+  return rows;
 }
 
 /**
@@ -303,9 +366,28 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   doc.setTextColor(...whiteColor);
   doc.text("Fees Details", rightColX + halfColWidth / 2, topColumnsY + 5.2, { align: 'center' });
 
+  // Fees Details fields breakdown (only non-zero data rows + TOTAL RECEIVED)
+  const feesFields = getReceiptFeesBreakdown(receipt);
+
+  // Total height of Student's Profile table body = profileFields.length * profileRowH = 6 * 5.6 = 33.6mm
+  const targetBodyH = 33.6;
+
+  // Dynamically allocate height between Period header row and Fees data rows
+  let periodH = 8.0;
+  if (feesFields.length <= 2) {
+    periodH = 8.6;
+  } else if (feesFields.length === 3) {
+    periodH = 8.1;
+  } else if (feesFields.length === 4) {
+    periodH = 8.0;
+  } else {
+    periodH = 7.6;
+  }
+
+  const feesRowH = (targetBodyH - periodH) / feesFields.length;
+
   // Period / Months Title row inside Fees Details
   const periodY = topColumnsY + 7.5;
-  const periodH = 9.0;
   doc.setDrawColor(...borderLight);
   doc.setLineWidth(0.25);
   doc.rect(rightColX, periodY, halfColWidth, periodH, 'S');
@@ -314,32 +396,9 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...blackColor);
   const formattedPeriod = formatMonthNamesWithBrackets(formatReceiptPeriod(receipt));
-  doc.text(formattedPeriod.toUpperCase(), rightColX + halfColWidth / 2, periodY + 6.0, { align: 'center' });
+  doc.text(formattedPeriod.toUpperCase(), rightColX + halfColWidth / 2, periodY + (periodH / 2) + 1.4, { align: 'center' });
 
-  // Fees details fields
-  const middleRows = [];
-  if (receipt.admissionFee && receipt.admissionFee > 0) {
-    middleRows.push({ label: 'Admission Fee', value: pdfCurrency(receipt.admissionFee) });
-  }
-  if (receipt.prevDue > 0) {
-    middleRows.push({ label: 'Previous Dues', value: pdfCurrency(receipt.prevDue) });
-  }
-  if (receipt.remainingAmount !== undefined && receipt.remainingAmount > 0) {
-    middleRows.push({ label: 'Remaining Balance', value: pdfCurrency(receipt.remainingAmount) });
-  }
-  // Pad with empty rows to keep the height consistent (exactly 5 rows total: 1 Amount + 3 middle + 1 Total)
-  while (middleRows.length < 3) {
-    middleRows.push({ label: '', value: '' });
-  }
-
-  const feesFields = [
-    { label: 'Amount Paid', value: pdfCurrency(receipt.amtPaid) },
-    ...middleRows,
-    { label: 'TOTAL RECEIVED', value: pdfCurrency(receipt.totalRecv), isHighlight: true }
-  ];
-
-
-  const feesRowH = 6.1;
+  // Render Fees rows
   feesFields.forEach((field, i) => {
     const rowY = periodY + periodH + (i * feesRowH);
     
@@ -347,6 +406,8 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
     doc.setDrawColor(...borderLight);
     doc.setLineWidth(0.25);
     
+    const textOffsetY = (feesRowH / 2) + 1.2;
+
     if (field.isHighlight) {
       // Highlight background
       doc.setFillColor(...highlightGreenBg);
@@ -355,25 +416,25 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
       
       // Highlight text
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10.0);
+      doc.setFontSize(feesRowH >= 8.0 ? 10.0 : 9.5);
       doc.setTextColor(...greenColor);
-      doc.text(field.label, rightColX + 2.5, rowY + 4.3);
-      doc.text(field.value, rightColX + halfColWidth - 2.5, rowY + 4.3, { align: 'right' });
+      doc.text(field.label, rightColX + 2.5, rowY + textOffsetY);
+      doc.text(field.value, rightColX + halfColWidth - 2.5, rowY + textOffsetY, { align: 'right' });
     } else {
       // Normal row
       doc.rect(rightColX, rowY, halfColWidth - 30, feesRowH, 'S');
       doc.rect(rightColX + halfColWidth - 30, rowY, 30, feesRowH, 'S');
       
-      // Bold text
+      // Text
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
+      doc.setFontSize(feesRowH >= 8.0 ? 9.0 : 8.5);
       doc.setTextColor(...blackColor);
-      doc.text(field.label, rightColX + 2.5, rowY + 4.3);
+      doc.text(field.label, rightColX + 2.5, rowY + textOffsetY);
       
-      // Bold value
+      // Value
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...blackColor);
-      doc.text(field.value, rightColX + halfColWidth - 2.5, rowY + 4.3, { align: 'right' });
+      doc.text(field.value, rightColX + halfColWidth - 2.5, rowY + textOffsetY, { align: 'right' });
     }
   });
 
