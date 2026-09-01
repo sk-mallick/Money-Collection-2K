@@ -19,6 +19,7 @@ export interface Student {
   admDate: string;
   dob: string;
   feePerMonth: number;
+  admissionFeePaid?: boolean;
   notes: string;
   createdAt: string;
   updatedAt: string;
@@ -49,6 +50,7 @@ export interface Receipt {
   prevDue: number;
   totalRecv: number;
   remainingAmount?: number;
+  admissionFee?: number;
   nextDue: string;
   notes: string;
   generatedOn: string;

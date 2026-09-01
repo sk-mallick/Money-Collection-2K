@@ -327,6 +327,9 @@ export default function ReceiptsPage() {
                       </div>
                     )}
                     <div><span className="text-muted-foreground">Amount Paid:</span> <span className="font-semibold">{formatCurrency(preview.amtPaid)}</span></div>
+                    {preview.admissionFee !== undefined && preview.admissionFee > 0 && (
+                      <div><span className="text-muted-foreground">Admission Fee:</span> <span className="font-semibold">{formatCurrency(preview.admissionFee)}</span></div>
+                    )}
                     {preview.prevDue > 0 && <div><span className="text-muted-foreground">Prev Dues:</span> {formatCurrency(preview.prevDue)}</div>}
                     {preview.remainingAmount !== undefined && preview.remainingAmount > 0 && (
                       <div className="text-red-600 dark:text-red-400 font-semibold col-span-2 flex items-center justify-between border-t pt-1">
@@ -334,14 +337,6 @@ export default function ReceiptsPage() {
                           {preview.remainingMonths ? `Remaining Balance (${preview.remainingMonths}):` : 'Remaining Balance:'}
                         </span>
                         <span>{formatCurrency(preview.remainingAmount)}</span>
-                      </div>
-                    )}
-                    {preview.remainingAmount !== undefined && preview.remainingAmount === 0 && preview.remainingMonths && (
-                      <div className="text-emerald-600 dark:text-emerald-400 font-semibold col-span-2 flex items-center justify-between border-t pt-1">
-                        <span>Remaining Balance:</span>
-                        <span>
-                          {formatCurrency(0)} (Fully Paid for {preview.remainingMonths})
-                        </span>
                       </div>
                     )}
                   </div>

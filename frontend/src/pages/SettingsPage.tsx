@@ -29,6 +29,7 @@ export default function SettingsPage() {
     adminName: 'Admin',
     feeJunior: '1000',
     feeSenior: '1000',
+    admissionFee: '500',
   });
   const [saving, setSaving] = useState(false);
   const [confirmText, setConfirmText] = useState('');
@@ -53,16 +54,17 @@ export default function SettingsPage() {
           adminName: settings.adminName || 'Admin',
           feeJunior: settings.feeJunior || '1000',
           feeSenior: settings.feeSenior || '1000',
+          admissionFee: settings.admissionFee || '500',
         });
       }, 0);
       return () => clearTimeout(timer);
     }
   }, [settings]);
 
-  // Detect if fee values have changed from saved settings
   const hasJuniorFeeChanged = form.feeJunior !== (settings.feeJunior || '1000');
   const hasSeniorFeeChanged = form.feeSenior !== (settings.feeSenior || '1000');
-  const hasFeeChanged = hasJuniorFeeChanged || hasSeniorFeeChanged;
+  const hasAdmissionFeeChanged = form.admissionFee !== (settings.admissionFee || '500');
+  const hasFeeChanged = hasJuniorFeeChanged || hasSeniorFeeChanged || hasAdmissionFeeChanged;
 
   // Build fee change previews before showing dialog
   const prepareFeeChangePreview = useCallback(async () => {
@@ -96,14 +98,14 @@ export default function SettingsPage() {
   }, [form.feeJunior, form.feeSenior, settings, hasJuniorFeeChanged, hasSeniorFeeChanged]);
 
   const handleSave = async () => {
-    // If fees changed, show confirmation dialog instead of saving directly
-    if (hasFeeChanged) {
+    // If tuition fees changed, show confirmation dialog instead of saving directly
+    if (hasJuniorFeeChanged || hasSeniorFeeChanged) {
       await prepareFeeChangePreview();
       setFeeChangeDialogOpen(true);
       return;
     }
 
-    // No fee change — save normally
+    // No tuition fee change — save normally
     await performSave(false);
   };
 
@@ -203,6 +205,7 @@ export default function SettingsPage() {
             updateField={updateField}
             hasJuniorFeeChanged={hasJuniorFeeChanged}
             hasSeniorFeeChanged={hasSeniorFeeChanged}
+            hasAdmissionFeeChanged={hasAdmissionFeeChanged}
             hasFeeChanged={hasFeeChanged}
             saving={saving}
             handleSave={handleSave}

@@ -44,6 +44,7 @@ export default function CollectPage() {
   const [remainingAmount, setRemainingAmount] = useState('');
   const [isRemainingOverridden, setIsRemainingOverridden] = useState(false);
   const [isPrevDueOverridden, setIsPrevDueOverridden] = useState(false);
+  const [includeAdmissionFee, setIncludeAdmissionFee] = useState(false);
 
   // Declare usePayments and paidMonths first so they are available to everything below
   const { payments, refresh: refreshPayments } = usePayments(selected?.id || null, selectedYear);
@@ -240,6 +241,7 @@ export default function CollectPage() {
     setIsPrevDueOverridden(false);
     setNextDue('');
     setNotes('');
+    setIncludeAdmissionFee(false);
   };
 
   const toggleMonth = (month: string) => {
@@ -334,6 +336,7 @@ export default function CollectPage() {
       const receiptId = generateReceiptId(selected.category);
 
       // Submit payment via the API — server handles payment allocation + receipt creation
+      const admissionFeeAmt = (includeAdmissionFee && selected && !selected.admissionFeePaid) ? parseInt(settings?.admissionFee || '500', 10) : 0;
       await api.submitPayment({
         studentId: selected.id,
         months: sortedMonths,
@@ -341,6 +344,7 @@ export default function CollectPage() {
         receiptId,
         prevDue: prevDueAmt,
         remainingAmount: remainingAmt,
+        admissionFee: admissionFeeAmt,
         nextDue: nextDue.trim(),
         notes: notes.trim(),
         date,
@@ -356,7 +360,7 @@ export default function CollectPage() {
       
       const prevDuePaid = Math.min(amount, prevDueAmt);
       const amtPaidForMonths = Math.max(0, amount - prevDuePaid);
-      const totalRecv = amount;
+      const totalRecv = amount + admissionFeeAmt;
 
       // Compute remaining months locally for immediate PDF download
       const receiptForPDF: Receipt = {
@@ -373,6 +377,7 @@ export default function CollectPage() {
         prevDue: prevDuePaid,
         totalRecv,
         remainingAmount: remainingAmt,
+        admissionFee: admissionFeeAmt,
         nextDue: nextDue.trim(),
         notes: notes.trim(),
         generatedOn: new Date().toISOString(),
@@ -433,6 +438,11 @@ export default function CollectPage() {
       setIsPrevDueOverridden(false);
       setNextDue('');
       setNotes('');
+      setIncludeAdmissionFee(false);
+      // Mark admission fee as paid locally so toggle disappears immediately
+      if (admissionFeeAmt > 0 && selected) {
+        selected.admissionFeePaid = true;
+      }
       refreshPayments();
     } catch (error) {
       toast.error('Failed to process payment');
@@ -499,6 +509,10 @@ export default function CollectPage() {
               handleMarkNA={handleMarkNA}
               submitting={submitting}
               selectedMonthsLength={selectedMonths.length}
+              showAdmissionFeeToggle={!!selected && !selected.admissionFeePaid}
+              includeAdmissionFee={includeAdmissionFee}
+              setIncludeAdmissionFee={setIncludeAdmissionFee}
+              admissionFeeAmount={parseInt(settings?.admissionFee || '500', 10)}
             />
           </div>
 

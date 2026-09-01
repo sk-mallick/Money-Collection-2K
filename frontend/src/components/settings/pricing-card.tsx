@@ -25,14 +25,17 @@ interface PricingCardProps {
   form: {
     feeJunior: string;
     feeSenior: string;
+    admissionFee?: string;
   };
   settings: {
     feeJunior?: string;
     feeSenior?: string;
+    admissionFee?: string;
   };
   updateField: (field: string, value: string) => void;
   hasJuniorFeeChanged: boolean;
   hasSeniorFeeChanged: boolean;
+  hasAdmissionFeeChanged: boolean;
   hasFeeChanged: boolean;
   saving: boolean;
   handleSave: () => Promise<void>;
@@ -51,6 +54,7 @@ export function PricingCard({
   updateField,
   hasJuniorFeeChanged,
   hasSeniorFeeChanged,
+  hasAdmissionFeeChanged,
   hasFeeChanged,
   saving,
   handleSave,
@@ -167,6 +171,53 @@ export function PricingCard({
                     placeholder="1000"
                     value={form.feeSenior}
                     onChange={e => updateField('feeSenior', e.target.value)}
+                    className="pl-6 text-sm font-bold h-9 bg-background/80 w-full"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Admission Fee Card */}
+            <div className="relative rounded-xl border bg-gradient-to-br from-emerald-500/5 to-teal-500/5 dark:from-emerald-500/10 dark:to-teal-500/10 p-3 flex items-center justify-between gap-4 transition-all">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-emerald-600 text-white border-none">
+                    Admission Fee
+                  </span>
+                  {hasAdmissionFeeChanged && (
+                    <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                      <ShieldAlert className="size-2.5" />
+                      Changed
+                    </span>
+                  )}
+                </div>
+                {hasAdmissionFeeChanged && (
+                  <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 rounded-lg px-2 py-0.5 mt-0.5 animate-in fade-in slide-in-from-top-1 duration-255">
+                    <ArrowRight className="size-3 shrink-0" />
+                    <span>
+                      <span className="line-through text-muted-foreground">
+                        {formatCurrency(Number(settings.admissionFee || '500'))}
+                      </span>
+                      <span className="mx-1">→</span>
+                      <strong>{formatCurrency(Number(form.admissionFee))}</strong>
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Label htmlFor="admissionFee" className="text-[11px] font-bold text-muted-foreground">
+                  One-Time Fee
+                </Label>
+                <div className="relative w-28">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground/60">₹</span>
+                  <Input
+                    id="admissionFee"
+                    type="number"
+                    min="0"
+                    placeholder="500"
+                    value={form.admissionFee || ''}
+                    onChange={e => updateField('admissionFee', e.target.value)}
                     className="pl-6 text-sm font-bold h-9 bg-background/80 w-full"
                   />
                 </div>

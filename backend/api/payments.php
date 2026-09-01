@@ -115,7 +115,8 @@ function submitPayment(PDO $pdo, array $user): void {
     $studentPrevDueInput = (int)($input['prevDue'] ?? 0);
     $prevDuePaid = min($totalPaidInput, $studentPrevDueInput);
     $amtPaidForMonths = max(0, $totalPaidInput - $prevDuePaid);
-    $totalRecv = $totalPaidInput;
+    $admissionFee = (int)($input['admissionFee'] ?? 0);
+    $totalRecv = $totalPaidInput + $admissionFee;
 
     $receiptId = sanitize_string($input['receiptId'], 20);
     $remainingAmount = (int)($input['remainingAmount'] ?? 0);
@@ -270,12 +271,12 @@ function submitPayment(PDO $pdo, array $user): void {
 
         // Insert receipt
         $receiptStmt = $pdo->prepare('
-            INSERT INTO receipts (id, student_id, student_name, category, class, school, fee_per_month, period, months, amt_paid, prev_due, total_recv, remaining_amount, remaining_months, next_due, notes, generated_on, generated_by, academic_year)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
+            INSERT INTO receipts (id, student_id, student_name, category, class, school, fee_per_month, period, months, amt_paid, prev_due, total_recv, remaining_amount, remaining_months, admission_fee, next_due, notes, generated_on, generated_by, academic_year)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
             ON DUPLICATE KEY UPDATE
                 amt_paid = VALUES(amt_paid), prev_due = VALUES(prev_due),
                 total_recv = VALUES(total_recv), remaining_amount = VALUES(remaining_amount),
-                remaining_months = VALUES(remaining_months),
+                remaining_months = VALUES(remaining_months), admission_fee = VALUES(admission_fee),
                 months = VALUES(months), period = VALUES(period),
                 next_due = VALUES(next_due), notes = VALUES(notes)
         ');
@@ -295,11 +296,18 @@ function submitPayment(PDO $pdo, array $user): void {
             $totalRecv,
             $remainingAmount,
             $remainingMonths,
+            $admissionFee,
             $nextDue,
             $notes,
             $user['name'] ?? 'Admin',
             $academicYear,
         ]);
+
+        // Mark student's admission fee as paid if included
+        if ($admissionFee > 0) {
+            $admFeeStmt = $pdo->prepare('UPDATE students SET admission_fee_paid = 1 WHERE id = ?');
+            $admFeeStmt->execute([$studentId]);
+        }
 
         $pdo->commit();
 

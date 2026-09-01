@@ -38,7 +38,7 @@ function getSettings(PDO $pdo): void {
 function updateSettings(PDO $pdo): void {
     $input = get_input();
 
-    $allowedKeys = ['instituteName', 'address', 'phone1', 'phone2', 'academicYear', 'adminName', 'activeMonths', 'feeJunior', 'feeSenior'];
+    $allowedKeys = ['instituteName', 'address', 'phone1', 'phone2', 'academicYear', 'adminName', 'activeMonths', 'feeJunior', 'feeSenior', 'admissionFee'];
 
     // Read current fee settings BEFORE updating to detect changes
     $currentFees = [];

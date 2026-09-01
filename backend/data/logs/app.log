@@ -134,3 +134,33 @@
 {"timestamp":"2026-06-24 08:05:50","level":"WARNING","message":"Brute-force login attempt blocked","context":{"ip":"::1","username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
 {"timestamp":"2026-06-24 08:05:53","level":"WARNING","message":"Brute-force login attempt blocked","context":{"ip":"::1","username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
 {"timestamp":"2026-06-24 08:06:25","level":"INFO","message":"Successful login","context":{"username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-02 18:06:18","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"admin"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-02 18:06:23","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"admin"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-02 18:06:39","level":"INFO","message":"Successful login","context":{"username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-02 18:21:08","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"10182024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-02 18:21:11","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"10182024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-02 18:21:14","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"10182024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-02 18:21:15","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"10182024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-02 18:21:20","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"admin123"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-02 18:21:26","level":"WARNING","message":"Brute-force login attempt blocked","context":{"ip":"::1","username":"admin"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-02 18:22:15","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"admin"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-02 18:22:26","level":"INFO","message":"Successful login","context":{"username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-03 18:36:28","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"10182024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-03 18:36:31","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"10182024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-03 18:36:42","level":"INFO","message":"Successful login","context":{"username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-03 18:39:13","level":"INFO","message":"Successful login","context":{"username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-07-04 15:56:28","level":"WARNING","message":"Failed to auto-add remaining_months column","context":{"error":"SQLSTATE[HY000]: General error: 2006 MySQL server has gone away"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/verify"}
+{"timestamp":"2026-07-04 15:56:32","level":"ERROR","message":"Database connection failed","context":{"error":"SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it","host":"localhost","db":"mcms"},"ip":"::1","uri":"\/Money%20Collection%202K\/api\/groups"}
+}
+{"timestamp":"2026-07-04 15:56:36","level":"ERROR","message":"Database connection failed","context":{"error":"SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it","host":"localhost","db":"mcms"},"ip":"::1","uri":"\/Money%20Collection%202K\/api\/groups"}
+{"timestamp":"2026-07-04 15:56:36","level":"ERROR","message":"Database connection failed","context":{"error":"SQLSTATE[HY000] [2002] No connection could be made because the target machine actively refused it","host":"localhost","db":"mcms"},"ip":"::1","uri":"\/Money%20Collection%202K\/api\/settings"}
+{"timestamp":"2026-09-01 21:30:32","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"123"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-01 21:30:39","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-01 21:30:40","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-01 21:30:40","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-01 21:30:45","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-01 21:30:45","level":"WARNING","message":"Brute-force login attempt blocked","context":{"ip":"::1","username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-01 21:31:49","level":"WARNING","message":"Brute-force login attempt blocked","context":{"ip":"::1","username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-01 21:31:51","level":"WARNING","message":"Brute-force login attempt blocked","context":{"ip":"::1","username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-01 21:31:52","level":"WARNING","message":"Brute-force login attempt blocked","context":{"ip":"::1","username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-01 21:34:26","level":"INFO","message":"Successful login","context":{"username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}

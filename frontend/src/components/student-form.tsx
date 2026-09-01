@@ -18,6 +18,15 @@ const isClass10 = (classStr: string): boolean => {
   return /\b10\b/.test(classStr) || classStr.toLowerCase().includes('10th') || classStr.toLowerCase().includes('ten');
 };
 
+/** Split a group's class string (e.g. "3rd & 4th") into individual class options */
+const parseGroupClasses = (classStr: string): string[] => {
+  if (!classStr) return [];
+  return classStr
+    .split(/\s*&\s*/)
+    .map(c => c.trim())
+    .filter(Boolean);
+};
+
 interface StudentFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -90,19 +99,35 @@ export function StudentForm({ open, onOpenChange, student, onSaved }: StudentFor
     
     setForm(prev => {
       const updated = { ...prev, group: selectedGroupVal };
-      if (!isEdit && selectedGroupVal) {
+      if (selectedGroupVal) {
         const selectedGroupObj = groups.find(g => g.id === selectedGroupVal);
         if (selectedGroupObj) {
           updated.category = selectedGroupObj.category;
-          updated.class = selectedGroupObj.class;
+
+          // Split group class into individual options (e.g. "3rd & 4th" → ["3rd", "4th"])
+          const classOptions = parseGroupClasses(selectedGroupObj.class);
+          if (classOptions.length === 1) {
+            // Single class — auto-fill directly
+            updated.class = classOptions[0];
+          } else {
+            // Multiple classes — clear so user must pick one from dropdown
+            updated.class = '';
+          }
           
-          const defaultFee = isClass10(selectedGroupObj.class)
+          const classForFee = classOptions.length === 1 ? classOptions[0] : '';
+          const defaultFee = isClass10(classForFee)
             ? 1300
             : (selectedGroupObj.category === 'Junior'
               ? (settings.feeJunior ? Number(settings.feeJunior) : 1000)
               : (settings.feeSenior ? Number(settings.feeSenior) : 1000));
           updated.feePerMonth = defaultFee;
         }
+      } else {
+        // Group was removed — clear the auto-filled class, reset category & fee
+        updated.class = '';
+        updated.category = 'Junior';
+        const defaultFee = settings.feeJunior ? Number(settings.feeJunior) : 1000;
+        updated.feePerMonth = defaultFee;
       }
       return updated;
     });
@@ -349,13 +374,64 @@ export function StudentForm({ open, onOpenChange, student, onSaved }: StudentFor
             {/* Class */}
             <div className="space-y-2">
               <Label htmlFor="class">Class</Label>
-              <Input
-                id="class"
-                placeholder="e.g. Class 9"
-                value={form.class}
-                onChange={e => handleClassChange(e.target.value)}
-                maxLength={50}
-              />
+              {(() => {
+                // Determine class options from the selected group
+                const selectedGroupObj = form.group ? groups.find(g => g.id === form.group) : null;
+                const classOptions = selectedGroupObj ? parseGroupClasses(selectedGroupObj.class) : [];
+
+                if (selectedGroupObj && classOptions.length > 1) {
+                  // Group has multiple classes — show dropdown to pick ONE
+                  return (
+                    <>
+                      <Select value={form.class || 'pick'} onValueChange={v => handleClassChange(v === 'pick' ? '' : v)}>
+                        <SelectTrigger id="class" className="w-full cursor-pointer">
+                          <SelectValue placeholder="Select a class" />
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          <SelectItem value="pick" disabled>Select a class</SelectItem>
+                          {classOptions.map(cls => (
+                            <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {!form.class && (
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1 font-medium">
+                          <Info className="size-3 shrink-0" />
+                          Please select one class from the group.
+                        </p>
+                      )}
+                    </>
+                  );
+                } else if (selectedGroupObj && classOptions.length === 1) {
+                  // Group has a single class — show read-only input
+                  return (
+                    <>
+                      <Input
+                        id="class"
+                        value={form.class}
+                        readOnly
+                        className="bg-muted cursor-not-allowed opacity-70"
+                        title="Class is determined by the selected group"
+                      />
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Info className="size-3 shrink-0" />
+                        Class is auto-set from the selected group.
+                      </p>
+                    </>
+                  );
+                } else {
+                  // No group — free text input
+                  return (
+                    <Input
+                      id="class"
+                      placeholder="e.g. Class 9"
+                      value={form.class}
+                      onChange={e => handleClassChange(e.target.value)}
+                      maxLength={50}
+                    />
+                  );
+                }
+              })()}
             </div>
 
             {/* School */}

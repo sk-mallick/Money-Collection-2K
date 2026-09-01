@@ -66,6 +66,7 @@ interface ServerStudent {
   adm_date: string;
   dob: string | null;
   fee_per_month: number | string;
+  admission_fee_paid?: number | string;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -94,6 +95,7 @@ interface ServerReceipt {
   generated_by: string;
   academic_year?: string;
   remaining_months?: string | null;
+  admission_fee?: number | string;
   adm_date?: string | null;
 }
 
@@ -119,6 +121,7 @@ export function mapServerStudent(s: ServerStudent): Student {
     admDate: s.adm_date,
     dob: s.dob || '',
     feePerMonth: Number(s.fee_per_month),
+    admissionFeePaid: Boolean(Number(s.admission_fee_paid || 0)),
     notes: s.notes || '',
     createdAt: s.created_at,
     updatedAt: s.updated_at,
@@ -152,6 +155,7 @@ function mapServerReceipt(r: ServerReceipt): Receipt {
     prevDue: Number(r.prev_due),
     totalRecv: Number(r.total_recv),
     remainingAmount: Number(r.remaining_amount || 0),
+    admissionFee: Number(r.admission_fee || 0),
     nextDue: r.next_due || '',
     notes: r.notes || '',
     generatedOn: r.generated_on,

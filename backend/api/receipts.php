@@ -41,6 +41,7 @@ function getReceipts(PDO $pdo): void {
         $r['amt_paid'] = (int)$r['amt_paid'];
         $r['prev_due'] = (int)$r['prev_due'];
         $r['total_recv'] = (int)$r['total_recv'];
+        $r['admission_fee'] = (int)($r['admission_fee'] ?? 0);
         $r['months'] = json_decode($r['months'], true) ?: [];
     }
 

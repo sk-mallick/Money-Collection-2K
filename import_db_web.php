@@ -1,4 +1,7 @@
 <?php
+if (function_exists('opcache_reset')) {
+    opcache_reset();
+}
 /**
  * Temporary Web-based Database Seed / JSON Import Script
  * Parses data from backend/data/*.json and populates the database (excluding payments).
@@ -224,8 +227,62 @@ try {
         }
     }
 
+    // 4. Load receipts.json if it exists
+    $receiptsPath = __DIR__ . '/backend/data/receipts.json';
+    $jsonReceiptCount = 0;
+    if (file_exists($receiptsPath)) {
+        $receiptsData = json_decode(file_get_contents($receiptsPath), true);
+        if (is_array($receiptsData)) {
+            $stmtReceiptImport = $pdo->prepare('
+                INSERT INTO `receipts` (
+                    `id`, `student_id`, `student_name`, `category`, `class`, `school`, `fee_per_month`, 
+                    `period`, `months`, `amt_paid`, `prev_due`, `total_recv`, `remaining_amount`, `remaining_months`, `next_due`, `notes`, `generated_on`, `generated_by`, `academic_year`
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE 
+                    `student_name` = VALUES(`student_name`),
+                    `category` = VALUES(`category`),
+                    `class` = VALUES(`class`),
+                    `school` = VALUES(`school`),
+                    `fee_per_month` = VALUES(`fee_per_month`),
+                    `period` = VALUES(`period`),
+                    `months` = VALUES(`months`),
+                    `amt_paid` = VALUES(`amt_paid`),
+                    `total_recv` = VALUES(`total_recv`),
+                    `generated_on` = VALUES(`generated_on`)
+            ');
+            
+            foreach ($receiptsData as $r) {
+                $stmtReceiptImport->execute([
+                    $r['id'],
+                    $r['student_id'],
+                    $r['student_name'],
+                    $r['category'],
+                    $r['class'] ?? '',
+                    $r['school'] ?? '',
+                    $r['fee_per_month'],
+                    $r['period'],
+                    json_encode($r['months']),
+                    $r['amt_paid'],
+                    $r['prev_due'] ?? 0,
+                    $r['total_recv'] ?? $r['amt_paid'],
+                    $r['remaining_amount'] ?? 0,
+                    $r['remaining_months'] ?? null,
+                    $r['next_due'] ?? '',
+                    $r['notes'] ?? '',
+                    $r['generated_on'],
+                    $r['generated_by'] ?? 'Admin',
+                    $r['academic_year'] ?? $academicYear
+                ]);
+                $jsonReceiptCount++;
+            }
+        }
+    }
+
     echo "Imported $studentCount students successfully!\n";
-    echo "Generated $receiptCount receipts successfully!\n";
+    echo "Generated $receiptCount student-payments receipts successfully!\n";
+    if ($jsonReceiptCount > 0) {
+        echo "Imported $jsonReceiptCount receipts from receipts.json successfully!\n";
+    }
     echo "SUCCESS: Database has been fully seeded.\n";
 
 } catch (Exception $e) {

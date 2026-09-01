@@ -33,7 +33,7 @@ switch ($method) {
 
 function getStudents(PDO $pdo): void {
     // 1. Fetch all students (explicit columns, excluding soft-deleted ones)
-    $stmt = $pdo->query('SELECT id, name, category, class, school, contact_no, father_no, mother_no, adm_date, dob, fee_per_month, notes, group_id, created_at, updated_at FROM students WHERE deleted_at IS NULL ORDER BY name ASC');
+    $stmt = $pdo->query('SELECT id, name, category, class, school, contact_no, father_no, mother_no, adm_date, dob, fee_per_month, admission_fee_paid, notes, group_id, created_at, updated_at FROM students WHERE deleted_at IS NULL ORDER BY name ASC');
     $students = $stmt->fetchAll();
 
     // 2. Fetch active academic year from settings

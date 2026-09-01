@@ -317,12 +317,27 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
   doc.text(formattedPeriod.toUpperCase(), rightColX + halfColWidth / 2, periodY + 6.0, { align: 'center' });
 
   // Fees details fields
+  const middleRows = [];
+  if (receipt.admissionFee && receipt.admissionFee > 0) {
+    middleRows.push({ label: 'Admission Fee', value: pdfCurrency(receipt.admissionFee) });
+  }
+  if (receipt.prevDue > 0) {
+    middleRows.push({ label: 'Previous Dues', value: pdfCurrency(receipt.prevDue) });
+  }
+  if (receipt.remainingAmount !== undefined && receipt.remainingAmount > 0) {
+    middleRows.push({ label: 'Remaining Balance', value: pdfCurrency(receipt.remainingAmount) });
+  }
+  // Pad with empty rows to keep the height consistent (exactly 5 rows total: 1 Amount + 3 middle + 1 Total)
+  while (middleRows.length < 3) {
+    middleRows.push({ label: '', value: '' });
+  }
+
   const feesFields = [
     { label: 'Amount Paid', value: pdfCurrency(receipt.amtPaid) },
-    { label: 'Previous Dues', value: pdfCurrency(receipt.prevDue) },
-    { label: 'Remaining Balance', value: receipt.remainingAmount !== undefined ? pdfCurrency(receipt.remainingAmount) : 'Rs. 0' },
+    ...middleRows,
     { label: 'TOTAL RECEIVED', value: pdfCurrency(receipt.totalRecv), isHighlight: true }
   ];
+
 
   const feesRowH = 6.1;
   feesFields.forEach((field, i) => {
@@ -349,8 +364,8 @@ export async function generateReceiptPDF(receipt: Receipt, payments: Payment[] =
       doc.rect(rightColX, rowY, halfColWidth - 30, feesRowH, 'S');
       doc.rect(rightColX + halfColWidth - 30, rowY, 30, feesRowH, 'S');
       
-      // Normal text
-      doc.setFont('helvetica', 'normal');
+      // Bold text
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
       doc.setTextColor(...blackColor);
       doc.text(field.label, rightColX + 2.5, rowY + 4.3);
