@@ -184,6 +184,13 @@ export function getApiBase(): string {
   if (import.meta.env.DEV) {
     return '';
   }
+  const baseEl = document.querySelector('base');
+  if (baseEl) {
+    const href = baseEl.getAttribute('href');
+    if (href) {
+      return href.endsWith('/') ? href.slice(0, -1) : href;
+    }
+  }
   let path = window.location.pathname;
   const routes = [
     // Module selection

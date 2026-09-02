@@ -47,14 +47,17 @@ RewriteRule ^backend/data/ - [F,L]
 
 
 # ─── Static Assets Mapping ───────────────────────────
-# Direct requests for frontend assets in root to the built dist folder
+# Direct requests for frontend assets to the built dist folder (handles root and any nested sub-routes)
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^assets/(.*)$ dist/assets/$1 [L]
-RewriteRule ^favicon\.svg$ dist/favicon.svg [L]
-RewriteRule ^favicon\.png$ dist/favicon.png [L]
-RewriteRule ^icons\.svg$ dist/icons.svg [L]
-RewriteRule ^manifest\.json$ dist/manifest.json [L]
-RewriteRule ^sw\.js$ dist/sw.js [L]
+RewriteRule (.*/)?assets/(.*)$ dist/assets/$2 [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule (.*/)?favicon\.(svg|png)$ dist/favicon.$2 [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule (.*/)?icons\.svg$ dist/icons.svg [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule (.*/)?manifest\.json$ dist/manifest.json [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule (.*/)?sw\.js$ dist/sw.js [L]
 
 # Support dist/ prefixed API/Auth endpoints
 RewriteRule ^dist/auth/(.*)$ backend/auth/$1.php [L,QSA]
