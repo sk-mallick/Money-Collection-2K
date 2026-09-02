@@ -353,34 +353,56 @@ export default function StudentReportsPage() {
     };
   }, [reportData]);
 
+  // Helper to format marks cleanly without unnecessary decimals (.00)
+  const formatMark = (val: number | string | null | undefined): string => {
+    if (val === null || val === undefined || val === '') return '';
+    const num = Number(val);
+    if (isNaN(num)) return String(val);
+    return Number.isInteger(num) ? num.toString() : parseFloat(num.toFixed(2)).toString();
+  };
+
+  // Helper to determine Grade from percentage
+  const getGrade = (percentage: number | null) => {
+    if (percentage === null || percentage === undefined) return '—';
+    const num = Number(percentage);
+    if (isNaN(num)) return '—';
+    if (num >= 90) return 'A+';
+    if (num >= 80) return 'A';
+    if (num >= 70) return 'B+';
+    if (num >= 60) return 'B';
+    if (num >= 50) return 'C';
+    if (num >= 40) return 'D';
+    return 'E';
+  };
+
   // If a student is selected -> Show Detail View ("Inside")
   if (selectedStudentId) {
     return (
-      <div className="page-enter p-4 sm:p-6 space-y-6 w-full">
+      <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
         {/* ─── TOP HEADER & ACTION BAR ─── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
-          <div className="flex items-center gap-3">
+        <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b pb-4">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             <Button
               variant="outline"
               size="sm"
               onClick={handleBackToList}
-              className="gap-1.5 cursor-pointer"
+              className="h-8.5 px-3 gap-1.5 cursor-pointer shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Students</span>
             </Button>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate">
                   {reportData?.student.name || 'Student Report'}
                 </h1>
                 {reportData && (
                   <>
-                    <Badge variant="outline" className="font-mono text-xs">
+                    <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground border">
                       {reportData.student.id}
-                    </Badge>
+                    </span>
                     <Badge
-                      className={`text-xs px-2 py-0.5 font-bold rounded-full border-0 text-white ${
+                      className={`text-[10px] px-2 py-0.5 font-bold rounded-full border-0 text-white ${
                         reportData.student.category === 'Junior'
                           ? 'bg-blue-600 dark:bg-blue-500'
                           : 'bg-red-600 dark:bg-red-500'
@@ -389,63 +411,71 @@ export default function StudentReportsPage() {
                       {reportData.student.category}
                     </Badge>
                     {reportData.student.class && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-[10px]">
                         Class {reportData.student.class}
                       </Badge>
                     )}
                   </>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Comprehensive marks history and official report card
+              <p className="text-xs text-muted-foreground mt-0.5 truncate hidden sm:block">
+                Academic progress details and official printable A4 report card
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
             {/* Previous / Next Student Navigator */}
-            <div className="hidden md:flex items-center border rounded-lg overflow-hidden bg-background shadow-2xs">
+            <div className="flex items-center border rounded-lg overflow-hidden bg-background shadow-2xs">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-2.5 rounded-none"
+                className="h-8.5 px-2.5 rounded-none cursor-pointer"
                 onClick={handlePrevStudent}
                 disabled={currentStudentIndex <= 0}
                 title="Previous Student"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 mr-0.5" />
+                <span className="text-xs hidden md:inline">Prev</span>
               </Button>
-              <span className="text-[11px] font-medium text-muted-foreground px-2">
-                {currentStudentIndex >= 0 ? `${currentStudentIndex + 1} of ${filteredStudents.length}` : ''}
+              <span className="text-[11px] font-semibold text-muted-foreground px-2 border-x">
+                {currentStudentIndex >= 0 ? `${currentStudentIndex + 1} / ${filteredStudents.length}` : ''}
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-2.5 rounded-none"
+                className="h-8.5 px-2.5 rounded-none cursor-pointer"
                 onClick={handleNextStudent}
                 disabled={currentStudentIndex >= filteredStudents.length - 1 || currentStudentIndex === -1}
                 title="Next Student"
               >
-                <ChevronRight className="h-4 w-4" />
+                <span className="text-xs hidden md:inline">Next</span>
+                <ChevronRight className="h-4 w-4 ml-0.5" />
               </Button>
             </div>
 
+            {/* Print / Download Button */}
             <Button
               onClick={() => window.print()}
               disabled={!reportData}
-              className="gap-1.5 bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer"
+              className="h-8.5 gap-1.5 px-3.5 bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer"
             >
               <Printer className="h-4 w-4" />
-              <span>Print / Download PDF</span>
+              <span>Download PDF</span>
             </Button>
           </div>
         </div>
 
         {/* ─── LOADING STATE ─── */}
         {loading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-28 w-full rounded-xl" />
-            <Skeleton className="h-96 w-full rounded-xl" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-4 space-y-4">
+              <Skeleton className="h-48 w-full rounded-xl" />
+              <Skeleton className="h-48 w-full rounded-xl" />
+            </div>
+            <div className="lg:col-span-8">
+              <Skeleton className="h-[600px] w-full rounded-xl" />
+            </div>
           </div>
         ) : !reportData ? (
           <Card className="p-12 text-center text-muted-foreground">
@@ -457,219 +487,393 @@ export default function StudentReportsPage() {
             </Button>
           </Card>
         ) : (
-          <div className="space-y-6">
-            {/* ─── SUMMARY CARDS ROW (Hidden in Print) ─── */}
-            <div className="no-print grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              <Card className="bg-card/50 backdrop-blur-xs">
-                <CardContent className="p-3.5 sm:p-4">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <BookOpen className="h-4 w-4 text-blue-500" />
-                    <span className="text-xs text-muted-foreground font-medium">Exams Taken</span>
+          /* ─── MAIN TWO-COLUMN SPLIT LAYOUT ─── */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start w-full">
+            {/* ══════════════════════════════════════════════════════
+                LEFT SIDE (Desktop): STUDENT PROFILE & PERFORMANCE DETAILS
+                ══════════════════════════════════════════════════════ */}
+            <div className="no-print lg:col-span-4 xl:col-span-4 space-y-4 w-full">
+              {/* Profile Card */}
+              <Card className="bg-card/70 backdrop-blur-xs border shadow-xs overflow-hidden">
+                <CardContent className="p-4 space-y-3.5">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`h-13 w-13 rounded-2xl flex items-center justify-center font-black text-lg shrink-0 text-white shadow-xs ${
+                        reportData.student.category === 'Junior'
+                          ? 'bg-gradient-to-br from-blue-600 to-indigo-700'
+                          : 'bg-gradient-to-br from-red-600 to-rose-700'
+                      }`}
+                    >
+                      {reportData.student.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-sm sm:text-base leading-tight truncate">
+                          {reportData.student.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-muted text-foreground border">
+                          {reportData.student.id}
+                        </span>
+                        <Badge
+                          className={`text-[10px] px-2 py-0.2 font-bold rounded-full border-0 text-white ${
+                            reportData.student.category === 'Junior'
+                              ? 'bg-blue-600 dark:bg-blue-500'
+                              : 'bg-red-600 dark:bg-red-500'
+                          }`}
+                        >
+                          {reportData.student.category}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold">{stats.totalExams}</div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">Recorded months</div>
+
+                  {/* 2x2 Performance KPIs */}
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/60">
+                    <div className="p-2.5 rounded-lg bg-muted/40 border border-border/40">
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium mb-0.5">
+                        <BookOpen className="h-3.5 w-3.5 text-blue-500" />
+                        <span>Exams Taken</span>
+                      </div>
+                      <div className="text-base font-bold">{stats.totalExams}</div>
+                      <div className="text-[10px] text-muted-foreground">Recorded months</div>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-muted/40 border border-border/40">
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium mb-0.5">
+                        <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+                        <span>Average Score</span>
+                      </div>
+                      <div className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                        {stats.avgPercentage}%
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">Grade: {getGrade(stats.avgPercentage)}</div>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-muted/40 border border-border/40">
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium mb-0.5">
+                        <Award className="h-3.5 w-3.5 text-amber-500" />
+                        <span>Best Score</span>
+                      </div>
+                      <div className="text-base font-bold text-amber-600 dark:text-amber-400">
+                        {stats.highestPercentage}%
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">{stats.bestMonth}</div>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-muted/40 border border-border/40">
+                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium mb-0.5">
+                        <Users className="h-3.5 w-3.5 text-purple-500" />
+                        <span>Tuition Batch</span>
+                      </div>
+                      <div className="text-base font-bold truncate">
+                        Group {reportData.student.group_id || '—'}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {reportData.student.class ? `Class ${reportData.student.class}` : 'No Class'}
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-card/50 backdrop-blur-xs">
-                <CardContent className="p-3.5 sm:p-4">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <TrendingUp className="h-4 w-4 text-emerald-500" />
-                    <span className="text-xs text-muted-foreground font-medium">Average Score</span>
+              {/* Academic & Personal Information Card */}
+              <Card className="bg-card/70 backdrop-blur-xs border shadow-xs">
+                <CardHeader className="p-3.5 pb-2 border-b border-border/50">
+                  <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <GraduationCap className="h-3.5 w-3.5 text-primary" />
+                    <span>Academic & Student Info</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3.5 space-y-2 text-xs">
+                  <div className="flex justify-between py-1 border-b border-border/30">
+                    <span className="text-muted-foreground font-medium">Class / Standard</span>
+                    <span className="font-bold text-foreground">{reportData.student.class || 'NIL'}</span>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                    {stats.avgPercentage}%
+                  <div className="flex justify-between py-1 border-b border-border/30">
+                    <span className="text-muted-foreground font-medium">School</span>
+                    <span className="font-semibold text-foreground text-right max-w-[180px] truncate" title={reportData.student.school || ''}>
+                      {reportData.student.school || 'NIL'}
+                    </span>
                   </div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">Overall percentage</div>
+                  <div className="flex justify-between py-1 border-b border-border/30">
+                    <span className="text-muted-foreground font-medium">Tuition Group</span>
+                    <span className="font-bold text-foreground">Group {reportData.student.group_id || 'NIL'}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-border/30">
+                    <span className="text-muted-foreground font-medium">Admission Date</span>
+                    <span className="font-mono text-foreground">{formatReportDate(reportData.student.adm_date)}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-muted-foreground font-medium">Date of Birth</span>
+                    <span className="font-mono text-foreground">{formatReportDate(reportData.student.dob)}</span>
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-card/50 backdrop-blur-xs">
-                <CardContent className="p-3.5 sm:p-4">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Award className="h-4 w-4 text-amber-500" />
-                    <span className="text-xs text-muted-foreground font-medium">Best Score</span>
+              {/* Contact Information Card */}
+              <Card className="bg-card/70 backdrop-blur-xs border shadow-xs">
+                <CardHeader className="p-3.5 pb-2 border-b border-border/50">
+                  <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-primary" />
+                    <span>Contact Information</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3.5 space-y-2 text-xs">
+                  <div className="flex items-center justify-between py-1 border-b border-border/30">
+                    <span className="text-muted-foreground font-medium">Father's Contact</span>
+                    {reportData.student.father_no ? (
+                      <a
+                        href={`tel:${reportData.student.father_no}`}
+                        className="font-mono font-bold text-primary hover:underline flex items-center gap-1"
+                      >
+                        <Phone className="h-3 w-3" />
+                        <span>{reportData.student.father_no}</span>
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground font-mono">NIL</span>
+                    )}
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400">
-                    {stats.highestPercentage}%
+
+                  <div className="flex items-center justify-between py-1 border-b border-border/30">
+                    <span className="text-muted-foreground font-medium">Mother's Contact</span>
+                    {reportData.student.mother_no ? (
+                      <a
+                        href={`tel:${reportData.student.mother_no}`}
+                        className="font-mono font-bold text-primary hover:underline flex items-center gap-1"
+                      >
+                        <Phone className="h-3 w-3" />
+                        <span>{reportData.student.mother_no}</span>
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground font-mono">NIL</span>
+                    )}
                   </div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">{stats.bestMonth}</div>
+
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-muted-foreground font-medium">Personal Contact</span>
+                    {reportData.student.contact_no ? (
+                      <a
+                        href={`tel:${reportData.student.contact_no}`}
+                        className="font-mono font-bold text-primary hover:underline flex items-center gap-1"
+                      >
+                        <Phone className="h-3 w-3" />
+                        <span>{reportData.student.contact_no}</span>
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground font-mono">NIL</span>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-card/50 backdrop-blur-xs">
-                <CardContent className="p-3.5 sm:p-4">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Users className="h-4 w-4 text-purple-500" />
-                    <span className="text-xs text-muted-foreground font-medium">Group & Class</span>
-                  </div>
-                  <div className="text-base sm:text-lg font-bold truncate">
-                    Group {reportData.student.group_id || '—'}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                    {reportData.student.class ? `Class ${reportData.student.class}` : 'No Class'}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Monthly Results History Drilldown */}
+              {reportData.results && reportData.results.length > 0 && (
+                <Card className="bg-card/70 backdrop-blur-xs border shadow-xs">
+                  <CardHeader className="p-3.5 pb-2 border-b border-border/50">
+                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-primary" />
+                      <span>Monthly Exam Records ({reportData.results.length})</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-2 space-y-1.5 max-h-[300px] overflow-y-auto">
+                    {reportData.results.map((res) => {
+                      const isAbsent = res.status === 'Absent';
+                      const monthName = MONTH_NAMES[res.month] || res.month;
+                      return (
+                        <div
+                          key={res.id}
+                          className="p-2.5 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between gap-2 text-xs"
+                        >
+                          <div>
+                            <div className="font-bold text-foreground">
+                              {monthName} {res.academic_year}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {isAbsent ? (
+                                <span className="text-destructive font-semibold">Absent</span>
+                              ) : (
+                                <>
+                                  Score: <strong className="text-foreground font-mono">{formatMark(res.total_obtained)}/{formatMark(res.total_max)}</strong>
+                                  {' · '}
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">{Math.round(Number(res.percentage) || 0)}%</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {res.class_rank && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-bold bg-amber-500/10 text-amber-600 border-amber-500/20">
+                                Rank #{res.class_rank}
+                              </Badge>
+                            )}
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              className="h-7 px-2 text-[11px] text-primary hover:bg-primary/10 cursor-pointer"
+                              onClick={() => navigate(`/reports/monthly/${res.result_period_id}/marks`)}
+                              title="Edit Marks"
+                            >
+                              <Pencil className="h-3 w-3 mr-1" />
+                              <span>Edit</span>
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
-            {/* ─── TABS: REPORT CARD vs MONTHLY MARKS HISTORY (Hidden in Print) ─── */}
-            <div className="no-print flex items-center justify-between">
-              <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'card' | 'history')} className="w-full">
-                <TabsList className="grid w-full sm:w-[400px] grid-cols-2">
-                  <TabsTrigger value="card" className="gap-1.5 cursor-pointer">
-                    <FileText className="h-3.5 w-3.5" />
-                    <span>Official Report Card</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="gap-1.5 cursor-pointer">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span>Monthly Marks History</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
-            {/* ─── TAB 1: OFFICIAL REPORT CARD (PRINTABLE) ─── */}
-            <div className={activeTab === 'card' ? 'block' : 'hidden print:block'}>
-              <div className="printable-report max-w-4xl mx-auto bg-white text-black font-sans border-[2.5px] border-black rounded-lg p-5 sm:p-7 shadow-sm space-y-4">
-                {/* Header Block with Logo & Official Branding */}
-                <div className="flex items-center gap-4 pb-2">
+            {/* ══════════════════════════════════════════════════════
+                RIGHT SIDE (Desktop) / BELOW (Mobile): AUTHENTIC A4 REPORT CARD
+                ══════════════════════════════════════════════════════ */}
+            <div className="lg:col-span-8 xl:col-span-8 w-full">
+              <div className="printable-report w-full bg-white text-black font-sans border-[2.5px] border-black rounded-lg p-3 sm:p-5 lg:p-6 shadow-sm space-y-3 sm:space-y-4">
+                {/* ─── 1. Header Block with Logo & Official Branding ─── */}
+                <div className="flex items-center gap-3 sm:gap-4 pb-1">
                   {/* Logo */}
                   <div className="shrink-0 flex items-center justify-center">
                     <img
                       src={logoUrl}
                       alt="EnglishJibi"
-                      className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-full shadow-xs border border-gray-300"
+                      className="h-14 w-14 sm:h-18 sm:w-18 object-contain rounded-full border border-gray-300 shadow-2xs"
                     />
                   </div>
 
                   {/* Institution Details */}
-                  <div className="flex-1 text-center pr-4">
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight uppercase font-sans">
+                  <div className="flex-1 text-center pr-2 sm:pr-4">
+                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight leading-tight uppercase font-sans">
                       <span className="text-black">ENGLISH</span>
                       <span className="text-red-600">JIBI</span>{' '}
                       <span className="text-black">CLASSES</span>
                     </h1>
-                    <p className="text-xs sm:text-sm italic font-semibold text-gray-800 tracking-wide mt-0.5">
+                    <p className="text-[11px] sm:text-xs italic font-semibold text-gray-800 tracking-wide mt-0.5">
                       Your Child, Our Responsibility
                     </p>
-                    <p className="text-[11px] sm:text-xs text-gray-700 font-medium mt-0.5">
+                    <p className="text-[10px] sm:text-[11px] text-gray-700 font-medium mt-0.5 leading-tight">
                       {reportData.settings.address || 'Duplex - 37, In front of DAV School, Sailashree Vihar, BBSR.'}
                     </p>
-                    <div className="flex flex-wrap items-center justify-center gap-3 text-[10px] sm:text-[11px] font-semibold text-sky-700 pt-0.5">
+                    <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 text-[9px] sm:text-[10.5px] font-semibold text-sky-700 pt-0.5">
                       <span className="inline-flex items-center gap-1">
-                        <Send className="h-3 w-3 text-sky-500 fill-sky-500" />
+                        <Send className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-sky-500 fill-sky-500" />
                         {reportData.settings.instagram || '@englishwithchiranjibisir'}
                       </span>
                       <span className="inline-flex items-center gap-1 text-sky-800">
-                        <Phone className="h-3 w-3 text-sky-600" />
+                        <Phone className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-sky-600" />
                         {reportData.settings.phone1 || '+91 83289 22917'} / {reportData.settings.phone2 || '+91 7735812335'}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Red Separator Line */}
+                {/* ─── 2. Red Separator Line ─── */}
                 <div className="h-1 bg-red-600 w-full" />
 
-                {/* Academic Session & Sub-Title */}
-                <div className="text-center pt-1 pb-1 space-y-0.5">
-                  <h2 className="text-xs sm:text-sm font-black uppercase text-amber-700 tracking-wider">
+                {/* ─── 3. Academic Session & Sub-Title ─── */}
+                <div className="text-center py-0.5 space-y-0.5">
+                  <h2 className="text-[11px] sm:text-xs font-black uppercase text-amber-700 tracking-wider">
                     ACADEMIC SESSION: {academicSession}
                   </h2>
-                  <div className="text-[11px] sm:text-xs font-bold text-gray-800">
-                    Report Card
+                  <div className="text-[10px] sm:text-[11px] font-bold text-gray-800">
+                    Official Annual Report Card
                   </div>
-                  <div className="text-xs font-bold text-black underline underline-offset-2 pt-0.5">
+                  <div className="text-[11px] sm:text-xs font-bold text-black underline underline-offset-2 pt-0.5">
                     Student's Profile
                   </div>
                 </div>
 
-                {/* Student Profile Info Grid (Aligned with Colons) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs font-semibold py-1 px-1 border-b border-gray-300 pb-2">
+                {/* ─── 4. Student Profile Info Grid (2-Column Aligned with Colons) ─── */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-1 text-[10.5px] sm:text-xs font-semibold py-1 px-1 border-b border-gray-300 pb-2">
                   {/* Left Column */}
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     <div className="flex">
-                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">STUDENT ID</span>
+                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">STUDENT ID</span>
                       <span className="mr-1">:</span>
                       <span className="font-mono font-bold text-black">{reportData.student.id}</span>
                     </div>
                     <div className="flex">
-                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">STUDENT NAME</span>
+                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">STUDENT NAME</span>
                       <span className="mr-1">:</span>
                       <span className="font-bold text-black">{reportData.student.name}</span>
                     </div>
                     <div className="flex">
-                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">FATHER'S CONTACT</span>
+                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">FATHER'S CONTACT</span>
                       <span className="mr-1">:</span>
                       <span className="font-mono text-gray-900">{reportData.student.father_no || 'NIL'}</span>
                     </div>
                     <div className="flex">
-                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">MOTHER'S CONTACT</span>
+                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">MOTHER'S CONTACT</span>
                       <span className="mr-1">:</span>
                       <span className="font-mono text-gray-900">{reportData.student.mother_no || 'NIL'}</span>
                     </div>
                     <div className="flex">
-                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">PERSONAL CONTACT</span>
+                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">PERSONAL CONTACT</span>
                       <span className="mr-1">:</span>
                       <span className="font-mono text-gray-900">{reportData.student.contact_no || 'NIL'}</span>
                     </div>
                   </div>
 
                   {/* Right Column */}
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     <div className="flex">
-                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">CLASS</span>
+                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">CLASS</span>
                       <span className="mr-1">:</span>
                       <span className="font-bold text-black">{reportData.student.class || 'NIL'}</span>
                     </div>
                     <div className="flex">
-                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">SCHOOL</span>
+                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">SCHOOL</span>
                       <span className="mr-1">:</span>
-                      <span className="font-bold text-black">{reportData.student.school || 'NIL'}</span>
+                      <span className="font-bold text-black truncate" title={reportData.student.school || ''}>
+                        {reportData.student.school || 'NIL'}
+                      </span>
                     </div>
                     <div className="flex">
-                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">ADMISSION DATE</span>
+                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">ADMISSION DATE</span>
                       <span className="mr-1">:</span>
                       <span className="font-mono text-gray-900">{formatReportDate(reportData.student.adm_date)}</span>
                     </div>
                     <div className="flex">
-                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">DATE OF BIRTH</span>
+                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">DATE OF BIRTH</span>
                       <span className="mr-1">:</span>
                       <span className="font-mono text-gray-900">{formatReportDate(reportData.student.dob)}</span>
                     </div>
                     <div className="flex">
-                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">TUITION GROUP</span>
+                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">TUITION GROUP</span>
                       <span className="mr-1">:</span>
-                      <span className="font-bold text-black">{reportData.student.group_id || 'NIL'}</span>
+                      <span className="font-bold text-black">Group {reportData.student.group_id || 'NIL'}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Section Heading: RESULT SUMMARY */}
-                <div className="text-center pt-1 pb-1">
-                  <h3 className="text-xs sm:text-sm font-black uppercase text-amber-700 tracking-wider underline underline-offset-2">
+                {/* ─── 5. Section Heading: RESULT SUMMARY ─── */}
+                <div className="text-center pt-0.5">
+                  <h3 className="text-[11px] sm:text-xs font-black uppercase text-amber-700 tracking-wider underline underline-offset-2">
                     RESULT SUMMARY
                   </h3>
                 </div>
 
-                {/* Performance Matrix Table (All 12 Months) */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-center border-collapse border-[1.5px] border-black text-xs">
+                {/* ─── 6. Performance Matrix Table (All 12 Months) ─── */}
+                {/* Fits all screen sizes cleanly without horizontal scrolling */}
+                <div className="w-full">
+                  <table className="w-full text-center border-collapse border-[1.5px] border-black text-[9px] sm:text-[11px] leading-tight">
                     <thead className="bg-gray-100 font-bold border-b-[1.5px] border-black text-black">
                       <tr>
-                        <th className="p-1.5 sm:p-2 border border-black font-black uppercase w-28 text-left pl-3">
+                        <th className="p-1 sm:p-1.5 border border-black font-black uppercase text-left pl-1.5 sm:pl-2 w-[16%]">
                           MONTH
                         </th>
                         {subjectsList.map((subName) => (
-                          <th key={subName} className="p-1.5 sm:p-2 border border-black font-bold uppercase min-w-[70px]">
+                          <th key={subName} className="p-0.5 sm:p-1.5 border border-black font-bold uppercase w-[12%]">
                             {subName}
                           </th>
                         ))}
-                        <th className="p-1.5 sm:p-2 border border-black font-bold uppercase w-16">
+                        <th className="p-0.5 sm:p-1.5 border border-black font-bold uppercase w-[14%]">
                           Total
                         </th>
-                        <th className="p-1.5 sm:p-2 border border-black font-bold uppercase w-12">
+                        <th className="p-0.5 sm:p-1.5 border border-black font-bold uppercase w-[10%]">
                           %
                         </th>
                       </tr>
@@ -692,9 +896,9 @@ export default function StudentReportsPage() {
                         }
 
                         return (
-                          <tr key={mCode} className="h-7 hover:bg-gray-50/50">
+                          <tr key={mCode} className="h-6 sm:h-6.5 hover:bg-gray-50/50">
                             {/* Month Column */}
-                            <td className="p-1 sm:p-1.5 border border-black font-bold uppercase text-left pl-3 text-black">
+                            <td className="p-0.5 sm:p-1 border border-black font-bold uppercase text-left pl-1.5 sm:pl-2 text-black">
                               {monthName}
                             </td>
 
@@ -703,46 +907,46 @@ export default function StudentReportsPage() {
                               const mk = marksMap.get(subName.toLowerCase());
 
                               if (!monthResult) {
-                                return <td key={subName} className="p-1 border border-black" />;
+                                return <td key={subName} className="p-0.5 border border-black" />;
                               }
 
                               if (isAbsent) {
                                 return (
-                                  <td key={subName} className="p-1 border border-black font-bold text-red-600">
-                                    A
-                                  </td>
-                                );
+                                   <td key={subName} className="p-0.5 border border-black font-bold text-red-600">
+                                     A
+                                   </td>
+                                 );
                               }
 
                               if (!mk || mk.obt === null) {
-                                return <td key={subName} className="p-1 border border-black" />;
+                                return <td key={subName} className="p-0.5 border border-black" />;
                               }
 
                               return (
-                                <td key={subName} className="p-1 border border-black font-mono font-semibold text-black">
-                                  {mk.obt} / {mk.max}
+                                <td key={subName} className="p-0.5 border border-black font-mono font-semibold text-black">
+                                  {formatMark(mk.obt)}/{formatMark(mk.max)}
                                 </td>
                               );
                             })}
 
                             {/* Total Column */}
-                            <td className="p-1 border border-black font-mono font-bold text-black">
+                            <td className="p-0.5 border border-black font-mono font-bold text-black">
                               {monthResult
                                 ? isAbsent
                                   ? 'A'
                                   : monthResult.total_obtained !== null
-                                  ? `${monthResult.total_obtained} / ${monthResult.total_max}`
+                                  ? `${formatMark(monthResult.total_obtained)}/${formatMark(monthResult.total_max)}`
                                   : ''
                                 : ''}
                             </td>
 
                             {/* Percentage Column */}
-                            <td className="p-1 border border-black font-mono font-bold text-black">
+                            <td className="p-0.5 border border-black font-mono font-bold text-black">
                               {monthResult
                                 ? isAbsent
                                   ? '-'
                                   : monthResult.percentage !== null
-                                  ? `${Math.round(monthResult.percentage)}%`
+                                  ? `${Math.round(Number(monthResult.percentage))}%`
                                   : ''
                                 : ''}
                             </td>
@@ -753,183 +957,61 @@ export default function StudentReportsPage() {
                   </table>
                 </div>
 
-                {/* Feedback Box */}
-                <div className="border-[1.5px] border-black rounded-xs overflow-hidden mt-3">
-                  <div className="border-b-[1.5px] border-black bg-gray-50 px-3 py-1 font-bold text-xs uppercase w-32 border-r">
-                    FEEDBACK
+                {/* ─── 7. Cumulative Evaluation Summary Box ─── */}
+                <div className="grid grid-cols-3 border-[1.5px] border-black bg-gray-50 text-[10px] sm:text-xs font-bold text-center">
+                  <div className="p-1.5 sm:p-2 border-r border-black">
+                    <span className="text-gray-600 block text-[9px] sm:text-[10px] uppercase font-semibold">Exams Attended</span>
+                    <span className="font-bold text-black">{stats.totalExams} of 12 Months</span>
                   </div>
-                  <div className="h-16 p-2 text-xs text-gray-600 italic">
-                    {/* Comments area */}
+                  <div className="p-1.5 sm:p-2 border-r border-black">
+                    <span className="text-gray-600 block text-[9px] sm:text-[10px] uppercase font-semibold">Cumulative Avg</span>
+                    <span className="font-bold text-black">{stats.avgPercentage}%</span>
+                  </div>
+                  <div className="p-1.5 sm:p-2">
+                    <span className="text-gray-600 block text-[9px] sm:text-[10px] uppercase font-semibold">Overall Grade</span>
+                    <span className="font-black text-red-600">{getGrade(stats.avgPercentage)}</span>
                   </div>
                 </div>
 
-                {/* Teacher and Parent Signature Block */}
-                <div className="pt-6 pb-2 grid grid-cols-2 gap-8 text-xs font-bold text-black">
-                  <div className="space-y-1">
-                    <div className="text-[11px] font-mono">* {reportData.settings.teacherName || reportData.settings.adminName || 'CHIRANJIBI SIR'}</div>
-                    <div className="text-[11px] font-sans font-semibold text-gray-800">Teacher's Signature</div>
+                {/* ─── 8. Feedback Box ─── */}
+                <div className="border-[1.5px] border-black rounded-xs overflow-hidden">
+                  <div className="border-b-[1.5px] border-black bg-gray-50 px-2.5 py-0.5 font-bold text-[10px] sm:text-xs uppercase w-28 border-r">
+                    FEEDBACK
+                  </div>
+                  <div className="h-12 sm:h-14 p-1.5 text-[10px] sm:text-xs text-gray-700 italic flex items-center">
+                    {stats.avgPercentage >= 80 ? (
+                      <span>Outstanding academic performance and consistent dedication throughout the academic year.</span>
+                    ) : stats.avgPercentage >= 60 ? (
+                      <span>Good progress shown with steady potential. Focus on consistent practice and revisions.</span>
+                    ) : stats.totalExams > 0 ? (
+                      <span>Needs regular improvement in core foundation areas. Extra guidance is encouraged.</span>
+                    ) : (
+                      <span className="text-gray-400">Official teacher's assessment will be provided upon examination completion.</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* ─── 9. Teacher and Parent Signature Block ─── */}
+                <div className="pt-4 sm:pt-6 pb-1 grid grid-cols-2 gap-6 text-[10.5px] sm:text-xs font-bold text-black">
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] sm:text-[11px] font-mono font-bold text-black">
+                      * {reportData.settings.teacherName || reportData.settings.adminName || 'CHIRANJIBI SIR'}
+                    </div>
+                    <div className="text-[10px] sm:text-[11px] font-sans font-semibold text-gray-800 border-t border-black/40 pt-0.5 inline-block pr-6">
+                      Teacher's Signature
+                    </div>
                   </div>
 
-                  <div className="text-right space-y-1">
-                    <div className="text-[11px] font-mono">*</div>
-                    <div className="text-[11px] font-sans font-semibold text-gray-800">Parent's Signature</div>
+                  <div className="text-right space-y-0.5">
+                    <div className="text-[10px] sm:text-[11px] font-mono font-bold text-black">
+                      {formatReportDate(new Date().toISOString())}
+                    </div>
+                    <div className="text-[10px] sm:text-[11px] font-sans font-semibold text-gray-800 border-t border-black/40 pt-0.5 inline-block pl-6">
+                      Parent's Signature & Date
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* ─── TAB 2: MONTHLY MARKS HISTORY (DETAILED DRILLDOWN) ─── */}
-            <div className={activeTab === 'history' ? 'block' : 'hidden'}>
-              {reportData.results.length === 0 ? (
-                <Card className="p-12 text-center text-muted-foreground">
-                  <Calendar className="h-12 w-12 mx-auto mb-3 opacity-40 text-muted-foreground" />
-                  <h3 className="text-base font-semibold mb-1">No Monthly Exam Records Found</h3>
-                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                    This student does not have any recorded monthly examination results yet. Monthly exams can be entered in the Monthly Results section.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-4 gap-1.5"
-                    onClick={() => navigate('/reports/monthly')}
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    <span>Go to Monthly Results</span>
-                  </Button>
-                </Card>
-              ) : (
-                <div className="space-y-4">
-                  {reportData.results.map((res) => {
-                    const isAbsent = res.status === 'Absent';
-                    const monthName = MONTH_NAMES[res.month] || res.month;
-
-                    return (
-                      <Card key={res.id} className="overflow-hidden border transition-shadow hover:shadow-md">
-                        <CardHeader className="bg-muted/30 border-b p-4 sm:px-6">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-bold text-base">
-                                {monthName} {res.academic_year}
-                              </span>
-                              <Badge
-                                variant={res.period_status === 'Published' ? 'default' : 'secondary'}
-                                className="text-[10px]"
-                              >
-                                {res.period_status}
-                              </Badge>
-                              <Badge
-                                variant={isAbsent ? 'destructive' : 'outline'}
-                                className="text-[10px]"
-                              >
-                                {res.status}
-                              </Badge>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              {res.class_rank && (
-                                <Badge variant="secondary" className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20 font-bold">
-                                  Class Rank #{res.class_rank}
-                                </Badge>
-                              )}
-                              {res.group_rank && (
-                                <Badge variant="outline" className="text-xs font-semibold">
-                                  Group Rank #{res.group_rank}
-                                </Badge>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-xs gap-1 ml-1"
-                                onClick={() => navigate(`/reports/monthly/${res.result_period_id}/marks`)}
-                              >
-                                <Pencil className="h-3 w-3" />
-                                <span>Edit Marks</span>
-                              </Button>
-                            </div>
-                          </div>
-                        </CardHeader>
-
-                        <CardContent className="p-4 sm:p-6 space-y-4">
-                          {/* Total Score & Progress Indicator */}
-                          <div className="flex flex-wrap items-center justify-between gap-4 p-3 rounded-lg bg-muted/20 border">
-                            <div>
-                              <div className="text-xs text-muted-foreground font-medium">Total Score</div>
-                              <div className="text-lg font-bold font-mono">
-                                {isAbsent ? (
-                                  <span className="text-destructive font-sans">Absent</span>
-                                ) : (
-                                  `${res.total_obtained || 0} / ${res.total_max || 0}`
-                                )}
-                              </div>
-                            </div>
-
-                            <div>
-                              <div className="text-xs text-muted-foreground font-medium">Percentage</div>
-                              <div className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400">
-                                {isAbsent || res.percentage === null ? '—' : `${Math.round(res.percentage)}%`}
-                              </div>
-                            </div>
-
-                            <div>
-                              <div className="text-xs text-muted-foreground font-medium">Batch / Group</div>
-                              <div className="text-sm font-semibold">
-                                Group {res.group_id} {res.group_class ? `(${res.group_class})` : ''}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Subject Marks Grid */}
-                          <div>
-                            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                              Subject Scores Breakdown
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
-                              {res.marks.map((mk) => {
-                                const obt = mk.obtained_marks;
-                                const max = mk.max_marks;
-                                const subPercent = obt !== null && max > 0 ? Math.round((obt / max) * 100) : null;
-
-                                return (
-                                  <div
-                                    key={mk.id}
-                                    className="p-3 rounded-lg border bg-card/60 flex flex-col justify-between space-y-2 shadow-2xs"
-                                  >
-                                    <div className="flex items-center justify-between gap-1">
-                                      <span className="font-semibold text-xs truncate" title={mk.subject_name}>
-                                        {mk.subject_name}
-                                      </span>
-                                      <Badge variant="outline" className="text-[9px] px-1 py-0">
-                                        Max {max}
-                                      </Badge>
-                                    </div>
-
-                                    <div className="flex items-baseline justify-between pt-1 border-t border-border/40">
-                                      <div className="font-mono font-bold text-sm">
-                                        {isAbsent ? (
-                                          <span className="text-xs text-destructive">Absent</span>
-                                        ) : obt !== null ? (
-                                          `${obt} / ${max}`
-                                        ) : (
-                                          <span className="text-xs text-muted-foreground">Not Marked</span>
-                                        )}
-                                      </div>
-                                      {subPercent !== null && !isAbsent && (
-                                        <span className="text-[11px] font-bold text-muted-foreground font-mono">
-                                          {subPercent}%
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           </div>
         )}
