@@ -61,6 +61,7 @@ function MarksDropdownInput({
   isTable = false,
 }: MarksDropdownInputProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpwards, setOpenUpwards] = useState(false);
   const [inputValue, setInputValue] = useState<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -76,7 +77,7 @@ function MarksDropdownInput({
     }
   }, [obtainedMarks, isAbsent]);
 
-  // Click outside listener to close dropdown menu
+  // Click outside listener to close dropdown menu & smart placement check
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -85,6 +86,17 @@ function MarksDropdownInput({
     };
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      // Determine if dropdown should flip upwards to prevent overlapping / clipping
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        if (spaceBelow < 200 && spaceAbove > 150) {
+          setOpenUpwards(true);
+        } else {
+          setOpenUpwards(false);
+        }
+      }
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
@@ -193,63 +205,52 @@ function MarksDropdownInput({
         )}
       </div>
 
-      {/* Floating Dropdown Menu for Marks & Absent */}
+      {/* Floating Compact Dropdown Menu for Marks & Absent (Smart auto-flip up/down) */}
       {isOpen && (
         <div
-          className="absolute left-0 top-full mt-1 z-50 w-full min-w-[130px] max-w-[170px] bg-popover text-popover-foreground border rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100"
-          style={{ maxHeight: '230px' }}
+          className={`absolute left-0 z-50 w-full min-w-[70px] bg-popover text-popover-foreground border rounded-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ${
+            openUpwards ? 'bottom-full mb-1' : 'top-full mt-1'
+          }`}
+          style={{ maxHeight: '180px' }}
         >
-          {/* Top Option: Absent (A) */}
-          <div className="p-1 border-b bg-muted/40">
+          {/* Top Option: Absent */}
+          <div className="p-0.5 border-b bg-destructive/5">
             <button
               type="button"
               onClick={handleSelectAbsent}
-              className="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-xs font-bold text-destructive hover:bg-destructive/15 transition-colors cursor-pointer"
+              className="w-full text-center py-1 rounded text-xs font-bold text-destructive hover:bg-destructive/15 transition-colors cursor-pointer"
             >
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-destructive" />
-                {/* Desktop: Absent, Mobile: A */}
-                <span className="hidden sm:inline font-bold">Absent (A)</span>
-                <span className="sm:hidden font-black">A (Absent)</span>
-              </div>
-              <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-destructive/10">A</span>
+              <span className="hidden sm:inline">Absent</span>
+              <span className="sm:hidden">A</span>
             </button>
           </div>
 
-          {/* Number Options List */}
-          <div className="overflow-y-auto max-h-[140px] p-1 divide-y divide-border/20">
+          {/* Clean Number List */}
+          <div className="overflow-y-auto max-h-[120px] p-0.5 divide-y divide-border/20">
             {numberOptions.map((num) => (
               <button
                 key={num}
                 type="button"
                 onClick={() => handleSelectNumber(num)}
-                className={`w-full flex items-center justify-between px-2.5 py-1 text-xs font-mono rounded hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer ${
+                className={`w-full text-center py-1 text-xs font-mono rounded hover:bg-accent transition-colors cursor-pointer ${
                   !isAbsent && obtainedMarks === num
-                    ? 'bg-primary/10 text-primary font-bold'
-                    : num === maxMarks
-                    ? 'font-bold text-emerald-600 dark:text-emerald-400'
+                    ? 'bg-primary/15 text-primary font-bold'
                     : ''
                 }`}
               >
-                <span>{num}</span>
-                {num === maxMarks && (
-                  <span className="text-[9px] font-sans text-muted-foreground uppercase">Full</span>
-                )}
-                {!isAbsent && obtainedMarks === num && (
-                  <Check className="h-3 w-3 text-primary" />
-                )}
+                {num}
               </button>
             ))}
           </div>
 
           {/* Bottom Option: Clear */}
-          <div className="p-1 border-t bg-muted/20">
+          <div className="p-0.5 border-t bg-muted/20">
             <button
               type="button"
               onClick={handleClear}
-              className="w-full text-center px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors cursor-pointer font-medium"
+              className="w-full text-center py-0.5 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors cursor-pointer"
             >
-              Clear (Empty)
+              Clear
             </button>
           </div>
         </div>
@@ -271,7 +272,26 @@ export default function MarksEntryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<'accordion' | 'table'>('accordion');
+  const [viewMode, setViewModeState] = useState<'accordion' | 'table'>(() => {
+    try {
+      const saved = localStorage.getItem('marks_entry_view_mode');
+      if (saved === 'table' || saved === 'accordion') {
+        return saved;
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+    return 'accordion';
+  });
+
+  const setViewMode = (mode: 'accordion' | 'table') => {
+    setViewModeState(mode);
+    try {
+      localStorage.setItem('marks_entry_view_mode', mode);
+    } catch {
+      // Ignore localStorage errors
+    }
+  };
 
   // Track expanded student dropdown states (studentResultId -> boolean)
   const [expandedStudents, setExpandedStudents] = useState<Record<number, boolean>>({});
@@ -939,7 +959,7 @@ export default function MarksEntryPage() {
               return (
                 <Card
                   key={student.studentResultId}
-                  className={`border transition-all duration-200 overflow-hidden shadow-xs ${
+                  className={`border transition-all duration-200 shadow-xs ${
                     isExpanded
                       ? 'ring-2 ring-primary/40 border-primary/50 shadow-md bg-card'
                       : 'hover:border-border hover:shadow-xs bg-card'
@@ -954,7 +974,9 @@ export default function MarksEntryPage() {
                   {/* Student Header Card (Click to Expand / Collapse Dropdown) */}
                   <div
                     onClick={() => toggleStudentExpanded(student.studentResultId)}
-                    className="p-3.5 sm:p-4 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none bg-card hover:bg-accent/30 transition-colors"
+                    className={`p-3.5 sm:p-4 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none bg-card hover:bg-accent/30 transition-colors ${
+                      isExpanded ? 'rounded-t-xl' : 'rounded-xl'
+                    }`}
                   >
                     {/* Left: Student Identity */}
                     <div className="flex items-center gap-3 min-w-0">
@@ -972,9 +994,9 @@ export default function MarksEntryPage() {
                         {isAllAbsent ? (
                           <span className="text-xs font-black">A</span>
                         ) : complete && !isPartialAbsent ? (
-                          <Check className="h-5 w-5 stroke-[2.5]" />
+                          <Check className="h-4 w-4 stroke-[2.5]" />
                         ) : (
-                          student.studentId.slice(-3)
+                          <span className="text-xs font-bold">{student.name.charAt(0).toUpperCase()}</span>
                         )}
                       </div>
 
@@ -1063,7 +1085,7 @@ export default function MarksEntryPage() {
 
                   {/* ─── EXPANDED DOWN SIDE: SUBJECT MARKS ENTRY FORM ─── */}
                   {isExpanded && (
-                    <div className="p-4 sm:p-6 border-t bg-muted/15 space-y-4 animate-in fade-in duration-150">
+                    <div className="p-4 sm:p-5 border-t bg-muted/15 space-y-4 rounded-b-xl animate-in fade-in duration-150">
                       {/* Sub-header inside student card: Quick Actions */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -1118,8 +1140,8 @@ export default function MarksEntryPage() {
                         </Button>
                       </div>
 
-                      {/* Subject Marks Entry Grid (Fluid responsive: 1 col on mobile, 2 on tablet, 3 on desktop, 4-5 on wide/zoomed screens) */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
+                      {/* Subject Marks Entry Grid (5 columns on desktop, 6 on 2xl/wide screens so all 5 subjects fit in 1 line) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6 gap-2.5 sm:gap-3">
                         {student.marks.map((mark, markIdx) => {
                           const isExceeded =
                             !mark.isAbsent &&
@@ -1130,7 +1152,7 @@ export default function MarksEntryPage() {
                           return (
                             <div
                               key={mark.markId}
-                              className={`p-3.5 rounded-xl border transition-all ${
+                              className={`relative focus-within:z-40 p-2.5 sm:p-3 rounded-lg border transition-all ${
                                 mark.isAbsent
                                   ? 'border-destructive/30 bg-destructive/[0.03]'
                                   : isExceeded
@@ -1140,20 +1162,16 @@ export default function MarksEntryPage() {
                                   : 'border-border bg-card'
                               }`}
                             >
-                              {/* Subject Name without confusing Both category */}
-                              <div className="flex items-center justify-between mb-2">
+                              {/* Subject Name */}
+                              <div className="flex items-center justify-between mb-1.5">
                                 <span className="font-bold text-xs sm:text-sm text-foreground truncate block">
                                   {mark.subjectName}
                                 </span>
                               </div>
 
-                              {/* Inputs Row: Unified Marks Dropdown + Max Marks Input */}
-                              <div className="flex items-center gap-2">
-                                {/* Left Side: Unified Marks Dropdown + Direct Typing Input */}
+                              {/* Inputs Row: [ MarksDropdownInput ] / [ Max Marks ] */}
+                              <div className="flex items-center gap-1.5">
                                 <div className="flex-1 min-w-0">
-                                  <label className="text-[10px] font-semibold text-muted-foreground block mb-1">
-                                    Marks / Absent
-                                  </label>
                                   <MarksDropdownInput
                                     obtainedMarks={mark.obtainedMarks}
                                     isAbsent={mark.isAbsent}
@@ -1164,13 +1182,10 @@ export default function MarksEntryPage() {
                                   />
                                 </div>
 
-                                <div className="text-muted-foreground font-bold text-sm pt-4">/</div>
+                                <span className="text-muted-foreground font-bold text-xs">/</span>
 
-                                {/* Manual Maximum Marks Input (per student per subject) */}
-                                <div className="w-20 shrink-0">
-                                  <label className="text-[10px] font-semibold text-muted-foreground block mb-1">
-                                    Max Marks
-                                  </label>
+                                {/* Manual Maximum Marks Input */}
+                                <div className="w-14 shrink-0">
                                   <Input
                                     type="number"
                                     min={1}
@@ -1179,15 +1194,15 @@ export default function MarksEntryPage() {
                                     onChange={(e) =>
                                       updateStudentMaxMark(originalIndex, markIdx, e.target.value)
                                     }
-                                    className="h-9 font-mono text-xs text-center bg-muted/30"
-                                    title="Maximum marks for this subject for this student"
+                                    className="h-8 sm:h-9 font-mono text-xs text-center bg-muted/30 font-semibold px-0.5"
+                                    title="Maximum marks"
                                   />
                                 </div>
                               </div>
 
                               {isExceeded && (
                                 <p className="text-[10px] text-destructive font-semibold mt-1">
-                                  Cannot exceed max ({mark.maxMarks})
+                                  Exceeds max ({mark.maxMarks})
                                 </p>
                               )}
                             </div>
@@ -1257,10 +1272,10 @@ export default function MarksEntryPage() {
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead className="bg-muted/80 sticky top-0 z-20 backdrop-blur-md border-b">
                 <tr>
-                  <th className="p-3 font-semibold text-muted-foreground sticky left-0 z-30 bg-muted/95 min-w-[75px] border-r">
-                    Roll / ID
+                  <th className="p-3 font-semibold text-muted-foreground sticky left-0 z-30 bg-muted/95 min-w-[55px] sm:min-w-[60px] text-center border-r">
+                    ID
                   </th>
-                  <th className="p-3 font-semibold text-muted-foreground sticky left-[75px] z-30 bg-muted/95 min-w-[150px] sm:min-w-[200px] border-r">
+                  <th className="p-3 font-semibold text-muted-foreground sticky left-[55px] sm:left-[60px] z-30 bg-muted/95 min-w-[150px] sm:min-w-[200px] border-r">
                     Student Name
                   </th>
 
@@ -1314,12 +1329,12 @@ export default function MarksEntryPage() {
                         }`}
                       >
                         {/* Student ID (Sticky) */}
-                        <td className="p-2.5 font-mono text-xs font-semibold sticky left-0 z-10 bg-background/95 border-r">
+                        <td className="p-2.5 font-mono text-xs font-semibold sticky left-0 z-10 bg-background/95 border-r text-center">
                           {student.studentId}
                         </td>
 
                         {/* Student Name (Sticky) */}
-                        <td className="p-2.5 font-medium sticky left-[75px] z-10 bg-background/95 border-r truncate max-w-[200px]">
+                        <td className="p-2.5 font-medium sticky left-[55px] sm:left-[60px] z-10 bg-background/95 border-r truncate max-w-[200px]">
                           <div className="truncate font-semibold text-foreground">{student.name}</div>
                           <div className="text-[10px] text-muted-foreground">
                             Class: {student.class || '—'}

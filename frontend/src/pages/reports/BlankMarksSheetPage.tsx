@@ -211,7 +211,7 @@ export default function BlankMarksSheetPage() {
               <thead className="bg-muted/80 border-b">
                 <tr>
                   <th className="p-2.5 font-bold text-muted-foreground border-r w-12 text-center">#</th>
-                  <th className="p-2.5 font-bold text-muted-foreground border-r w-24">Roll / ID</th>
+                  <th className="p-2.5 font-bold text-muted-foreground border-r w-16 text-center">ID</th>
                   <th className="p-2.5 font-bold text-muted-foreground border-r min-w-[160px]">Student Name</th>
                   <th className="p-2.5 font-bold text-muted-foreground border-r w-20">Class</th>
                   <th className="p-2.5 font-bold text-muted-foreground border-r min-w-[120px]">School</th>

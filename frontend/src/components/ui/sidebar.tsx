@@ -25,6 +25,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
+const SIDEBAR_STORAGE_KEY = "sidebar_state"
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
@@ -69,9 +70,22 @@ function SidebarProvider({
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen)
+  // This is the internal state of the sidebar with localStorage persistence.
+  const [_open, _setOpen] = React.useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY)
+      if (stored !== null) {
+        return stored === "true"
+      }
+      const match = document.cookie.match(new RegExp(`(?:^|; )${SIDEBAR_COOKIE_NAME}=([^;]*)`))
+      if (match) {
+        return match[1] === "true"
+      }
+    } catch {
+      // Ignore localStorage access errors
+    }
+    return defaultOpen
+  })
   const open = openProp ?? _open
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -80,6 +94,12 @@ function SidebarProvider({
         setOpenProp(openState)
       } else {
         _setOpen(openState)
+      }
+
+      try {
+        localStorage.setItem(SIDEBAR_STORAGE_KEY, String(openState))
+      } catch {
+        // Ignore localStorage access errors
       }
 
       // This sets the cookie to keep the sidebar state.
