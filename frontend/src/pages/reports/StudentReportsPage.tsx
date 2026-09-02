@@ -167,7 +167,7 @@ export default function StudentReportsPage() {
   const academicSession = reportData?.settings?.academicYear || '2026-27';
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8 space-y-4 animate-fade-in max-w-5xl mx-auto">
+    <div className="page-enter p-4 sm:p-6 space-y-6 w-full">
       {/* ─── TOP CONTROL BAR (HIDDEN IN PRINT) ─── */}
       <div className="no-print space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -271,7 +271,7 @@ export default function StudentReportsPage() {
           <p className="text-sm">Please select a student to display their report card.</p>
         </Card>
       ) : (
-        <div className="printable-report bg-white text-black font-sans border-[2.5px] border-black rounded-lg p-5 sm:p-7 shadow-sm space-y-4">
+        <div className="printable-report max-w-4xl mx-auto bg-white text-black font-sans border-[2.5px] border-black rounded-lg p-5 sm:p-7 shadow-sm space-y-4">
           {/* Header Block with Logo & Official Branding */}
           <div className="flex items-center gap-4 pb-2">
             {/* Logo */}

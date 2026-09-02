@@ -17,7 +17,7 @@ export default function AboutPage() {
   const [copied, setCopied] = useState(false);
 
   return (
-    <div className="page-enter space-y-6 p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+    <div className="page-enter space-y-6 p-4 md:p-6 w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
       {/* Hero Header Section */}
       <div className="relative overflow-hidden rounded-2xl border bg-card/50 backdrop-blur-md p-4 md:p-5 shadow-xs transition-all">
         <div className="absolute top-0 right-0 -z-10 h-40 w-40 rounded-full bg-gradient-to-br from-indigo-500/5 to-purple-600/5 blur-2xl" />

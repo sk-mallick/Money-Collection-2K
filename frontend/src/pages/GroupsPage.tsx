@@ -162,7 +162,7 @@ export default function GroupsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-content-in text-left p-4 md:p-6">
+    <div className="page-enter space-y-6 text-left p-4 md:p-6 w-full">
       {/* Top Header */}
       <div className="flex items-center justify-between gap-4">
         <div>

@@ -217,7 +217,7 @@ export default function StudentsPage() {
   if (loading) return <StudentsPageLoading />;
 
   return (
-    <div className="page-enter space-y-6 p-4 md:p-6">
+    <div className="page-enter space-y-6 p-4 md:p-6 w-full">
       {/* Header */}
       <div className="flex flex-row items-center justify-between gap-4 border-b pb-4">
         <div className="flex items-center gap-2">

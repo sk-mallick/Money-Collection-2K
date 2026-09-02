@@ -455,7 +455,7 @@ export default function CollectPage() {
   if (loading) return <CollectPageLoading />;
 
   return (
-    <div className="page-enter space-y-6 p-4 md:p-6">
+    <div className="page-enter space-y-6 p-4 md:p-6 w-full">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Collect Fee</h1>
         <p className="text-sm text-muted-foreground">Record payment and generate receipt</p>

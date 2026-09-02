@@ -187,7 +187,7 @@ export default function SettingsPage() {
   if (loading) return <SettingsPageLoading />;
 
   return (
-    <div className="page-enter space-y-6 p-4 md:p-6">
+    <div className="page-enter space-y-6 p-4 md:p-6 w-full">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-sm text-muted-foreground">Configure institute information, fees, and database operations</p>

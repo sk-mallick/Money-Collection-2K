@@ -91,7 +91,7 @@ function McmsLayout() {
   return (
     <SidebarProvider>
       <McmsSidebar />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 min-h-screen">
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b bg-background/80 backdrop-blur-md px-4 gap-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
@@ -104,11 +104,11 @@ function McmsLayout() {
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-auto">
+        <div className="flex-1 min-w-0 overflow-auto">
           <Suspense fallback={<DynamicSuspenseFallback />}>
             <Outlet />
           </Suspense>
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
@@ -119,7 +119,7 @@ function ReportsLayout() {
   return (
     <SidebarProvider>
       <ReportsSidebar />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 min-h-screen">
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b bg-background/80 backdrop-blur-md px-4 gap-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
@@ -132,11 +132,11 @@ function ReportsLayout() {
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-auto">
+        <div className="flex-1 min-w-0 overflow-auto">
           <Suspense fallback={<PageLoading />}>
             <Outlet />
           </Suspense>
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

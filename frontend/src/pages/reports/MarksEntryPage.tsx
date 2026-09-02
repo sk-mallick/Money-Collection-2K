@@ -432,7 +432,7 @@ export default function MarksEntryPage() {
   const isPublished = period.status === 'Published';
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8 space-y-5 animate-fade-in max-w-6xl mx-auto">
+    <div className="page-enter p-4 sm:p-6 space-y-6 w-full">
       {/* Top Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
