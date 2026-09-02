@@ -658,9 +658,9 @@ export default function MarksEntryPage() {
   const isPublished = period.status === 'Published';
 
   return (
-    <div className="page-enter p-3 sm:p-6 space-y-5 w-full max-w-7xl mx-auto">
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 w-full max-w-[99vw] 2xl:max-w-[1850px] mx-auto">
       {/* Top Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card p-4 rounded-xl border shadow-xs">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card p-4 rounded-xl border shadow-xs w-full">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-lg sm:text-2xl font-black tracking-tight text-foreground">
@@ -1118,8 +1118,8 @@ export default function MarksEntryPage() {
                         </Button>
                       </div>
 
-                      {/* Subject Marks Entry Grid (Responsive: 1 col on mobile, 2 on tablet, 3-4 on desktop) */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                      {/* Subject Marks Entry Grid (Fluid responsive: 1 col on mobile, 2 on tablet, 3 on desktop, 4-5 on wide/zoomed screens) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
                         {student.marks.map((mark, markIdx) => {
                           const isExceeded =
                             !mark.isAbsent &&
@@ -1257,14 +1257,11 @@ export default function MarksEntryPage() {
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead className="bg-muted/80 sticky top-0 z-20 backdrop-blur-md border-b">
                 <tr>
-                  <th className="p-3 font-semibold text-muted-foreground sticky left-0 z-30 bg-muted/95 min-w-[70px] border-r">
+                  <th className="p-3 font-semibold text-muted-foreground sticky left-0 z-30 bg-muted/95 min-w-[75px] border-r">
                     Roll / ID
                   </th>
-                  <th className="p-3 font-semibold text-muted-foreground sticky left-[70px] z-30 bg-muted/95 min-w-[140px] sm:min-w-[180px] border-r">
+                  <th className="p-3 font-semibold text-muted-foreground sticky left-[75px] z-30 bg-muted/95 min-w-[150px] sm:min-w-[200px] border-r">
                     Student Name
-                  </th>
-                  <th className="p-3 font-semibold text-muted-foreground min-w-[100px] border-r">
-                    School
                   </th>
 
                   {/* Subject Columns (Generous width for Grammar, Creative, Passage, Vocabulary, Literature, etc.) */}
@@ -1295,7 +1292,7 @@ export default function MarksEntryPage() {
                 {filteredStudents.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5 + subjects.length}
+                      colSpan={4 + subjects.length}
                       className="text-center p-8 text-muted-foreground"
                     >
                       No students match your filter criteria.
@@ -1322,16 +1319,11 @@ export default function MarksEntryPage() {
                         </td>
 
                         {/* Student Name (Sticky) */}
-                        <td className="p-2.5 font-medium sticky left-[70px] z-10 bg-background/95 border-r truncate max-w-[180px]">
+                        <td className="p-2.5 font-medium sticky left-[75px] z-10 bg-background/95 border-r truncate max-w-[200px]">
                           <div className="truncate font-semibold text-foreground">{student.name}</div>
                           <div className="text-[10px] text-muted-foreground">
                             Class: {student.class || '—'}
                           </div>
-                        </td>
-
-                        {/* School */}
-                        <td className="p-2.5 text-xs text-muted-foreground border-r truncate max-w-[120px]">
-                          {student.school || '—'}
                         </td>
 
                         {/* Subject Mark Inputs with direct unified dropdown component */}
