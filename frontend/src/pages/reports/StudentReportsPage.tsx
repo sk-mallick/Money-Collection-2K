@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { fetchStudentReport, type StudentReportResult } from '@/lib/reports-api';
@@ -21,7 +21,6 @@ import {
   Send,
   Phone,
   FileText,
-  Filter,
   ArrowLeft,
   ArrowRight,
   ChevronLeft,
@@ -29,13 +28,15 @@ import {
   GraduationCap,
   Award,
   TrendingUp,
-  CheckCircle2,
-  XCircle,
   Pencil,
   School,
   Users,
   BookOpen,
-  Sparkles,
+  LayoutGrid,
+  List,
+  X,
+  Filter,
+  RotateCcw,
 } from 'lucide-react';
 
 // Academic session month sequence (April to March)
@@ -56,6 +57,11 @@ export default function StudentReportsPage() {
   const [filterGroup, setFilterGroup] = useState('all');
   const [filterClass, setFilterClass] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
+
+  // Directory View Mode: 'grid' (card) vs 'list' (bar)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    return (localStorage.getItem('student_reports_view_mode') as 'grid' | 'list') || 'grid';
+  });
 
   // Detail View Active Tab
   const [activeTab, setActiveTab] = useState<'card' | 'history'>('card');
@@ -140,6 +146,11 @@ export default function StudentReportsPage() {
     setSearchParams({});
   };
 
+  const handleViewModeChange = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('student_reports_view_mode', mode);
+  };
+
   // Filter student list for directory
   const filteredStudents = useMemo(() => {
     return studentsList.filter((s) => {
@@ -159,9 +170,121 @@ export default function StudentReportsPage() {
     });
   }, [studentsList, searchQuery, filterGroup, filterClass, filterCategory]);
 
-  const uniqueClasses = useMemo(() => {
-    return Array.from(new Set(studentsList.map((s) => s.class).filter(Boolean))).sort();
-  }, [studentsList]);
+  // Dependent Available Groups based on Category & Class filters
+  const availableGroups = useMemo(() => {
+    return groups.filter((g) => {
+      const matchCategory = filterCategory === 'all' || g.category === filterCategory;
+      const matchClass =
+        filterClass === 'all' ||
+        (g.class && g.class.toLowerCase().includes(filterClass.toLowerCase())) ||
+        studentsList.some((s) => s.group === g.id && s.class === filterClass);
+      return matchCategory && matchClass;
+    });
+  }, [groups, filterCategory, filterClass, studentsList]);
+
+  // Dependent Available Classes based on Category & Group filters
+  const availableClasses = useMemo(() => {
+    const matchingStudents = studentsList.filter((s) => {
+      const matchCategory = filterCategory === 'all' || s.category === filterCategory;
+      const matchGroup = filterGroup === 'all' || s.group === filterGroup;
+      return matchCategory && matchGroup;
+    });
+
+    const classesSet = new Set(matchingStudents.map((s) => s.class).filter(Boolean));
+
+    // Also include classes defined on selected group
+    if (filterGroup !== 'all') {
+      const grp = groups.find((g) => g.id === filterGroup);
+      if (grp && grp.class) {
+        grp.class.split('&').forEach((c) => {
+          const clean = c.trim();
+          if (clean) classesSet.add(clean);
+        });
+      }
+    }
+
+    return Array.from(classesSet).sort((a, b) => {
+      const numA = parseInt(a, 10);
+      const numB = parseInt(b, 10);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+  }, [studentsList, groups, filterCategory, filterGroup]);
+
+  // Category change handler with cascading auto-reset
+  const handleCategoryChange = (val: string) => {
+    setFilterCategory(val);
+    if (val !== 'all') {
+      if (filterGroup !== 'all') {
+        const grp = groups.find((g) => g.id === filterGroup);
+        if (grp && grp.category !== val) {
+          setFilterGroup('all');
+        }
+      }
+      if (filterClass !== 'all') {
+        const classBelongs = studentsList.some(
+          (s) => s.class === filterClass && s.category === val
+        );
+        if (!classBelongs) {
+          setFilterClass('all');
+        }
+      }
+    }
+  };
+
+  // Group change handler with auto-sync category and cascading class filter
+  const handleGroupChange = (val: string) => {
+    setFilterGroup(val);
+    if (val !== 'all') {
+      const grp = groups.find((g) => g.id === val);
+      if (grp) {
+        setFilterCategory(grp.category);
+      }
+      if (filterClass !== 'all') {
+        const hasClass = studentsList.some((s) => s.group === val && s.class === filterClass);
+        if (!hasClass) {
+          setFilterClass('all');
+        }
+      }
+    }
+  };
+
+  // Class change handler with auto-sync category and cascading group filter
+  const handleClassChange = (val: string) => {
+    setFilterClass(val);
+    if (val !== 'all') {
+      const matching = studentsList.filter((s) => s.class === val);
+      if (matching.length > 0) {
+        const categories = Array.from(new Set(matching.map((s) => s.category)));
+        if (categories.length === 1 && filterCategory !== categories[0]) {
+          setFilterCategory(categories[0]);
+        }
+      }
+      if (filterGroup !== 'all') {
+        const hasClassInGroup = studentsList.some(
+          (s) => s.group === filterGroup && s.class === val
+        );
+        if (!hasClassInGroup) {
+          setFilterGroup('all');
+        }
+      }
+    }
+  };
+
+  // Check if any filters are actively applied
+  const hasActiveFilters = Boolean(
+    searchQuery.trim() !== '' ||
+    filterGroup !== 'all' ||
+    filterClass !== 'all' ||
+    filterCategory !== 'all'
+  );
+
+  const handleClearAllFilters = () => {
+    setSearchQuery('');
+    setFilterGroup('all');
+    setFilterClass('all');
+    setFilterCategory('all');
+  };
 
   // Format date helper: e.g. 1-Mar-2026
   const formatReportDate = (dStr?: string | null) => {
@@ -890,28 +1013,28 @@ export default function StudentReportsPage() {
       </div>
 
       {/* Search & Filter Toolbar */}
-      <Card className="border shadow-xs">
-        <CardContent className="p-3 sm:p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search name, ID, school, class..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 text-xs sm:text-sm h-9"
-              />
-            </div>
+      <div className="border-0 sm:border bg-transparent sm:bg-card shadow-none sm:shadow-xs rounded-xl p-0 sm:p-4">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3 justify-between">
+          {/* Search Input */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search name, ID, school, class..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 text-xs sm:text-sm h-9 bg-card sm:bg-transparent"
+            />
+          </div>
 
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             {/* Group Filter */}
-            <Select value={filterGroup} onValueChange={setFilterGroup}>
-              <SelectTrigger className="text-xs sm:text-sm h-9">
+            <Select value={filterGroup} onValueChange={handleGroupChange}>
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card sm:bg-transparent">
                 <SelectValue placeholder="All Groups" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Groups</SelectItem>
-                {groups.map((g) => (
+                {availableGroups.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
                     Group {g.id} ({g.class})
                   </SelectItem>
@@ -920,13 +1043,13 @@ export default function StudentReportsPage() {
             </Select>
 
             {/* Class Filter */}
-            <Select value={filterClass} onValueChange={setFilterClass}>
-              <SelectTrigger className="text-xs sm:text-sm h-9">
+            <Select value={filterClass} onValueChange={handleClassChange}>
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[125px] text-xs sm:text-sm h-9 bg-card sm:bg-transparent">
                 <SelectValue placeholder="All Classes" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
-                {uniqueClasses.map((c) => (
+                {availableClasses.map((c) => (
                   <SelectItem key={c} value={c}>
                     Class {c}
                   </SelectItem>
@@ -935,8 +1058,8 @@ export default function StudentReportsPage() {
             </Select>
 
             {/* Category Filter */}
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="text-xs sm:text-sm h-9">
+            <Select value={filterCategory} onValueChange={handleCategoryChange}>
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card sm:bg-transparent">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -945,15 +1068,136 @@ export default function StudentReportsPage() {
                 <SelectItem value="Senior">Senior Section</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Student Cards Grid List */}
+            {/* View Mode Toggle: Icon-Only beside 'All Categories' */}
+            <div className="flex items-center border rounded-lg p-0.5 bg-muted/40 shrink-0 shadow-2xs">
+              <Button
+                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                size="icon"
+                className={`h-8 w-8 rounded-md cursor-pointer transition-all ${viewMode === 'grid' ? 'bg-background shadow-xs font-bold text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => handleViewModeChange('grid')}
+                title="Card / Grid View"
+                aria-label="Card / Grid View"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                size="icon"
+                className={`h-8 w-8 rounded-md cursor-pointer transition-all ${viewMode === 'list' ? 'bg-background shadow-xs font-bold text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => handleViewModeChange('list')}
+                title="Bar / List View"
+                aria-label="Bar / List View"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Active Filters Summary Bar */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-muted/20 border text-xs animate-in fade-in duration-200">
+          <span className="text-[11px] font-bold text-muted-foreground mr-1 flex items-center gap-1">
+            <Filter className="h-3.5 w-3.5" />
+            <span>Active:</span>
+          </span>
+
+          {/* Search chip */}
+          {searchQuery.trim() !== '' && (
+            <Badge
+              variant="secondary"
+              className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
+            >
+              <span>Search: "{searchQuery}"</span>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="rounded-full p-0.5 hover:bg-primary/20 cursor-pointer"
+                title="Clear search filter"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+
+          {/* Category chip */}
+          {filterCategory !== 'all' && (
+            <Badge
+              variant="secondary"
+              className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
+            >
+              <span>Category: {filterCategory}</span>
+              <button
+                type="button"
+                onClick={() => handleCategoryChange('all')}
+                className="rounded-full p-0.5 hover:bg-purple-500/20 cursor-pointer"
+                title="Clear category filter"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+
+          {/* Group chip */}
+          {filterGroup !== 'all' && (
+            <Badge
+              variant="secondary"
+              className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+            >
+              <span>Group {filterGroup}</span>
+              <button
+                type="button"
+                onClick={() => handleGroupChange('all')}
+                className="rounded-full p-0.5 hover:bg-blue-500/20 cursor-pointer"
+                title="Clear group filter"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+
+          {/* Class chip */}
+          {filterClass !== 'all' && (
+            <Badge
+              variant="secondary"
+              className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+            >
+              <span>Class {filterClass}</span>
+              <button
+                type="button"
+                onClick={() => handleClassChange('all')}
+                className="rounded-full p-0.5 hover:bg-emerald-500/20 cursor-pointer"
+                title="Clear class filter"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+
+          {/* Clear All Button */}
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={handleClearAllFilters}
+            className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer font-medium"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            <span>Reset All</span>
+          </Button>
+
+          <span className="text-[11px] text-muted-foreground ml-auto hidden sm:inline">
+            Showing <strong className="text-foreground font-bold">{filteredStudents.length}</strong> of {studentsList.length} students
+          </span>
+        </div>
+      )}
+
+      {/* Student List View: Grid / Card Format vs Bar / List Format */}
       {initialLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" : "space-y-2"}>
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="h-44 w-full rounded-xl" />
+            <Skeleton key={i} className={viewMode === 'grid' ? "h-36 sm:h-44 w-full rounded-xl" : "h-14 sm:h-16 w-full rounded-xl"} />
           ))}
         </div>
       ) : filteredStudents.length === 0 ? (
@@ -976,8 +1220,9 @@ export default function StudentReportsPage() {
             Clear All Filters
           </Button>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      ) : viewMode === 'grid' ? (
+        /* ─── CARD / GRID FORMAT ─── */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredStudents.map((student) => {
             const isJuniorCat = student.category === 'Junior';
 
@@ -985,17 +1230,17 @@ export default function StudentReportsPage() {
               <Card
                 key={student.id}
                 onClick={() => handleSelectStudent(student.id)}
-                className="group relative flex flex-col justify-between overflow-hidden border bg-card transition-all duration-200 hover:border-primary/50 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+                className="group relative flex flex-col justify-between overflow-hidden border bg-card transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer"
               >
-                <CardHeader className="p-4 pb-2 space-y-0">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <Badge variant="outline" className="font-mono text-xs font-semibold px-2 py-0.5">
+                <CardHeader className="p-3.5 sm:p-4 pb-2 space-y-0">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground border">
                       {student.id}
-                    </Badge>
+                    </span>
                     <div className="flex items-center gap-1.5">
                       <Badge
                         variant={isJuniorCat ? 'outline' : 'secondary'}
-                        className={`text-[10px] ${
+                        className={`text-[10px] px-1.5 py-0 ${
                           isJuniorCat
                             ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
                             : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
@@ -1004,14 +1249,14 @@ export default function StudentReportsPage() {
                         {student.category}
                       </Badge>
                       {student.class && (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                           Class {student.class}
                         </Badge>
                       )}
                     </div>
                   </div>
 
-                  <CardTitle className="text-base font-bold tracking-tight text-foreground group-hover:text-primary transition-colors truncate">
+                  <CardTitle className="text-sm sm:text-base font-bold tracking-tight text-foreground group-hover:text-primary transition-colors truncate">
                     {student.name}
                   </CardTitle>
                   <CardDescription className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
@@ -1020,25 +1265,96 @@ export default function StudentReportsPage() {
                   </CardDescription>
                 </CardHeader>
 
-                <CardContent className="p-4 pt-2 space-y-3">
-                  <div className="text-xs text-muted-foreground space-y-1 bg-muted/20 p-2.5 rounded-lg border border-border/40">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-medium">Batch / Group:</span>
-                      <span className="font-semibold text-foreground">
-                        {student.group ? `Group ${student.group}` : 'Unassigned'}
-                      </span>
-                    </div>
-                    {student.admDate && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-medium">Admission:</span>
-                        <span className="font-mono text-[11px]">{formatReportDate(student.admDate)}</span>
-                      </div>
-                    )}
+                <CardContent className="p-3.5 sm:p-4 pt-1 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/20 px-2.5 py-1.5 rounded-md border border-border/40">
+                    <span className="text-[11px] font-medium">Batch:</span>
+                    <span className="font-semibold text-foreground">
+                      {student.group ? `Group ${student.group}` : 'Unassigned'}
+                    </span>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs font-semibold text-primary pt-1">
+                  <div className="flex items-center justify-between text-xs font-semibold text-primary pt-0.5">
                     <span className="group-hover:underline">View Marks & Report Card</span>
                     <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        /* ─── BAR / LIST FORMAT (like mcms/students) ─── */
+        <div className="space-y-2">
+          {filteredStudents.map((student) => {
+            const isJuniorCat = student.category === 'Junior';
+
+            return (
+              <Card
+                key={student.id}
+                onClick={() => handleSelectStudent(student.id)}
+                className="group overflow-hidden border bg-card/60 backdrop-blur-xs transition-all duration-200 hover:bg-card hover:border-primary/40 hover:shadow-xs py-0 gap-0 rounded-xl cursor-pointer"
+              >
+                <CardContent className="p-2.5 sm:p-3 flex items-center justify-between gap-3 px-3 sm:px-3.5">
+                  {/* Left Column: ID, Name, Category, Class, School */}
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                    <span className="font-mono text-[11px] sm:text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground border shrink-0">
+                      {student.id}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      {/* Name & Category Badge */}
+                      <div className="flex items-center gap-1.5 sm:gap-2 leading-tight min-w-0">
+                        <span className="font-bold text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors truncate">
+                          {student.name}
+                        </span>
+                        <Badge
+                          variant={isJuniorCat ? 'outline' : 'secondary'}
+                          className={`text-[9px] px-1.5 py-0 leading-none shrink-0 ${
+                            isJuniorCat
+                              ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
+                              : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                          }`}
+                        >
+                          {student.category}
+                        </Badge>
+                      </div>
+
+                      {/* School & Class Metadata */}
+                      <div className="text-[11px] sm:text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
+                        <School className="h-3 w-3 shrink-0 text-muted-foreground/70" />
+                        <span className="truncate">{student.school || 'No School'}</span>
+                        {student.class && (
+                          <>
+                            <span className="text-muted-foreground/60">•</span>
+                            <span className="font-medium text-foreground/80">Class {student.class}</span>
+                          </>
+                        )}
+                        {student.group && (
+                          <>
+                            <span className="text-muted-foreground/60 hidden sm:inline">•</span>
+                            <span className="hidden sm:inline">Group {student.group}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Group Meta (Desktop) & Action Button */}
+                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <div className="hidden md:block text-right">
+                      <div className="text-xs font-semibold text-foreground">
+                        {student.group ? `Group ${student.group}` : 'Unassigned'}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">Tuition Batch</div>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-7 sm:h-8 px-2.5 sm:px-3 text-xs gap-1 font-semibold bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground group-hover:bg-primary group-hover:text-primary-foreground dark:bg-muted dark:text-foreground dark:hover:bg-primary dark:hover:text-primary-foreground transition-all cursor-pointer shrink-0 shadow-2xs"
+                    >
+                      <span className="hidden xs:inline">View Marks</span>
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
