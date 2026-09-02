@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { fetchStudentReport, type StudentReportResult } from '@/lib/reports-api';
@@ -21,6 +22,20 @@ import {
   Phone,
   FileText,
   Filter,
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  GraduationCap,
+  Award,
+  TrendingUp,
+  CheckCircle2,
+  XCircle,
+  Pencil,
+  School,
+  Users,
+  BookOpen,
+  Sparkles,
 } from 'lucide-react';
 
 // Academic session month sequence (April to March)
@@ -30,12 +45,20 @@ const SESSION_MONTHS = [
 
 export default function StudentReportsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
   const [studentsList, setStudentsList] = useState<Student[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  
+  // Directory Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [filterGroup, setFilterGroup] = useState('all');
   const [filterClass, setFilterClass] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+
+  // Detail View Active Tab
+  const [activeTab, setActiveTab] = useState<'card' | 'history'>('card');
   
   const [reportData, setReportData] = useState<{
     student: {
@@ -69,11 +92,10 @@ export default function StudentReportsPage() {
         const urlStudentId = searchParams.get('studentId');
         if (urlStudentId) {
           setSelectedStudentId(urlStudentId);
-        } else if (students.length > 0) {
-          setSelectedStudentId(students[0].id);
         }
       } catch (err) {
         console.error('Failed to load students:', err);
+        toast.error('Failed to load students');
       } finally {
         setInitialLoading(false);
       }
@@ -81,9 +103,12 @@ export default function StudentReportsPage() {
     load();
   }, [searchParams]);
 
-  // Load report data
+  // Load report data when a student is selected
   const loadReport = useCallback(async (sId: string) => {
-    if (!sId) return;
+    if (!sId) {
+      setReportData(null);
+      return;
+    }
     setLoading(true);
     try {
       const data = await fetchStudentReport(sId);
@@ -100,6 +125,8 @@ export default function StudentReportsPage() {
   useEffect(() => {
     if (selectedStudentId) {
       loadReport(selectedStudentId);
+    } else {
+      setReportData(null);
     }
   }, [selectedStudentId, loadReport]);
 
@@ -108,21 +135,29 @@ export default function StudentReportsPage() {
     setSearchParams({ studentId: id });
   };
 
-  // Filter student list for selector
+  const handleBackToList = () => {
+    setSelectedStudentId('');
+    setSearchParams({});
+  };
+
+  // Filter student list for directory
   const filteredStudents = useMemo(() => {
     return studentsList.filter((s) => {
+      const query = searchQuery.toLowerCase().trim();
       const matchesSearch =
-        !searchQuery ||
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (s.class && s.class.toLowerCase().includes(searchQuery.toLowerCase()));
+        !query ||
+        s.name.toLowerCase().includes(query) ||
+        s.id.toLowerCase().includes(query) ||
+        (s.school && s.school.toLowerCase().includes(query)) ||
+        (s.class && s.class.toLowerCase().includes(query));
 
       const matchesGroup = filterGroup === 'all' || s.group === filterGroup;
       const matchesClass = filterClass === 'all' || s.class === filterClass;
+      const matchesCategory = filterCategory === 'all' || s.category === filterCategory;
 
-      return matchesSearch && matchesGroup && matchesClass;
+      return matchesSearch && matchesGroup && matchesClass && matchesCategory;
     });
-  }, [studentsList, searchQuery, filterGroup, filterClass]);
+  }, [studentsList, searchQuery, filterGroup, filterClass, filterCategory]);
 
   const uniqueClasses = useMemo(() => {
     return Array.from(new Set(studentsList.map((s) => s.class).filter(Boolean))).sort();
@@ -166,355 +201,849 @@ export default function StudentReportsPage() {
   // Academic year from settings or latest result
   const academicSession = reportData?.settings?.academicYear || '2026-27';
 
-  return (
-    <div className="page-enter p-4 sm:p-6 space-y-6 w-full">
-      {/* ─── TOP CONTROL BAR (HIDDEN IN PRINT) ─── */}
-      <div className="no-print space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
-              Student Report Card & Academic Profile
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Official monthly examination progress report
-            </p>
+  // Navigation between students (previous / next)
+  const currentStudentIndex = useMemo(() => {
+    return filteredStudents.findIndex((s) => s.id === selectedStudentId);
+  }, [filteredStudents, selectedStudentId]);
+
+  const handlePrevStudent = () => {
+    if (currentStudentIndex > 0) {
+      handleSelectStudent(filteredStudents[currentStudentIndex - 1].id);
+    }
+  };
+
+  const handleNextStudent = () => {
+    if (currentStudentIndex >= 0 && currentStudentIndex < filteredStudents.length - 1) {
+      handleSelectStudent(filteredStudents[currentStudentIndex + 1].id);
+    }
+  };
+
+  // Academic statistics for the selected student
+  const stats = useMemo(() => {
+    if (!reportData || !reportData.results || reportData.results.length === 0) {
+      return { totalExams: 0, avgPercentage: 0, highestPercentage: 0, bestMonth: '—' };
+    }
+    const attended = reportData.results.filter(r => r.status !== 'Absent' && r.percentage !== null);
+    if (attended.length === 0) {
+      return { totalExams: reportData.results.length, avgPercentage: 0, highestPercentage: 0, bestMonth: '—' };
+    }
+
+    const percentages = attended.map(r => r.percentage || 0);
+    const sum = percentages.reduce((a, b) => a + b, 0);
+    const avg = Math.round(sum / percentages.length);
+    const highest = Math.max(...percentages);
+    const bestResult = attended.find(r => r.percentage === highest);
+
+    return {
+      totalExams: reportData.results.length,
+      avgPercentage: avg,
+      highestPercentage: Math.round(highest),
+      bestMonth: bestResult ? (MONTH_NAMES[bestResult.month] || bestResult.month) : '—',
+    };
+  }, [reportData]);
+
+  // If a student is selected -> Show Detail View ("Inside")
+  if (selectedStudentId) {
+    return (
+      <div className="page-enter p-4 sm:p-6 space-y-6 w-full">
+        {/* ─── TOP HEADER & ACTION BAR ─── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBackToList}
+              className="gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Students</span>
+            </Button>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+                  {reportData?.student.name || 'Student Report'}
+                </h1>
+                {reportData && (
+                  <>
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {reportData.student.id}
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      {reportData.student.category}
+                    </Badge>
+                    {reportData.student.class && (
+                      <Badge variant="outline" className="text-xs">
+                        Class {reportData.student.class}
+                      </Badge>
+                    )}
+                  </>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Comprehensive marks history and official report card
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Previous / Next Student Navigator */}
+            <div className="hidden md:flex items-center border rounded-lg overflow-hidden bg-background shadow-2xs">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2.5 rounded-none"
+                onClick={handlePrevStudent}
+                disabled={currentStudentIndex <= 0}
+                title="Previous Student"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-[11px] font-medium text-muted-foreground px-2">
+                {currentStudentIndex >= 0 ? `${currentStudentIndex + 1} of ${filteredStudents.length}` : ''}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2.5 rounded-none"
+                onClick={handleNextStudent}
+                disabled={currentStudentIndex >= filteredStudents.length - 1 || currentStudentIndex === -1}
+                title="Next Student"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
             <Button
-              size="sm"
               onClick={() => window.print()}
               disabled={!reportData}
-              className="text-xs h-8 bg-primary"
+              className="gap-1.5 bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer"
             >
-              <Printer className="h-3.5 w-3.5 mr-1.5" />
-              Print Report Card
+              <Printer className="h-4 w-4" />
+              <span>Print / Download PDF</span>
             </Button>
           </div>
         </div>
 
-        {/* Search & Student Picker Toolbar */}
-        <Card className="border shadow-xs">
-          <CardContent className="p-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
-              {/* Search by Name/ID */}
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Search student..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 text-xs h-8"
-                />
-              </div>
+        {/* ─── LOADING STATE ─── */}
+        {loading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-96 w-full rounded-xl" />
+          </div>
+        ) : !reportData ? (
+          <Card className="p-12 text-center text-muted-foreground">
+            <UserRound className="h-12 w-12 mx-auto mb-3 opacity-40" />
+            <h3 className="text-base font-semibold mb-1">Student Not Found</h3>
+            <p className="text-xs text-muted-foreground mb-4">The selected student could not be loaded.</p>
+            <Button variant="outline" size="sm" onClick={handleBackToList}>
+              Back to Students List
+            </Button>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            {/* ─── SUMMARY CARDS ROW (Hidden in Print) ─── */}
+            <div className="no-print grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              <Card className="bg-card/50 backdrop-blur-xs">
+                <CardContent className="p-3.5 sm:p-4">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <BookOpen className="h-4 w-4 text-blue-500" />
+                    <span className="text-xs text-muted-foreground font-medium">Exams Taken</span>
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold">{stats.totalExams}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">Recorded months</div>
+                </CardContent>
+              </Card>
 
-              {/* Group Filter */}
-              <Select value={filterGroup} onValueChange={setFilterGroup}>
-                <SelectTrigger className="text-xs h-8">
-                  <SelectValue placeholder="All Groups" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Groups</SelectItem>
-                  {groups.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>
-                      Group {g.id} ({g.class})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Card className="bg-card/50 backdrop-blur-xs">
+                <CardContent className="p-3.5 sm:p-4">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    <span className="text-xs text-muted-foreground font-medium">Average Score</span>
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                    {stats.avgPercentage}%
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">Overall percentage</div>
+                </CardContent>
+              </Card>
 
-              {/* Class Filter */}
-              <Select value={filterClass} onValueChange={setFilterClass}>
-                <SelectTrigger className="text-xs h-8">
-                  <SelectValue placeholder="All Classes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Classes</SelectItem>
-                  {uniqueClasses.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      Class {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Card className="bg-card/50 backdrop-blur-xs">
+                <CardContent className="p-3.5 sm:p-4">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Award className="h-4 w-4 text-amber-500" />
+                    <span className="text-xs text-muted-foreground font-medium">Best Score</span>
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400">
+                    {stats.highestPercentage}%
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{stats.bestMonth}</div>
+                </CardContent>
+              </Card>
 
-              {/* Student Selector Dropdown */}
-              <Select value={selectedStudentId} onValueChange={handleSelectStudent}>
-                <SelectTrigger className="text-xs h-8 font-semibold bg-accent/40">
-                  <SelectValue placeholder="Select Student" />
-                </SelectTrigger>
-                <SelectContent className="max-h-64">
-                  {filteredStudents.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      <span className="font-semibold">{s.name}</span>{' '}
-                      <span className="text-muted-foreground text-[11px]">
-                        ({s.id} · {s.class || 'No Class'})
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Card className="bg-card/50 backdrop-blur-xs">
+                <CardContent className="p-3.5 sm:p-4">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Users className="h-4 w-4 text-purple-500" />
+                    <span className="text-xs text-muted-foreground font-medium">Group & Class</span>
+                  </div>
+                  <div className="text-base sm:text-lg font-bold truncate">
+                    Group {reportData.student.group_id || '—'}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                    {reportData.student.class ? `Class ${reportData.student.class}` : 'No Class'}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+
+            {/* ─── TABS: REPORT CARD vs MONTHLY MARKS HISTORY (Hidden in Print) ─── */}
+            <div className="no-print flex items-center justify-between">
+              <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'card' | 'history')} className="w-full">
+                <TabsList className="grid w-full sm:w-[400px] grid-cols-2">
+                  <TabsTrigger value="card" className="gap-1.5 cursor-pointer">
+                    <FileText className="h-3.5 w-3.5" />
+                    <span>Official Report Card</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="gap-1.5 cursor-pointer">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Monthly Marks History</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            {/* ─── TAB 1: OFFICIAL REPORT CARD (PRINTABLE) ─── */}
+            <div className={activeTab === 'card' ? 'block' : 'hidden print:block'}>
+              <div className="printable-report max-w-4xl mx-auto bg-white text-black font-sans border-[2.5px] border-black rounded-lg p-5 sm:p-7 shadow-sm space-y-4">
+                {/* Header Block with Logo & Official Branding */}
+                <div className="flex items-center gap-4 pb-2">
+                  {/* Logo */}
+                  <div className="shrink-0 flex items-center justify-center">
+                    <img
+                      src={logoUrl}
+                      alt="EnglishJibi"
+                      className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-full shadow-xs border border-gray-300"
+                    />
+                  </div>
+
+                  {/* Institution Details */}
+                  <div className="flex-1 text-center pr-4">
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight uppercase font-sans">
+                      <span className="text-black">ENGLISH</span>
+                      <span className="text-red-600">JIBI</span>{' '}
+                      <span className="text-black">CLASSES</span>
+                    </h1>
+                    <p className="text-xs sm:text-sm italic font-semibold text-gray-800 tracking-wide mt-0.5">
+                      Your Child, Our Responsibility
+                    </p>
+                    <p className="text-[11px] sm:text-xs text-gray-700 font-medium mt-0.5">
+                      {reportData.settings.address || 'Duplex - 37, In front of DAV School, Sailashree Vihar, BBSR.'}
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-3 text-[10px] sm:text-[11px] font-semibold text-sky-700 pt-0.5">
+                      <span className="inline-flex items-center gap-1">
+                        <Send className="h-3 w-3 text-sky-500 fill-sky-500" />
+                        {reportData.settings.instagram || '@englishwithchiranjibisir'}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-sky-800">
+                        <Phone className="h-3 w-3 text-sky-600" />
+                        {reportData.settings.phone1 || '+91 83289 22917'} / {reportData.settings.phone2 || '+91 7735812335'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Red Separator Line */}
+                <div className="h-1 bg-red-600 w-full" />
+
+                {/* Academic Session & Sub-Title */}
+                <div className="text-center pt-1 pb-1 space-y-0.5">
+                  <h2 className="text-xs sm:text-sm font-black uppercase text-amber-700 tracking-wider">
+                    ACADEMIC SESSION: {academicSession}
+                  </h2>
+                  <div className="text-[11px] sm:text-xs font-bold text-gray-800">
+                    Report Card
+                  </div>
+                  <div className="text-xs font-bold text-black underline underline-offset-2 pt-0.5">
+                    Student's Profile
+                  </div>
+                </div>
+
+                {/* Student Profile Info Grid (Aligned with Colons) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs font-semibold py-1 px-1 border-b border-gray-300 pb-2">
+                  {/* Left Column */}
+                  <div className="space-y-1">
+                    <div className="flex">
+                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">STUDENT ID</span>
+                      <span className="mr-1">:</span>
+                      <span className="font-mono font-bold text-black">{reportData.student.id}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">STUDENT NAME</span>
+                      <span className="mr-1">:</span>
+                      <span className="font-bold text-black">{reportData.student.name}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">FATHER'S CONTACT</span>
+                      <span className="mr-1">:</span>
+                      <span className="font-mono text-gray-900">{reportData.student.father_no || 'NIL'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">MOTHER'S CONTACT</span>
+                      <span className="mr-1">:</span>
+                      <span className="font-mono text-gray-900">{reportData.student.mother_no || 'NIL'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">PERSONAL CONTACT</span>
+                      <span className="mr-1">:</span>
+                      <span className="font-mono text-gray-900">{reportData.student.contact_no || 'NIL'}</span>
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-1">
+                    <div className="flex">
+                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">CLASS</span>
+                      <span className="mr-1">:</span>
+                      <span className="font-bold text-black">{reportData.student.class || 'NIL'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">SCHOOL</span>
+                      <span className="mr-1">:</span>
+                      <span className="font-bold text-black">{reportData.student.school || 'NIL'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">ADMISSION DATE</span>
+                      <span className="mr-1">:</span>
+                      <span className="font-mono text-gray-900">{formatReportDate(reportData.student.adm_date)}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">DATE OF BIRTH</span>
+                      <span className="mr-1">:</span>
+                      <span className="font-mono text-gray-900">{formatReportDate(reportData.student.dob)}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">TUITION GROUP</span>
+                      <span className="mr-1">:</span>
+                      <span className="font-bold text-black">{reportData.student.group_id || 'NIL'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section Heading: RESULT SUMMARY */}
+                <div className="text-center pt-1 pb-1">
+                  <h3 className="text-xs sm:text-sm font-black uppercase text-amber-700 tracking-wider underline underline-offset-2">
+                    RESULT SUMMARY
+                  </h3>
+                </div>
+
+                {/* Performance Matrix Table (All 12 Months) */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-center border-collapse border-[1.5px] border-black text-xs">
+                    <thead className="bg-gray-100 font-bold border-b-[1.5px] border-black text-black">
+                      <tr>
+                        <th className="p-1.5 sm:p-2 border border-black font-black uppercase w-28 text-left pl-3">
+                          MONTH
+                        </th>
+                        {subjectsList.map((subName) => (
+                          <th key={subName} className="p-1.5 sm:p-2 border border-black font-bold uppercase min-w-[70px]">
+                            {subName}
+                          </th>
+                        ))}
+                        <th className="p-1.5 sm:p-2 border border-black font-bold uppercase w-16">
+                          Total
+                        </th>
+                        <th className="p-1.5 sm:p-2 border border-black font-bold uppercase w-12">
+                          %
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-black font-medium">
+                      {SESSION_MONTHS.map((mCode) => {
+                        const monthName = MONTH_NAMES[mCode]?.toUpperCase() || mCode;
+                        const monthResult = resultsByMonth.get(mCode);
+                        const isAbsent = monthResult?.status === 'Absent';
+
+                        // Build marks map for this month
+                        const marksMap = new Map<string, { obt: number | null; max: number }>();
+                        if (monthResult && monthResult.marks) {
+                          monthResult.marks.forEach((mk) => {
+                            marksMap.set(mk.subject_name.toLowerCase(), {
+                              obt: mk.obtained_marks,
+                              max: mk.max_marks,
+                            });
+                          });
+                        }
+
+                        return (
+                          <tr key={mCode} className="h-7 hover:bg-gray-50/50">
+                            {/* Month Column */}
+                            <td className="p-1 sm:p-1.5 border border-black font-bold uppercase text-left pl-3 text-black">
+                              {monthName}
+                            </td>
+
+                            {/* Subject Marks Columns */}
+                            {subjectsList.map((subName) => {
+                              const mk = marksMap.get(subName.toLowerCase());
+
+                              if (!monthResult) {
+                                return <td key={subName} className="p-1 border border-black" />;
+                              }
+
+                              if (isAbsent) {
+                                return (
+                                  <td key={subName} className="p-1 border border-black font-bold text-red-600">
+                                    A
+                                  </td>
+                                );
+                              }
+
+                              if (!mk || mk.obt === null) {
+                                return <td key={subName} className="p-1 border border-black" />;
+                              }
+
+                              return (
+                                <td key={subName} className="p-1 border border-black font-mono font-semibold text-black">
+                                  {mk.obt} / {mk.max}
+                                </td>
+                              );
+                            })}
+
+                            {/* Total Column */}
+                            <td className="p-1 border border-black font-mono font-bold text-black">
+                              {monthResult
+                                ? isAbsent
+                                  ? 'A'
+                                  : monthResult.total_obtained !== null
+                                  ? `${monthResult.total_obtained} / ${monthResult.total_max}`
+                                  : ''
+                                : ''}
+                            </td>
+
+                            {/* Percentage Column */}
+                            <td className="p-1 border border-black font-mono font-bold text-black">
+                              {monthResult
+                                ? isAbsent
+                                  ? '-'
+                                  : monthResult.percentage !== null
+                                  ? `${Math.round(monthResult.percentage)}%`
+                                  : ''
+                                : ''}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Feedback Box */}
+                <div className="border-[1.5px] border-black rounded-xs overflow-hidden mt-3">
+                  <div className="border-b-[1.5px] border-black bg-gray-50 px-3 py-1 font-bold text-xs uppercase w-32 border-r">
+                    FEEDBACK
+                  </div>
+                  <div className="h-16 p-2 text-xs text-gray-600 italic">
+                    {/* Comments area */}
+                  </div>
+                </div>
+
+                {/* Teacher and Parent Signature Block */}
+                <div className="pt-6 pb-2 grid grid-cols-2 gap-8 text-xs font-bold text-black">
+                  <div className="space-y-1">
+                    <div className="text-[11px] font-mono">* {reportData.settings.teacherName || reportData.settings.adminName || 'CHIRANJIBI SIR'}</div>
+                    <div className="text-[11px] font-sans font-semibold text-gray-800">Teacher's Signature</div>
+                  </div>
+
+                  <div className="text-right space-y-1">
+                    <div className="text-[11px] font-mono">*</div>
+                    <div className="text-[11px] font-sans font-semibold text-gray-800">Parent's Signature</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ─── TAB 2: MONTHLY MARKS HISTORY (DETAILED DRILLDOWN) ─── */}
+            <div className={activeTab === 'history' ? 'block' : 'hidden'}>
+              {reportData.results.length === 0 ? (
+                <Card className="p-12 text-center text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-3 opacity-40 text-muted-foreground" />
+                  <h3 className="text-base font-semibold mb-1">No Monthly Exam Records Found</h3>
+                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                    This student does not have any recorded monthly examination results yet. Monthly exams can be entered in the Monthly Results section.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4 gap-1.5"
+                    onClick={() => navigate('/reports/monthly')}
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    <span>Go to Monthly Results</span>
+                  </Button>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {reportData.results.map((res) => {
+                    const isAbsent = res.status === 'Absent';
+                    const monthName = MONTH_NAMES[res.month] || res.month;
+
+                    return (
+                      <Card key={res.id} className="overflow-hidden border transition-shadow hover:shadow-md">
+                        <CardHeader className="bg-muted/30 border-b p-4 sm:px-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-base">
+                                {monthName} {res.academic_year}
+                              </span>
+                              <Badge
+                                variant={res.period_status === 'Published' ? 'default' : 'secondary'}
+                                className="text-[10px]"
+                              >
+                                {res.period_status}
+                              </Badge>
+                              <Badge
+                                variant={isAbsent ? 'destructive' : 'outline'}
+                                className="text-[10px]"
+                              >
+                                {res.status}
+                              </Badge>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {res.class_rank && (
+                                <Badge variant="secondary" className="text-xs bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20 font-bold">
+                                  Class Rank #{res.class_rank}
+                                </Badge>
+                              )}
+                              {res.group_rank && (
+                                <Badge variant="outline" className="text-xs font-semibold">
+                                  Group Rank #{res.group_rank}
+                                </Badge>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1 ml-1"
+                                onClick={() => navigate(`/reports/monthly/${res.result_period_id}/marks`)}
+                              >
+                                <Pencil className="h-3 w-3" />
+                                <span>Edit Marks</span>
+                              </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
+
+                        <CardContent className="p-4 sm:p-6 space-y-4">
+                          {/* Total Score & Progress Indicator */}
+                          <div className="flex flex-wrap items-center justify-between gap-4 p-3 rounded-lg bg-muted/20 border">
+                            <div>
+                              <div className="text-xs text-muted-foreground font-medium">Total Score</div>
+                              <div className="text-lg font-bold font-mono">
+                                {isAbsent ? (
+                                  <span className="text-destructive font-sans">Absent</span>
+                                ) : (
+                                  `${res.total_obtained || 0} / ${res.total_max || 0}`
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              <div className="text-xs text-muted-foreground font-medium">Percentage</div>
+                              <div className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                                {isAbsent || res.percentage === null ? '—' : `${Math.round(res.percentage)}%`}
+                              </div>
+                            </div>
+
+                            <div>
+                              <div className="text-xs text-muted-foreground font-medium">Batch / Group</div>
+                              <div className="text-sm font-semibold">
+                                Group {res.group_id} {res.group_class ? `(${res.group_class})` : ''}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Subject Marks Grid */}
+                          <div>
+                            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                              Subject Scores Breakdown
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                              {res.marks.map((mk) => {
+                                const obt = mk.obtained_marks;
+                                const max = mk.max_marks;
+                                const subPercent = obt !== null && max > 0 ? Math.round((obt / max) * 100) : null;
+
+                                return (
+                                  <div
+                                    key={mk.id}
+                                    className="p-3 rounded-lg border bg-card/60 flex flex-col justify-between space-y-2 shadow-2xs"
+                                  >
+                                    <div className="flex items-center justify-between gap-1">
+                                      <span className="font-semibold text-xs truncate" title={mk.subject_name}>
+                                        {mk.subject_name}
+                                      </span>
+                                      <Badge variant="outline" className="text-[9px] px-1 py-0">
+                                        Max {max}
+                                      </Badge>
+                                    </div>
+
+                                    <div className="flex items-baseline justify-between pt-1 border-t border-border/40">
+                                      <div className="font-mono font-bold text-sm">
+                                        {isAbsent ? (
+                                          <span className="text-xs text-destructive">Absent</span>
+                                        ) : obt !== null ? (
+                                          `${obt} / ${max}`
+                                        ) : (
+                                          <span className="text-xs text-muted-foreground">Not Marked</span>
+                                        )}
+                                      </div>
+                                      {subPercent !== null && !isAbsent && (
+                                        <span className="text-[11px] font-bold text-muted-foreground font-mono">
+                                          {subPercent}%
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ─── DIRECTORY VIEW: LIST OF ALL EXISTING STUDENTS ───
+  return (
+    <div className="page-enter p-4 sm:p-6 space-y-6 w-full">
+      {/* Page Title & Subtitle */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight">Student Reports & Results</h1>
+            <Badge variant="secondary" className="font-mono text-xs px-2 py-0.5 rounded-full font-bold">
+              {studentsList.length} Students
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Browse all existing students to view comprehensive monthly marks history and generate official report cards
+          </p>
+        </div>
+      </div>
+
+      {/* Overview Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <Card className="bg-card/60 backdrop-blur-xs">
+          <CardContent className="p-3.5 sm:p-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Users className="h-4 w-4 text-blue-500" />
+              <span className="text-xs text-muted-foreground font-medium">Total Students</span>
+            </div>
+            <div className="text-xl sm:text-2xl font-bold">{studentsList.length}</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">Enrolled candidates</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/60 backdrop-blur-xs">
+          <CardContent className="p-3.5 sm:p-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <GraduationCap className="h-4 w-4 text-emerald-500" />
+              <span className="text-xs text-muted-foreground font-medium">Junior Section</span>
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+              {studentsList.filter(s => s.category === 'Junior').length}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">Olympiad & Foundation</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/60 backdrop-blur-xs">
+          <CardContent className="p-3.5 sm:p-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Award className="h-4 w-4 text-purple-500" />
+              <span className="text-xs text-muted-foreground font-medium">Senior Section</span>
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">
+              {studentsList.filter(s => s.category === 'Senior').length}
+            </div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">Literature & Advanced</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/60 backdrop-blur-xs">
+          <CardContent className="p-3.5 sm:p-4">
+            <div className="flex items-center gap-2 mb-1.5">
+              <School className="h-4 w-4 text-amber-500" />
+              <span className="text-xs text-muted-foreground font-medium">Active Groups</span>
+            </div>
+            <div className="text-xl sm:text-2xl font-bold">{groups.length}</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">Classroom batches</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* ─── MAIN REPORT CARD (MATCHING USER ATTACHED SPEC) ─── */}
-      {loading || initialLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-28 w-full rounded-xl" />
-          <Skeleton className="h-96 w-full rounded-xl" />
-        </div>
-      ) : !reportData ? (
-        <Card className="p-8 text-center text-muted-foreground">
-          <UserRound className="h-10 w-10 mx-auto mb-2 opacity-40" />
-          <p className="text-sm">Please select a student to display their report card.</p>
-        </Card>
-      ) : (
-        <div className="printable-report max-w-4xl mx-auto bg-white text-black font-sans border-[2.5px] border-black rounded-lg p-5 sm:p-7 shadow-sm space-y-4">
-          {/* Header Block with Logo & Official Branding */}
-          <div className="flex items-center gap-4 pb-2">
-            {/* Logo */}
-            <div className="shrink-0 flex items-center justify-center">
-              <img
-                src={logoUrl}
-                alt="EnglishJibi"
-                className="h-16 w-16 sm:h-20 sm:w-20 object-contain rounded-full shadow-xs border border-gray-300"
+      {/* Search & Filter Toolbar */}
+      <Card className="border shadow-xs">
+        <CardContent className="p-3 sm:p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search name, ID, school, class..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 text-xs sm:text-sm h-9"
               />
             </div>
 
-            {/* Institution Details */}
-            <div className="flex-1 text-center pr-4">
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight uppercase font-sans">
-                <span className="text-black">ENGLISH</span>
-                <span className="text-red-600">JIBI</span>{' '}
-                <span className="text-black">CLASSES</span>
-              </h1>
-              <p className="text-xs sm:text-sm italic font-semibold text-gray-800 tracking-wide mt-0.5">
-                Your Child, Our Responsibility
-              </p>
-              <p className="text-[11px] sm:text-xs text-gray-700 font-medium mt-0.5">
-                {reportData.settings.address || 'Duplex - 37, In front of DAV School, Sailashree Vihar, BBSR.'}
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-3 text-[10px] sm:text-[11px] font-semibold text-sky-700 pt-0.5">
-                <span className="inline-flex items-center gap-1">
-                  <Send className="h-3 w-3 text-sky-500 fill-sky-500" />
-                  {reportData.settings.instagram || '@englishwithchiranjibisir'}
-                </span>
-                <span className="inline-flex items-center gap-1 text-sky-800">
-                  <Phone className="h-3 w-3 text-sky-600" />
-                  {reportData.settings.phone1 || '+91 83289 22917'} / {reportData.settings.phone2 || '+91 7735812335'}
-                </span>
-              </div>
-            </div>
+            {/* Group Filter */}
+            <Select value={filterGroup} onValueChange={setFilterGroup}>
+              <SelectTrigger className="text-xs sm:text-sm h-9">
+                <SelectValue placeholder="All Groups" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Groups</SelectItem>
+                {groups.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>
+                    Group {g.id} ({g.class})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Class Filter */}
+            <Select value={filterClass} onValueChange={setFilterClass}>
+              <SelectTrigger className="text-xs sm:text-sm h-9">
+                <SelectValue placeholder="All Classes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                {uniqueClasses.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    Class {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Category Filter */}
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="text-xs sm:text-sm h-9">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="Junior">Junior Section</SelectItem>
+                <SelectItem value="Senior">Senior Section</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Red Separator Line */}
-          <div className="h-1 bg-red-600 w-full" />
+      {/* Student Cards Grid List */}
+      {initialLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-44 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : filteredStudents.length === 0 ? (
+        <Card className="p-12 text-center text-muted-foreground">
+          <UserRound className="h-12 w-12 mx-auto mb-3 opacity-40 text-muted-foreground" />
+          <h3 className="text-base font-semibold mb-1">No Students Found</h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            No students match your search or filter criteria.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSearchQuery('');
+              setFilterGroup('all');
+              setFilterClass('all');
+              setFilterCategory('all');
+            }}
+          >
+            Clear All Filters
+          </Button>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredStudents.map((student) => {
+            const isJuniorCat = student.category === 'Junior';
 
-          {/* Academic Session & Sub-Title */}
-          <div className="text-center pt-1 pb-1 space-y-0.5">
-            <h2 className="text-xs sm:text-sm font-black uppercase text-amber-700 tracking-wider">
-              ACADEMIC SESSION: {academicSession}
-            </h2>
-            <div className="text-[11px] sm:text-xs font-bold text-gray-800">
-              Report Card
-            </div>
-            <div className="text-xs font-bold text-black underline underline-offset-2 pt-0.5">
-              Student's Profile
-            </div>
-          </div>
+            return (
+              <Card
+                key={student.id}
+                onClick={() => handleSelectStudent(student.id)}
+                className="group relative flex flex-col justify-between overflow-hidden border bg-card transition-all duration-200 hover:border-primary/50 hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+              >
+                <CardHeader className="p-4 pb-2 space-y-0">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <Badge variant="outline" className="font-mono text-xs font-semibold px-2 py-0.5">
+                      {student.id}
+                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge
+                        variant={isJuniorCat ? 'outline' : 'secondary'}
+                        className={`text-[10px] ${
+                          isJuniorCat
+                            ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
+                            : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                        }`}
+                      >
+                        {student.category}
+                      </Badge>
+                      {student.class && (
+                        <Badge variant="outline" className="text-[10px]">
+                          Class {student.class}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
 
-          {/* Student Profile Info Grid (Aligned with Colons) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs font-semibold py-1 px-1 border-b border-gray-300 pb-2">
-            {/* Left Column */}
-            <div className="space-y-1">
-              <div className="flex">
-                <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">STUDENT ID</span>
-                <span className="mr-1">:</span>
-                <span className="font-mono font-bold text-black">{reportData.student.id}</span>
-              </div>
-              <div className="flex">
-                <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">STUDENT NAME</span>
-                <span className="mr-1">:</span>
-                <span className="font-bold text-black">{reportData.student.name}</span>
-              </div>
-              <div className="flex">
-                <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">FATHER'S CONTACT</span>
-                <span className="mr-1">:</span>
-                <span className="font-mono text-gray-900">{reportData.student.father_no || 'NIL'}</span>
-              </div>
-              <div className="flex">
-                <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">MOTHER'S CONTACT</span>
-                <span className="mr-1">:</span>
-                <span className="font-mono text-gray-900">{reportData.student.mother_no || 'NIL'}</span>
-              </div>
-              <div className="flex">
-                <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">PERSONAL CONTACT</span>
-                <span className="mr-1">:</span>
-                <span className="font-mono text-gray-900">{reportData.student.contact_no || 'NIL'}</span>
-              </div>
-            </div>
+                  <CardTitle className="text-base font-bold tracking-tight text-foreground group-hover:text-primary transition-colors truncate">
+                    {student.name}
+                  </CardTitle>
+                  <CardDescription className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+                    <School className="h-3 w-3 shrink-0" />
+                    <span>{student.school || 'No School Specified'}</span>
+                  </CardDescription>
+                </CardHeader>
 
-            {/* Right Column */}
-            <div className="space-y-1">
-              <div className="flex">
-                <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">CLASS</span>
-                <span className="mr-1">:</span>
-                <span className="font-bold text-black">{reportData.student.class || 'NIL'}</span>
-              </div>
-              <div className="flex">
-                <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">SCHOOL</span>
-                <span className="mr-1">:</span>
-                <span className="font-bold text-black">{reportData.student.school || 'NIL'}</span>
-              </div>
-              <div className="flex">
-                <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">ADMISSION DATE</span>
-                <span className="mr-1">:</span>
-                <span className="font-mono text-gray-900">{formatReportDate(reportData.student.adm_date)}</span>
-              </div>
-              <div className="flex">
-                <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">DATE OF BIRTH</span>
-                <span className="mr-1">:</span>
-                <span className="font-mono text-gray-900">{formatReportDate(reportData.student.dob)}</span>
-              </div>
-              <div className="flex">
-                <span className="w-36 text-gray-800 uppercase font-bold text-[11px]">TUITION GROUP</span>
-                <span className="mr-1">:</span>
-                <span className="font-bold text-black">{reportData.student.group_id || 'NIL'}</span>
-              </div>
-            </div>
-          </div>
+                <CardContent className="p-4 pt-2 space-y-3">
+                  <div className="text-xs text-muted-foreground space-y-1 bg-muted/20 p-2.5 rounded-lg border border-border/40">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-medium">Batch / Group:</span>
+                      <span className="font-semibold text-foreground">
+                        {student.group ? `Group ${student.group}` : 'Unassigned'}
+                      </span>
+                    </div>
+                    {student.admDate && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-medium">Admission:</span>
+                        <span className="font-mono text-[11px]">{formatReportDate(student.admDate)}</span>
+                      </div>
+                    )}
+                  </div>
 
-          {/* Section Heading: RESULT SUMMARY */}
-          <div className="text-center pt-1 pb-1">
-            <h3 className="text-xs sm:text-sm font-black uppercase text-amber-700 tracking-wider underline underline-offset-2">
-              RESULT SUMMARY
-            </h3>
-          </div>
-
-          {/* Performance Matrix Table (All 12 Months) */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-center border-collapse border-[1.5px] border-black text-xs">
-              <thead className="bg-gray-100 font-bold border-b-[1.5px] border-black text-black">
-                <tr>
-                  <th className="p-1.5 sm:p-2 border border-black font-black uppercase w-28 text-left pl-3">
-                    MONTH
-                  </th>
-                  {subjectsList.map((subName) => (
-                    <th key={subName} className="p-1.5 sm:p-2 border border-black font-bold uppercase min-w-[70px]">
-                      {subName}
-                    </th>
-                  ))}
-                  <th className="p-1.5 sm:p-2 border border-black font-bold uppercase w-16">
-                    Total
-                  </th>
-                  <th className="p-1.5 sm:p-2 border border-black font-bold uppercase w-12">
-                    %
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-black font-medium">
-                {SESSION_MONTHS.map((mCode) => {
-                  const monthName = MONTH_NAMES[mCode]?.toUpperCase() || mCode;
-                  const monthResult = resultsByMonth.get(mCode);
-                  const isAbsent = monthResult?.status === 'Absent';
-
-                  // Build marks map for this month
-                  const marksMap = new Map<string, { obt: number | null; max: number }>();
-                  if (monthResult && monthResult.marks) {
-                    monthResult.marks.forEach((mk) => {
-                      marksMap.set(mk.subject_name.toLowerCase(), {
-                        obt: mk.obtained_marks,
-                        max: mk.max_marks,
-                      });
-                    });
-                  }
-
-                  return (
-                    <tr key={mCode} className="h-7 hover:bg-gray-50/50">
-                      {/* Month Column */}
-                      <td className="p-1 sm:p-1.5 border border-black font-bold uppercase text-left pl-3 text-black">
-                        {monthName}
-                      </td>
-
-                      {/* Subject Marks Columns */}
-                      {subjectsList.map((subName) => {
-                        const mk = marksMap.get(subName.toLowerCase());
-
-                        if (!monthResult) {
-                          return <td key={subName} className="p-1 border border-black" />;
-                        }
-
-                        if (isAbsent) {
-                          return (
-                            <td key={subName} className="p-1 border border-black font-bold text-red-600">
-                              A
-                            </td>
-                          );
-                        }
-
-                        if (!mk || mk.obt === null) {
-                          return <td key={subName} className="p-1 border border-black" />;
-                        }
-
-                        return (
-                          <td key={subName} className="p-1 border border-black font-mono font-semibold text-black">
-                            {mk.obt} / {mk.max}
-                          </td>
-                        );
-                      })}
-
-                      {/* Total Column */}
-                      <td className="p-1 border border-black font-mono font-bold text-black">
-                        {monthResult
-                          ? isAbsent
-                            ? 'A'
-                            : monthResult.total_obtained !== null
-                            ? `${monthResult.total_obtained} / ${monthResult.total_max}`
-                            : ''
-                          : ''}
-                      </td>
-
-                      {/* Percentage Column */}
-                      <td className="p-1 border border-black font-mono font-bold text-black">
-                        {monthResult
-                          ? isAbsent
-                            ? '-'
-                            : monthResult.percentage !== null
-                            ? `${Math.round(monthResult.percentage)}%`
-                            : ''
-                          : ''}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Feedback Box */}
-          <div className="border-[1.5px] border-black rounded-xs overflow-hidden mt-3">
-            <div className="border-b-[1.5px] border-black bg-gray-50 px-3 py-1 font-bold text-xs uppercase w-32 border-r">
-              FEEDBACK
-            </div>
-            <div className="h-16 p-2 text-xs text-gray-600 italic">
-              {/* Optional comments area */}
-            </div>
-          </div>
-
-          {/* Teacher and Parent Signature Block */}
-          <div className="pt-6 pb-2 grid grid-cols-2 gap-8 text-xs font-bold text-black">
-            <div className="space-y-1">
-              <div className="text-[11px] font-mono">* {reportData.settings.teacherName || reportData.settings.adminName || 'CHIRANJIBI SIR'}</div>
-              <div className="text-[11px] font-sans font-semibold text-gray-800">Teacher's Signature</div>
-            </div>
-
-            <div className="text-right space-y-1">
-              <div className="text-[11px] font-mono">*</div>
-              <div className="text-[11px] font-sans font-semibold text-gray-800">Parent's Signature</div>
-            </div>
-          </div>
+                  <div className="flex items-center justify-between text-xs font-semibold text-primary pt-1">
+                    <span className="group-hover:underline">View Marks & Report Card</span>
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
