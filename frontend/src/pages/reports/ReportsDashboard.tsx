@@ -140,7 +140,7 @@ export default function ReportsDashboard() {
           <div className="space-y-2">
             {periods.slice(0, 5).map(period => (
               <Card key={period.id} className="hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => navigate(`/reports/monthly/${period.id}/marks`)}>
-                <CardContent className="p-4 flex items-center justify-between">
+                <CardContent className="p-3 sm:p-3.5 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div>
                       <div className="font-medium text-sm">

@@ -176,7 +176,7 @@ export default function MonthlyResultsPage() {
         <div className="space-y-2">
           {periods.map(period => (
             <Card key={period.id} className="hover:bg-accent/30 transition-colors">
-              <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <CardContent className="p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm">

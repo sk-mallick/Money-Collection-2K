@@ -435,45 +435,27 @@ export default function MarksEntryPage() {
     <div className="p-3 sm:p-6 lg:p-8 space-y-5 animate-fade-in max-w-6xl mx-auto">
       {/* Top Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (hasUnsavedChanges) {
-                if (window.confirm('You have unsaved changes. Do you really want to leave?')) {
-                  navigate('/reports/monthly');
-                }
-              } else {
-                navigate('/reports/monthly');
-              }
-            }}
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
-                {MONTH_NAMES[period.month] || period.month} {period.academic_year} Marks Entry
-              </h1>
-              <Badge
-                variant={isPublished ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'}
-                className="text-xs"
-              >
-                {period.status}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {period.category}
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Group {period.group_id} {period.group_class ? `(${period.group_class})` : ''} ·{' '}
-              <span className="font-semibold text-foreground">
-                {completedCount} of {students.length} completed
-              </span>
-            </p>
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight">
+              {MONTH_NAMES[period.month] || period.month} {period.academic_year} Marks Entry
+            </h1>
+            <Badge
+              variant={isPublished ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'}
+              className="text-xs"
+            >
+              {period.status}
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              {period.category}
+            </Badge>
           </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Group {period.group_id} {period.group_class ? `(${period.group_class})` : ''} ·{' '}
+            <span className="font-semibold text-foreground">
+              {completedCount} of {students.length} completed
+            </span>
+          </p>
         </div>
 
         {/* Top Action Buttons */}
@@ -510,6 +492,24 @@ export default function MarksEntryPage() {
               Revert to Draft
             </Button>
           )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (hasUnsavedChanges) {
+                if (window.confirm('You have unsaved changes. Do you really want to leave?')) {
+                  navigate('/reports/monthly');
+                }
+              } else {
+                navigate('/reports/monthly');
+              }
+            }}
+            className="text-xs"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+            Back
+          </Button>
         </div>
       </div>
 
