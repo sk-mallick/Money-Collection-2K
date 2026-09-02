@@ -32,8 +32,6 @@ import {
   School,
   Users,
   BookOpen,
-  LayoutGrid,
-  List,
   X,
   Filter,
   RotateCcw,
@@ -57,11 +55,6 @@ export default function StudentReportsPage() {
   const [filterGroup, setFilterGroup] = useState('all');
   const [filterClass, setFilterClass] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
-
-  // Directory View Mode: 'grid' (card) vs 'list' (bar)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
-    return (localStorage.getItem('student_reports_view_mode') as 'grid' | 'list') || 'grid';
-  });
 
   // Detail View Active Tab
   const [activeTab, setActiveTab] = useState<'card' | 'history'>('card');
@@ -144,11 +137,6 @@ export default function StudentReportsPage() {
   const handleBackToList = () => {
     setSelectedStudentId('');
     setSearchParams({});
-  };
-
-  const handleViewModeChange = (mode: 'grid' | 'list') => {
-    setViewMode(mode);
-    localStorage.setItem('student_reports_view_mode', mode);
   };
 
   // Filter student list for directory
@@ -391,7 +379,13 @@ export default function StudentReportsPage() {
                     <Badge variant="outline" className="font-mono text-xs">
                       {reportData.student.id}
                     </Badge>
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge
+                      className={`text-xs px-2 py-0.5 font-bold rounded-full border-0 text-white ${
+                        reportData.student.category === 'Junior'
+                          ? 'bg-blue-600 dark:bg-blue-500'
+                          : 'bg-red-600 dark:bg-red-500'
+                      }`}
+                    >
                       {reportData.student.category}
                     </Badge>
                     {reportData.student.class && (
@@ -1012,8 +1006,8 @@ export default function StudentReportsPage() {
         </Card>
       </div>
 
-      {/* Search & Filter Toolbar */}
-      <div className="border-0 sm:border bg-transparent sm:bg-card shadow-none sm:shadow-xs rounded-xl p-0 sm:p-4">
+      {/* Search & Filter Toolbar & Active Filters */}
+      <div className="space-y-2">
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3 justify-between">
           {/* Search Input */}
           <div className="relative flex-1 min-w-[200px]">
@@ -1022,14 +1016,14 @@ export default function StudentReportsPage() {
               placeholder="Search name, ID, school, class..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 text-xs sm:text-sm h-9 bg-card sm:bg-transparent"
+              className="pl-8 text-xs sm:text-sm h-9 bg-card"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             {/* Group Filter */}
             <Select value={filterGroup} onValueChange={handleGroupChange}>
-              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card sm:bg-transparent">
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card">
                 <SelectValue placeholder="All Groups" />
               </SelectTrigger>
               <SelectContent>
@@ -1044,7 +1038,7 @@ export default function StudentReportsPage() {
 
             {/* Class Filter */}
             <Select value={filterClass} onValueChange={handleClassChange}>
-              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[125px] text-xs sm:text-sm h-9 bg-card sm:bg-transparent">
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[125px] text-xs sm:text-sm h-9 bg-card">
                 <SelectValue placeholder="All Classes" />
               </SelectTrigger>
               <SelectContent>
@@ -1059,7 +1053,7 @@ export default function StudentReportsPage() {
 
             {/* Category Filter */}
             <Select value={filterCategory} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card sm:bg-transparent">
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -1068,136 +1062,116 @@ export default function StudentReportsPage() {
                 <SelectItem value="Senior">Senior Section</SelectItem>
               </SelectContent>
             </Select>
-
-            {/* View Mode Toggle: Icon-Only beside 'All Categories' */}
-            <div className="flex items-center border rounded-lg p-0.5 bg-muted/40 shrink-0 shadow-2xs">
-              <Button
-                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                size="icon"
-                className={`h-8 w-8 rounded-md cursor-pointer transition-all ${viewMode === 'grid' ? 'bg-background shadow-xs font-bold text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                onClick={() => handleViewModeChange('grid')}
-                title="Card / Grid View"
-                aria-label="Card / Grid View"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                size="icon"
-                className={`h-8 w-8 rounded-md cursor-pointer transition-all ${viewMode === 'list' ? 'bg-background shadow-xs font-bold text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                onClick={() => handleViewModeChange('list')}
-                title="Bar / List View"
-                aria-label="Bar / List View"
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
         </div>
+
+        {/* Active Filters Summary Bar */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-muted/20 border text-xs animate-in fade-in duration-200">
+            <span className="text-[11px] font-bold text-muted-foreground mr-1 flex items-center gap-1">
+              <Filter className="h-3.5 w-3.5" />
+              <span>Active:</span>
+            </span>
+
+            {/* Search chip */}
+            {searchQuery.trim() !== '' && (
+              <Badge
+                variant="secondary"
+                className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
+              >
+                <span>Search: "{searchQuery}"</span>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="rounded-full p-0.5 hover:bg-primary/20 cursor-pointer"
+                  title="Clear search filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+
+            {/* Category chip */}
+            {filterCategory !== 'all' && (
+              <Badge
+                variant="secondary"
+                className={`h-6 gap-1 pl-2 pr-1 text-[11px] font-bold ${
+                  filterCategory === 'Junior'
+                    ? 'bg-blue-600/15 text-blue-600 dark:text-blue-400 border-blue-600/30'
+                    : 'bg-red-600/15 text-red-600 dark:text-red-400 border-red-600/30'
+                }`}
+              >
+                <span>Category: {filterCategory}</span>
+                <button
+                  type="button"
+                  onClick={() => handleCategoryChange('all')}
+                  className="rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer"
+                  title="Clear category filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+
+            {/* Group chip */}
+            {filterGroup !== 'all' && (
+              <Badge
+                variant="secondary"
+                className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+              >
+                <span>Group {filterGroup}</span>
+                <button
+                  type="button"
+                  onClick={() => handleGroupChange('all')}
+                  className="rounded-full p-0.5 hover:bg-blue-500/20 cursor-pointer"
+                  title="Clear group filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+
+            {/* Class chip */}
+            {filterClass !== 'all' && (
+              <Badge
+                variant="secondary"
+                className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+              >
+                <span>Class {filterClass}</span>
+                <button
+                  type="button"
+                  onClick={() => handleClassChange('all')}
+                  className="rounded-full p-0.5 hover:bg-emerald-500/20 cursor-pointer"
+                  title="Clear class filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+
+            {/* Clear All Button */}
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={handleClearAllFilters}
+              className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer font-medium"
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              <span>Reset All</span>
+            </Button>
+
+            <span className="text-[11px] text-muted-foreground ml-auto hidden sm:inline">
+              Showing <strong className="text-foreground font-bold">{filteredStudents.length}</strong> of {studentsList.length} students
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Active Filters Summary Bar */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-muted/20 border text-xs animate-in fade-in duration-200">
-          <span className="text-[11px] font-bold text-muted-foreground mr-1 flex items-center gap-1">
-            <Filter className="h-3.5 w-3.5" />
-            <span>Active:</span>
-          </span>
-
-          {/* Search chip */}
-          {searchQuery.trim() !== '' && (
-            <Badge
-              variant="secondary"
-              className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
-            >
-              <span>Search: "{searchQuery}"</span>
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="rounded-full p-0.5 hover:bg-primary/20 cursor-pointer"
-                title="Clear search filter"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          )}
-
-          {/* Category chip */}
-          {filterCategory !== 'all' && (
-            <Badge
-              variant="secondary"
-              className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
-            >
-              <span>Category: {filterCategory}</span>
-              <button
-                type="button"
-                onClick={() => handleCategoryChange('all')}
-                className="rounded-full p-0.5 hover:bg-purple-500/20 cursor-pointer"
-                title="Clear category filter"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          )}
-
-          {/* Group chip */}
-          {filterGroup !== 'all' && (
-            <Badge
-              variant="secondary"
-              className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
-            >
-              <span>Group {filterGroup}</span>
-              <button
-                type="button"
-                onClick={() => handleGroupChange('all')}
-                className="rounded-full p-0.5 hover:bg-blue-500/20 cursor-pointer"
-                title="Clear group filter"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          )}
-
-          {/* Class chip */}
-          {filterClass !== 'all' && (
-            <Badge
-              variant="secondary"
-              className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-            >
-              <span>Class {filterClass}</span>
-              <button
-                type="button"
-                onClick={() => handleClassChange('all')}
-                className="rounded-full p-0.5 hover:bg-emerald-500/20 cursor-pointer"
-                title="Clear class filter"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          )}
-
-          {/* Clear All Button */}
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={handleClearAllFilters}
-            className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer font-medium"
-          >
-            <RotateCcw className="h-3 w-3 mr-1" />
-            <span>Reset All</span>
-          </Button>
-
-          <span className="text-[11px] text-muted-foreground ml-auto hidden sm:inline">
-            Showing <strong className="text-foreground font-bold">{filteredStudents.length}</strong> of {studentsList.length} students
-          </span>
-        </div>
-      )}
-
-      {/* Student List View: Grid / Card Format vs Bar / List Format */}
+      {/* Student List View */}
       {initialLoading ? (
-        <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" : "space-y-2"}>
+        <div className="space-y-2">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className={viewMode === 'grid' ? "h-36 sm:h-44 w-full rounded-xl" : "h-14 sm:h-16 w-full rounded-xl"} />
+            <Skeleton key={i} className="h-14 sm:h-16 w-full rounded-xl" />
           ))}
         </div>
       ) : filteredStudents.length === 0 ? (
@@ -1210,80 +1184,12 @@ export default function StudentReportsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              setSearchQuery('');
-              setFilterGroup('all');
-              setFilterClass('all');
-              setFilterCategory('all');
-            }}
+            onClick={handleClearAllFilters}
           >
             Clear All Filters
           </Button>
         </Card>
-      ) : viewMode === 'grid' ? (
-        /* ─── CARD / GRID FORMAT ─── */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {filteredStudents.map((student) => {
-            const isJuniorCat = student.category === 'Junior';
-
-            return (
-              <Card
-                key={student.id}
-                onClick={() => handleSelectStudent(student.id)}
-                className="group relative flex flex-col justify-between overflow-hidden border bg-card transition-all duration-200 hover:border-primary/50 hover:shadow-md cursor-pointer"
-              >
-                <CardHeader className="p-3.5 sm:p-4 pb-2 space-y-0">
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground border">
-                      {student.id}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <Badge
-                        variant={isJuniorCat ? 'outline' : 'secondary'}
-                        className={`text-[10px] px-1.5 py-0 ${
-                          isJuniorCat
-                            ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
-                            : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
-                        }`}
-                      >
-                        {student.category}
-                      </Badge>
-                      {student.class && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                          Class {student.class}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  <CardTitle className="text-sm sm:text-base font-bold tracking-tight text-foreground group-hover:text-primary transition-colors truncate">
-                    {student.name}
-                  </CardTitle>
-                  <CardDescription className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
-                    <School className="h-3 w-3 shrink-0" />
-                    <span>{student.school || 'No School Specified'}</span>
-                  </CardDescription>
-                </CardHeader>
-
-                <CardContent className="p-3.5 sm:p-4 pt-1 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/20 px-2.5 py-1.5 rounded-md border border-border/40">
-                    <span className="text-[11px] font-medium">Batch:</span>
-                    <span className="font-semibold text-foreground">
-                      {student.group ? `Group ${student.group}` : 'Unassigned'}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs font-semibold text-primary pt-0.5">
-                    <span className="group-hover:underline">View Marks & Report Card</span>
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
       ) : (
-        /* ─── BAR / LIST FORMAT (like mcms/students) ─── */
         <div className="space-y-2">
           {filteredStudents.map((student) => {
             const isJuniorCat = student.category === 'Junior';
@@ -1292,7 +1198,7 @@ export default function StudentReportsPage() {
               <Card
                 key={student.id}
                 onClick={() => handleSelectStudent(student.id)}
-                className="group overflow-hidden border bg-card/60 backdrop-blur-xs transition-all duration-200 hover:bg-card hover:border-primary/40 hover:shadow-xs py-0 gap-0 rounded-xl cursor-pointer"
+                className="group overflow-hidden border bg-card/60 backdrop-blur-xs transition-all duration-200 hover:bg-muted/40 hover:border-primary/40 hover:shadow-xs py-0 gap-0 rounded-xl cursor-pointer"
               >
                 <CardContent className="p-2.5 sm:p-3 flex items-center justify-between gap-3 px-3 sm:px-3.5">
                   {/* Left Column: ID, Name, Category, Class, School */}
@@ -1307,11 +1213,10 @@ export default function StudentReportsPage() {
                           {student.name}
                         </span>
                         <Badge
-                          variant={isJuniorCat ? 'outline' : 'secondary'}
-                          className={`text-[9px] px-1.5 py-0 leading-none shrink-0 ${
+                          className={`text-[9px] px-2 py-0.5 leading-tight font-bold rounded-full border-none shrink-0 text-white transition-colors ${
                             isJuniorCat
-                              ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5'
-                              : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                              ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+                              : 'bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600'
                           }`}
                         >
                           {student.category}
@@ -1328,17 +1233,17 @@ export default function StudentReportsPage() {
                             <span className="font-medium text-foreground/80">Class {student.class}</span>
                           </>
                         )}
-                        {student.group && (
+                        {student.admDate && (
                           <>
                             <span className="text-muted-foreground/60 hidden sm:inline">•</span>
-                            <span className="hidden sm:inline">Group {student.group}</span>
+                            <span className="hidden sm:inline">Adm: {formatReportDate(student.admDate)}</span>
                           </>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Right Column: Group Meta (Desktop) & Action Button */}
+                  {/* Right Column: Group Meta (Desktop) & Chevron Icon */}
                   <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                     <div className="hidden md:block text-right">
                       <div className="text-xs font-semibold text-foreground">
@@ -1347,14 +1252,7 @@ export default function StudentReportsPage() {
                       <div className="text-[10px] text-muted-foreground">Tuition Batch</div>
                     </div>
 
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="h-7 sm:h-8 px-2.5 sm:px-3 text-xs gap-1 font-semibold bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground group-hover:bg-primary group-hover:text-primary-foreground dark:bg-muted dark:text-foreground dark:hover:bg-primary dark:hover:text-primary-foreground transition-all cursor-pointer shrink-0 shadow-2xs"
-                    >
-                      <span className="hidden xs:inline">View Marks</span>
-                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                    </Button>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
                   </div>
                 </CardContent>
               </Card>
