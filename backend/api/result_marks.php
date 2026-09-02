@@ -32,7 +32,19 @@ switch ($method) {
         json_response(['success' => false, 'error' => 'Method not allowed'], 405);
 }
 
+function ensureIsAbsentColumn(PDO $pdo): void {
+    static $checked = false;
+    if ($checked) return;
+    try {
+        $pdo->exec("ALTER TABLE rc_student_marks ADD COLUMN IF NOT EXISTS is_absent TINYINT(1) NOT NULL DEFAULT 0");
+    } catch (Exception $e) {
+        // Table or column already updated
+    }
+    $checked = true;
+}
+
 function getMarks(PDO $pdo): void {
+    ensureIsAbsentColumn($pdo);
     $periodId = query_param('period_id');
     if (empty($periodId)) {
         json_response(['success' => false, 'error' => 'period_id required'], 400);
@@ -42,7 +54,7 @@ function getMarks(PDO $pdo): void {
         SELECT sr.id as student_result_id, sr.student_id, sr.snapshot_name, sr.snapshot_class,
                sr.snapshot_group_id, sr.snapshot_school, sr.snapshot_category, sr.status,
                sr.total_obtained, sr.total_max, sr.percentage, sr.class_rank, sr.group_rank,
-               sm.id as mark_id, sm.subject_id, sm.max_marks, sm.obtained_marks, sm.is_default_max,
+               sm.id as mark_id, sm.subject_id, sm.max_marks, sm.obtained_marks, sm.is_absent, sm.is_default_max,
                s.name as subject_name, s.category as subject_category, s.display_order
         FROM rc_student_results sr
         LEFT JOIN rc_student_marks sm ON sm.student_result_id = sr.id
@@ -83,6 +95,7 @@ function getMarks(PDO $pdo): void {
                 'subjectCategory' => $row['subject_category'],
                 'maxMarks' => (int)$row['max_marks'],
                 'obtainedMarks' => $row['obtained_marks'] !== null ? (float)$row['obtained_marks'] : null,
+                'isAbsent' => (bool)($row['is_absent'] ?? 0),
                 'isDefaultMax' => (bool)$row['is_default_max'],
                 'displayOrder' => (int)$row['display_order'],
             ];
@@ -93,6 +106,7 @@ function getMarks(PDO $pdo): void {
 }
 
 function saveMarks(PDO $pdo): void {
+    ensureIsAbsentColumn($pdo);
     $input = get_input();
     
     if (!isset($input['periodId'])) {
@@ -115,19 +129,13 @@ function saveMarks(PDO $pdo): void {
     $pdo->beginTransaction();
     try {
         $updateStatusStmt = $pdo->prepare('UPDATE rc_student_results SET status = ? WHERE id = ?');
-        $updateMarksStmt = $pdo->prepare('UPDATE rc_student_marks SET obtained_marks = ?, max_marks = ?, is_default_max = ? WHERE id = ?');
+        $updateMarksStmt = $pdo->prepare('UPDATE rc_student_marks SET obtained_marks = ?, max_marks = ?, is_default_max = ?, is_absent = ? WHERE id = ?');
         
         $errors = [];
         
         foreach ($input['students'] as $studentData) {
             $srId = (int)($studentData['studentResultId'] ?? 0);
             if ($srId <= 0) continue;
-            
-            // Update student status
-            if (isset($studentData['status'])) {
-                $status = in_array($studentData['status'], ['Present', 'Absent', 'Incomplete']) ? $studentData['status'] : 'Present';
-                $updateStatusStmt->execute([$status, $srId]);
-            }
             
             // Update marks
             if (isset($studentData['marks']) && is_array($studentData['marks'])) {
@@ -136,9 +144,16 @@ function saveMarks(PDO $pdo): void {
                     if ($markId <= 0) continue;
                     
                     $maxMarks = (int)($markData['maxMarks'] ?? 0);
-                    $obtainedMarks = isset($markData['obtainedMarks']) && $markData['obtainedMarks'] !== null && $markData['obtainedMarks'] !== '' 
-                        ? (float)$markData['obtainedMarks'] 
-                        : null;
+                    $isAbsent = !empty($markData['isAbsent']) ? 1 : 0;
+                    
+                    if ($isAbsent === 1) {
+                        $obtainedMarks = null;
+                    } else {
+                        $obtainedMarks = isset($markData['obtainedMarks']) && $markData['obtainedMarks'] !== null && $markData['obtainedMarks'] !== '' 
+                            ? (float)$markData['obtainedMarks'] 
+                            : null;
+                    }
+                    
                     $isDefaultMax = isset($markData['isDefaultMax']) ? ($markData['isDefaultMax'] ? 1 : 0) : 1;
                     
                     // Validate
@@ -146,17 +161,23 @@ function saveMarks(PDO $pdo): void {
                         $errors[] = "Maximum marks must be greater than 0 for mark ID $markId";
                         continue;
                     }
-                    if ($obtainedMarks !== null && $obtainedMarks < 0) {
+                    if (!$isAbsent && $obtainedMarks !== null && $obtainedMarks < 0) {
                         $errors[] = "Negative marks are not allowed for mark ID $markId";
                         continue;
                     }
-                    if ($obtainedMarks !== null && $obtainedMarks > $maxMarks) {
+                    if (!$isAbsent && $obtainedMarks !== null && $obtainedMarks > $maxMarks) {
                         $errors[] = "Obtained marks ($obtainedMarks) exceed maximum ($maxMarks) for mark ID $markId";
                         continue;
                     }
                     
-                    $updateMarksStmt->execute([$obtainedMarks, $maxMarks, $isDefaultMax, $markId]);
+                    $updateMarksStmt->execute([$obtainedMarks, $maxMarks, $isDefaultMax, $isAbsent, $markId]);
                 }
+            }
+            
+            // If explicit student status provided, we update it; recalculation will refine it automatically
+            if (isset($studentData['status'])) {
+                $status = in_array($studentData['status'], ['Present', 'Absent', 'Incomplete']) ? $studentData['status'] : 'Present';
+                $updateStatusStmt->execute([$status, $srId]);
             }
         }
         
@@ -165,7 +186,7 @@ function saveMarks(PDO $pdo): void {
             json_response(['success' => false, 'error' => 'Validation errors', 'errors' => $errors], 400);
         }
         
-        // Recalculate totals and percentages
+        // Recalculate totals, percentages, and status
         recalculateForPeriod($pdo, $periodId);
         
         // Audit log
@@ -184,6 +205,7 @@ function saveMarks(PDO $pdo): void {
 }
 
 function recalculate(PDO $pdo): void {
+    ensureIsAbsentColumn($pdo);
     $periodId = query_param('period_id');
     if (empty($periodId)) {
         json_response(['success' => false, 'error' => 'period_id required'], 400);
@@ -201,51 +223,71 @@ function recalculate(PDO $pdo): void {
 }
 
 /**
- * Recalculate totals, percentages, and rankings for a result period
+ * Recalculate totals, percentages, statuses, and rankings for a result period
  */
 function recalculateForPeriod(PDO $pdo, int $periodId): void {
-    // 1. Calculate totals and percentages for each student
+    ensureIsAbsentColumn($pdo);
+    // 1. Calculate totals, percentages, and statuses for each student
     $srStmt = $pdo->prepare('SELECT id, status, snapshot_class, snapshot_group_id FROM rc_student_results WHERE result_period_id = ?');
     $srStmt->execute([$periodId]);
     $studentResults = $srStmt->fetchAll();
     
-    $updateSrStmt = $pdo->prepare('UPDATE rc_student_results SET total_obtained = ?, total_max = ?, percentage = ? WHERE id = ?');
+    $updateSrStmt = $pdo->prepare('UPDATE rc_student_results SET total_obtained = ?, total_max = ?, percentage = ?, status = ? WHERE id = ?');
     
     $presentStudents = []; // For ranking
     
     foreach ($studentResults as $sr) {
-        if ($sr['status'] === 'Absent') {
-            $updateSrStmt->execute([null, null, null, $sr['id']]);
-            continue;
-        }
-        
-        // Sum marks for this student
-        $marksStmt = $pdo->prepare('SELECT SUM(obtained_marks) as total_obtained, SUM(max_marks) as total_max FROM rc_student_marks WHERE student_result_id = ? AND obtained_marks IS NOT NULL');
+        // Query all subject marks for this student
+        $marksStmt = $pdo->prepare('SELECT id, max_marks, obtained_marks, is_absent FROM rc_student_marks WHERE student_result_id = ?');
         $marksStmt->execute([$sr['id']]);
-        $totals = $marksStmt->fetch();
+        $marks = $marksStmt->fetchAll();
         
-        // Check if all marks have been entered
-        $allMarksStmt = $pdo->prepare('SELECT COUNT(*) as total, SUM(CASE WHEN obtained_marks IS NOT NULL THEN 1 ELSE 0 END) as entered FROM rc_student_marks WHERE student_result_id = ?');
-        $allMarksStmt->execute([$sr['id']]);
-        $marksCounts = $allMarksStmt->fetch();
-        
-        if ((int)$marksCounts['entered'] === 0) {
-            $updateSrStmt->execute([null, null, null, $sr['id']]);
+        $totalSubjects = count($marks);
+        if ($totalSubjects === 0) {
+            $updateSrStmt->execute([null, null, null, 'Incomplete', $sr['id']]);
             continue;
         }
         
-        $totalObtained = (float)($totals['total_obtained'] ?? 0);
-        $totalMax = (float)($totals['total_max'] ?? 0);
-        $percentage = $totalMax > 0 ? round(($totalObtained / $totalMax) * 100, 2) : 0;
+        $absentCount = 0;
+        $enteredCount = 0;
+        $totalObtained = 0.0;
+        $totalMax = 0.0;
         
-        $updateSrStmt->execute([$totalObtained, $totalMax, $percentage, $sr['id']]);
+        foreach ($marks as $m) {
+            $mMax = (float)$m['max_marks'];
+            $totalMax += $mMax;
+            
+            if (!empty($m['is_absent'])) {
+                $absentCount++;
+                $enteredCount++;
+            } elseif ($m['obtained_marks'] !== null && $m['obtained_marks'] !== '') {
+                $enteredCount++;
+                $totalObtained += (float)$m['obtained_marks'];
+            }
+        }
         
-        $presentStudents[] = [
-            'id' => $sr['id'],
-            'percentage' => $percentage,
-            'class' => $sr['snapshot_class'],
-            'groupId' => $sr['snapshot_group_id'],
-        ];
+        if ($enteredCount === 0) {
+            // Nothing entered yet
+            $updateSrStmt->execute([null, null, null, 'Incomplete', $sr['id']]);
+        } elseif ($absentCount === $totalSubjects) {
+            // Student is absent for ALL subjects
+            $updateSrStmt->execute([null, null, null, 'Absent', $sr['id']]);
+        } else {
+            // Student attended at least one subject
+            $status = ($enteredCount === $totalSubjects) ? 'Present' : 'Incomplete';
+            $percentage = $totalMax > 0 ? round(($totalObtained / $totalMax) * 100, 2) : 0;
+            
+            $updateSrStmt->execute([$totalObtained, $totalMax, $percentage, $status, $sr['id']]);
+            
+            if ($status === 'Present') {
+                $presentStudents[] = [
+                    'id' => $sr['id'],
+                    'percentage' => $percentage,
+                    'class' => $sr['snapshot_class'],
+                    'groupId' => $sr['snapshot_group_id'],
+                ];
+            }
+        }
     }
     
     // 2. Calculate class rankings (by snapshot_class)
@@ -256,8 +298,8 @@ function recalculateForPeriod(PDO $pdo, int $periodId): void {
     
     $updateRankStmt = $pdo->prepare('UPDATE rc_student_results SET class_rank = ?, group_rank = ? WHERE id = ?');
     
-    // Reset ranks for absent students
-    $resetStmt = $pdo->prepare("UPDATE rc_student_results SET class_rank = NULL, group_rank = NULL WHERE result_period_id = ? AND status = 'Absent'");
+    // Reset ranks for absent or non-ranked students
+    $resetStmt = $pdo->prepare("UPDATE rc_student_results SET class_rank = NULL, group_rank = NULL WHERE result_period_id = ? AND (status != 'Present' OR total_obtained IS NULL)");
     $resetStmt->execute([$periodId]);
     
     foreach ($classBuckets as &$bucket) {
@@ -291,7 +333,6 @@ function recalculateForPeriod(PDO $pdo, int $periodId): void {
     unset($bucket);
     
     // 4. Apply rankings
-    // Build lookup maps
     $classRankMap = [];
     foreach ($classBuckets as $bucket) {
         foreach ($bucket as $s) {

@@ -216,19 +216,19 @@ export default function BlankMarksSheetPage() {
                   <th className="p-2.5 font-bold text-muted-foreground border-r w-20">Class</th>
                   <th className="p-2.5 font-bold text-muted-foreground border-r min-w-[120px]">School</th>
 
-                  {/* Subject Header Columns */}
+                  {/* Subject Header Columns (Spacious width for Grammar, Creative, Passage, Vocabulary, Literature, etc.) */}
                   {sheetData.subjects.map((sub) => (
                     <th
                       key={sub.id}
-                      className="p-2.5 font-bold text-muted-foreground border-r min-w-[90px] text-center"
+                      className="p-2.5 font-bold text-muted-foreground border-r min-w-[120px] sm:min-w-[135px] text-center"
                     >
-                      <div>{sub.name}</div>
+                      <div className="text-foreground font-bold">{sub.name}</div>
                       <div className="text-[10px] font-normal text-muted-foreground">Max: ___</div>
                     </th>
                   ))}
 
-                  <th className="p-2.5 font-bold text-muted-foreground border-r min-w-[70px] text-center">Total</th>
-                  <th className="p-2.5 font-bold text-muted-foreground min-w-[100px] text-center">Teacher Notes</th>
+                  <th className="p-2.5 font-bold text-muted-foreground border-r min-w-[80px] text-center">Total</th>
+                  <th className="p-2.5 font-bold text-muted-foreground min-w-[110px] text-center">Teacher Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -255,12 +255,12 @@ export default function BlankMarksSheetPage() {
                       {/* Blank Subject Cells */}
                       {sheetData.subjects.map((sub) => (
                         <td key={sub.id} className="p-2 text-center border-r">
-                          <div className="w-12 h-6 border-b border-dashed mx-auto" />
+                          <div className="w-16 h-6 border-b border-dashed mx-auto" />
                         </td>
                       ))}
 
                       <td className="p-2 text-center border-r">
-                        <div className="w-10 h-6 border-b border-dashed mx-auto" />
+                        <div className="w-12 h-6 border-b border-dashed mx-auto" />
                       </td>
                       <td className="p-2 text-center">
                         <div className="w-full h-6 border-b border-dashed" />

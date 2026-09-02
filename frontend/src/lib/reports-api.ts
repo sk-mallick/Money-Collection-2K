@@ -34,6 +34,7 @@ export interface StudentMark {
   subjectCategory: string;
   maxMarks: number;
   obtainedMarks: number | null;
+  isAbsent: boolean;
   isDefaultMax: boolean;
   displayOrder: number;
 }
@@ -98,6 +99,7 @@ export interface StudentReportResult {
     subject_id: number;
     max_marks: number;
     obtained_marks: number | null;
+    is_absent?: number | boolean;
     is_default_max: number;
     subject_name: string;
     subject_category: string;
@@ -216,7 +218,7 @@ export async function fetchMarks(periodId: number): Promise<StudentResult[]> {
 export async function saveMarks(periodId: number, students: {
   studentResultId: number;
   status?: string;
-  marks?: { markId: number; obtainedMarks: number | null; maxMarks: number; isDefaultMax: boolean }[];
+  marks?: { markId: number; obtainedMarks: number | null; isAbsent?: boolean; maxMarks: number; isDefaultMax: boolean }[];
 }[]): Promise<void> {
   await apiRequest('/api/result-marks', { method: 'POST', body: JSON.stringify({ periodId, students }) });
 }

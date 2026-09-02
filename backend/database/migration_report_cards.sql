@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS `rc_student_marks` (
   `subject_id` INT(11) NOT NULL,
   `max_marks` INT(11) NOT NULL,
   `obtained_marks` DECIMAL(5,2) DEFAULT NULL,
+  `is_absent` TINYINT(1) NOT NULL DEFAULT 0,
   `is_default_max` TINYINT(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_result_subject` (`student_result_id`, `subject_id`),

@@ -885,12 +885,13 @@ export default function StudentReportsPage() {
                         const isAbsent = monthResult?.status === 'Absent';
 
                         // Build marks map for this month
-                        const marksMap = new Map<string, { obt: number | null; max: number }>();
+                        const marksMap = new Map<string, { obt: number | null; max: number; isAbsent?: boolean }>();
                         if (monthResult && monthResult.marks) {
                           monthResult.marks.forEach((mk) => {
                             marksMap.set(mk.subject_name.toLowerCase(), {
                               obt: mk.obtained_marks,
                               max: mk.max_marks,
+                              isAbsent: Boolean(mk.is_absent),
                             });
                           });
                         }
@@ -910,12 +911,12 @@ export default function StudentReportsPage() {
                                 return <td key={subName} className="p-0.5 border border-black" />;
                               }
 
-                              if (isAbsent) {
+                              if (isAbsent || mk?.isAbsent) {
                                 return (
-                                   <td key={subName} className="p-0.5 border border-black font-bold text-red-600">
-                                     A
-                                   </td>
-                                 );
+                                  <td key={subName} className="p-0.5 border border-black font-bold text-red-600">
+                                    A
+                                  </td>
+                                );
                               }
 
                               if (!mk || mk.obt === null) {
