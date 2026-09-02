@@ -19,20 +19,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/constants';
 import type { Student } from '@/lib/constants';
-import { Plus, Search, Pencil, Trash2, UserRound, IndianRupee, MoreVertical, Settings, SlidersHorizontal, X, ArrowUpDown, Filter } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, UserRound, IndianRupee, MoreVertical, X, ArrowUpDown, Filter, RotateCcw } from 'lucide-react';
 
 const CLASSES = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
 
@@ -49,7 +40,6 @@ export default function StudentsPage() {
   const [deleting, setDeleting] = useState(false);
 
   // Filter & Sorting state
-  const [filterOpen, setFilterOpen] = useState(false);
   const [groupFilter, setGroupFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [classFilter, setClassFilter] = useState('all');
@@ -66,44 +56,123 @@ export default function StudentsPage() {
     }
   }, [searchParams]);
 
-  // Sync group parameter back to URL
+  // Dependent Available Groups based on Category & Class filters
+  const availableGroups = useMemo(() => {
+    return groups.filter((g) => {
+      const matchCategory = categoryFilter === 'all' || g.category === categoryFilter;
+      const matchClass =
+        classFilter === 'all' ||
+        (g.class && g.class.toLowerCase().includes(classFilter.toLowerCase())) ||
+        students.some((s) => s.group === g.id && s.class === classFilter);
+      return matchCategory && matchClass;
+    });
+  }, [groups, categoryFilter, classFilter, students]);
+
+  // Dependent Available Classes based on Category & Group filters
+  const availableClasses = useMemo(() => {
+    const matchingStudents = students.filter((s) => {
+      const matchCategory = categoryFilter === 'all' || s.category === categoryFilter;
+      const matchGroup = groupFilter === 'all' || s.group === groupFilter;
+      return matchCategory && matchGroup;
+    });
+
+    const classesSet = new Set(matchingStudents.map((s) => s.class).filter(Boolean));
+
+    // Also include classes defined on selected group
+    if (groupFilter !== 'all') {
+      const grp = groups.find((g) => g.id === groupFilter);
+      if (grp && grp.class) {
+        grp.class.split('&').forEach((c) => {
+          const clean = c.trim();
+          if (clean) classesSet.add(clean);
+        });
+      }
+    }
+
+    return Array.from(classesSet).sort((a, b) => {
+      const aNum = parseInt(a.match(/\d+/)?.[0] || '0', 10);
+      const bNum = parseInt(b.match(/\d+/)?.[0] || '0', 10);
+      if (aNum && bNum) return aNum - bNum;
+      return a.localeCompare(b);
+    });
+  }, [students, groups, categoryFilter, groupFilter]);
+
+  // Category change handler with cascading auto-reset
+  const handleCategoryChange = (val: string) => {
+    setCategoryFilter(val);
+    if (val !== 'all') {
+      if (groupFilter !== 'all') {
+        const grp = groups.find((g) => g.id === groupFilter);
+        if (grp && grp.category !== val) {
+          handleGroupFilterChange('all');
+        }
+      }
+      if (classFilter !== 'all') {
+        const classBelongs = students.some(
+          (s) => s.class === classFilter && s.category === val
+        );
+        if (!classBelongs) {
+          setClassFilter('all');
+        }
+      }
+    }
+  };
+
+  // Group change handler with auto-sync category and cascading class filter
   const handleGroupFilterChange = (val: string) => {
     setGroupFilter(val);
     if (val === 'all') {
       searchParams.delete('group');
     } else {
       searchParams.set('group', val);
+      const grp = groups.find((g) => g.id === val);
+      if (grp) {
+        setCategoryFilter(grp.category);
+      }
+      if (classFilter !== 'all') {
+        const hasClass = students.some((s) => s.group === val && s.class === classFilter);
+        if (!hasClass) {
+          setClassFilter('all');
+        }
+      }
     }
     setSearchParams(searchParams);
   };
 
-  // Dynamic list of unique classes present in students data
-  const uniqueClasses = useMemo(() => {
-    const classes = new Set<string>();
-    students.forEach(s => {
-      if (s.class) {
-        classes.add(s.class.trim());
+  // Class change handler with auto-sync category and cascading group filter
+  const handleClassChange = (val: string) => {
+    setClassFilter(val);
+    if (val !== 'all') {
+      const matching = students.filter((s) => s.class === val);
+      if (matching.length > 0) {
+        const categories = Array.from(new Set(matching.map((s) => s.category)));
+        if (categories.length === 1 && categoryFilter !== categories[0]) {
+          setCategoryFilter(categories[0]);
+        }
       }
-    });
-    // Sort them alphabetically and numerically if possible
-    return Array.from(classes).sort((a, b) => {
-      const aNum = parseInt(a.match(/\d+/)?.[0] || '0', 10);
-      const bNum = parseInt(b.match(/\d+/)?.[0] || '0', 10);
-      if (aNum && bNum) return aNum - bNum;
-      return a.localeCompare(b);
-    });
-  }, [students]);
+      if (groupFilter !== 'all') {
+        const hasClassInGroup = students.some(
+          (s) => s.group === groupFilter && s.class === val
+        );
+        if (!hasClassInGroup) {
+          handleGroupFilterChange('all');
+        }
+      }
+    }
+  };
 
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (groupFilter !== 'all') count++;
-    if (categoryFilter !== 'all') count++;
-    if (classFilter !== 'all') count++;
-    if (sortBy !== 'name' || sortOrder !== 'asc') count++;
-    return count;
-  }, [groupFilter, categoryFilter, classFilter, sortBy, sortOrder]);
+  // Check if any filters or sorting are actively applied
+  const hasActiveFilters = Boolean(
+    search.trim() !== '' ||
+    groupFilter !== 'all' ||
+    categoryFilter !== 'all' ||
+    classFilter !== 'all' ||
+    sortBy !== 'name' ||
+    sortOrder !== 'asc'
+  );
 
   const resetFilters = () => {
+    setSearch('');
     setGroupFilter('all');
     setCategoryFilter('all');
     setClassFilter('all');
@@ -232,381 +301,212 @@ export default function StudentsPage() {
         </Button>
       </div>
 
-      {/* Search and Filters Toolbar */}
-      <div className="flex flex-col gap-3">
-        {/* Mobile View: Search & Settings Button */}
-        <div className="flex items-center gap-2 w-full lg:hidden">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+      {/* Search & Filter Toolbar & Active Filters */}
+      <div className="space-y-2">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3 justify-between">
+          {/* Search Input */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or ID..."
+              placeholder="Search name, ID, school, class..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          
-          <Button 
-            variant={activeFiltersCount > 0 ? "secondary" : "outline"} 
-            size="icon" 
-            onClick={() => setFilterOpen(true)}
-            className={`relative shrink-0 active:scale-95 transition-all duration-200 cursor-pointer ${
-              activeFiltersCount > 0 
-                ? "border-indigo-500/30 text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100/50 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-500/20" 
-                : ""
-            }`}
-            title="Filter and Sort"
-          >
-            <Settings className="size-4" />
-            {activeFiltersCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white dark:bg-indigo-500 border border-background">
-                {activeFiltersCount}
-              </span>
-            )}
-          </Button>
-        </div>
-
-        {/* Desktop View: Inline Filters Toolbar */}
-        <div className="hidden lg:flex items-center gap-3 flex-wrap w-full">
-          {/* Search Box */}
-          <div className="relative w-64 xl:w-80 shrink-0">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search name/ID..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-8 h-9 text-xs"
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 text-xs sm:text-sm h-9 bg-card"
             />
           </div>
 
-          {/* Group Filter */}
-          <Select value={groupFilter} onValueChange={handleGroupFilterChange}>
-            <SelectTrigger className="w-[145px] h-9 text-xs cursor-pointer bg-card">
-              <SelectValue placeholder="Group" />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="all" className="text-xs">All Groups</SelectItem>
-              {groups.map(g => (
-                <SelectItem key={g.id} value={g.id} className="text-xs">
-                  Group {g.id}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Category Filter */}
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[145px] h-9 text-xs cursor-pointer bg-card">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="all" className="text-xs">All Categories</SelectItem>
-              <SelectItem value="Junior" className="text-xs">Junior</SelectItem>
-              <SelectItem value="Senior" className="text-xs">Senior</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Class Filter */}
-          <Select value={classFilter} onValueChange={setClassFilter}>
-            <SelectTrigger className="w-[140px] h-9 text-xs cursor-pointer bg-card">
-              <SelectValue placeholder="Class" />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="all" className="text-xs">All Classes</SelectItem>
-              {uniqueClasses.map(cls => (
-                <SelectItem key={cls} value={cls} className="text-xs">
-                  {cls}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Divider line */}
-          <div className="h-5 w-px bg-border shrink-0 mx-0.5" />
-
-          {/* Sort Field */}
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[155px] h-9 text-xs cursor-pointer bg-card">
-              <span className="text-muted-foreground/60 mr-1 shrink-0 font-medium">Sort:</span>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              <SelectItem value="name" className="text-xs">Name</SelectItem>
-              <SelectItem value="group" className="text-xs">Group</SelectItem>
-              <SelectItem value="class" className="text-xs">Class</SelectItem>
-              <SelectItem value="admDate" className="text-xs">Adm. Date</SelectItem>
-              <SelectItem value="feePerMonth" className="text-xs">Monthly Fee</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Sort Order Toggle Button */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 shrink-0 cursor-pointer active:scale-95 transition-all text-xs"
-            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-            title={sortOrder === 'asc' ? 'Change to Descending' : 'Change to Ascending'}
-          >
-            <ArrowUpDown className={`size-3.5 transition-transform duration-200 ${sortOrder === 'desc' ? 'rotate-180 text-indigo-500' : ''}`} />
-          </Button>
-
-          {/* Inline Reset Button */}
-          {activeFiltersCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 px-2 text-xs text-destructive font-semibold hover:bg-destructive/10 hover:text-destructive cursor-pointer ml-auto"
-              onClick={resetFilters}
-            >
-              Reset All
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Active Filter Tags */}
-      {activeFiltersCount > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="text-muted-foreground font-medium mr-1 flex items-center gap-1">
-            <Filter className="size-3" />
-            <span>Active filters:</span>
-          </span>
-          
-          {/* Group Tag */}
-          {groupFilter !== 'all' && (
-            <Badge variant="secondary" className="gap-1 px-2 py-0.5 font-medium rounded-md">
-              <span>Group: {groupFilter === 'none' ? 'None' : groupFilter}</span>
-              <button 
-                onClick={() => handleGroupFilterChange('all')}
-                className="hover:bg-muted-foreground/20 rounded-full p-0.5 focus:outline-none cursor-pointer"
-              >
-                <X className="size-3" />
-              </button>
-            </Badge>
-          )}
-
-          {/* Category Tag */}
-          {categoryFilter !== 'all' && (
-            <Badge variant="secondary" className="gap-1 px-2 py-0.5 font-medium rounded-md">
-              <span>Category: {categoryFilter}</span>
-              <button 
-                onClick={() => setCategoryFilter('all')}
-                className="hover:bg-muted-foreground/20 rounded-full p-0.5 focus:outline-none cursor-pointer"
-              >
-                <X className="size-3" />
-              </button>
-            </Badge>
-          )}
-
-          {/* Class Tag */}
-          {classFilter !== 'all' && (
-            <Badge variant="secondary" className="gap-1 px-2 py-0.5 font-medium rounded-md">
-              <span>Class: {classFilter}</span>
-              <button 
-                onClick={() => setClassFilter('all')}
-                className="hover:bg-muted-foreground/20 rounded-full p-0.5 focus:outline-none cursor-pointer"
-              >
-                <X className="size-3" />
-              </button>
-            </Badge>
-          )}
-
-          {/* Sort Tag */}
-          {(sortBy !== 'name' || sortOrder !== 'asc') && (
-            <Badge variant="secondary" className="gap-1 px-2 py-0.5 font-medium rounded-md bg-indigo-50/40 text-indigo-600 dark:bg-indigo-950/10 dark:text-indigo-400 border border-indigo-500/10">
-              <span>
-                Sorted by {sortBy === 'name' ? 'Name' : sortBy === 'group' ? 'Group' : sortBy === 'class' ? 'Class' : sortBy === 'admDate' ? 'Adm. Date' : 'Fee'} ({sortOrder === 'asc' ? 'Asc' : 'Desc'})
-              </span>
-              <button 
-                onClick={() => { setSortBy('name'); setSortOrder('asc'); }}
-                className="hover:bg-indigo-200/40 dark:hover:bg-indigo-900/30 rounded-full p-0.5 focus:outline-none cursor-pointer"
-              >
-                <X className="size-3" />
-              </button>
-            </Badge>
-          )}
-
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={resetFilters} 
-            className="h-7 text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/10 px-2 rounded-md cursor-pointer ml-1"
-          >
-            Clear all
-          </Button>
-        </div>
-      )}
-
-      <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-        <SheetContent side="right" className="w-[300px] max-w-[300px] flex flex-col h-full p-0">
-          <SheetHeader className="p-4 pb-3 border-b shrink-0">
-            <SheetTitle className="text-base font-bold flex items-center gap-2">
-              <SlidersHorizontal className="size-4.5 text-indigo-600 dark:text-indigo-400" />
-              <span>Filters & Sorting</span>
-            </SheetTitle>
-            <SheetDescription className="text-xs leading-normal mt-0.5">
-              Refine student list and configure sorting.
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Filter by Group */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold flex items-center justify-between text-muted-foreground/90">
-                <span>Group Batch</span>
-                {groupFilter !== 'all' && (
-                  <button 
-                    onClick={() => handleGroupFilterChange('all')}
-                    className="text-[11px] font-medium text-destructive hover:underline cursor-pointer"
-                  >
-                    Clear
-                  </button>
-                )}
-              </Label>
-              <Select value={groupFilter} onValueChange={handleGroupFilterChange}>
-                <SelectTrigger className="w-full h-10 text-sm cursor-pointer">
-                  <SelectValue placeholder="All Groups" />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectItem value="all" className="text-sm">All Groups</SelectItem>
-                  {groups.map(g => (
-                    <SelectItem key={g.id} value={g.id} className="text-sm">
-                      Group {g.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Filter by Category */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold flex items-center justify-between text-muted-foreground/90">
-                <span>Student Category</span>
-                {categoryFilter !== 'all' && (
-                  <button 
-                    onClick={() => setCategoryFilter('all')}
-                    className="text-[11px] font-medium text-destructive hover:underline cursor-pointer"
-                  >
-                    Clear
-                  </button>
-                )}
-              </Label>
-              <div className="flex flex-col gap-2">
-                {['Junior', 'Senior'].map(cat => (
-                  <Button
-                    key={cat}
-                    type="button"
-                    variant={categoryFilter === cat ? 'default' : 'outline'}
-                    className="h-10 font-medium active:scale-95 transition-all text-sm cursor-pointer w-full px-3"
-                    onClick={() => setCategoryFilter(prev => prev === cat ? 'all' : cat)}
-                  >
-                    {cat} Category
-                  </Button>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            {/* Group Filter */}
+            <Select value={groupFilter} onValueChange={handleGroupFilterChange}>
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card">
+                <SelectValue placeholder="All Groups" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Groups</SelectItem>
+                {availableGroups.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>
+                    Group {g.id}
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
+              </SelectContent>
+            </Select>
 
-            {/* Filter by Class */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold flex items-center justify-between text-muted-foreground/90">
-                <span>Class</span>
-                {classFilter !== 'all' && (
-                  <button 
-                    onClick={() => setClassFilter('all')}
-                    className="text-[11px] font-medium text-destructive hover:underline cursor-pointer"
-                  >
-                    Clear
-                  </button>
-                )}
-              </Label>
-              <Select value={classFilter} onValueChange={setClassFilter}>
-                <SelectTrigger className="w-full h-10 text-sm cursor-pointer">
-                  <SelectValue placeholder="All Classes" />
-                </SelectTrigger>
-                <SelectContent position="popper">
-                  <SelectItem value="all" className="text-sm">All Classes</SelectItem>
-                  {uniqueClasses.map(cls => (
-                    <SelectItem key={cls} value={cls} className="text-sm">
-                      {cls}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Class Filter */}
+            <Select value={classFilter} onValueChange={handleClassChange}>
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[125px] text-xs sm:text-sm h-9 bg-card">
+                <SelectValue placeholder="All Classes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                {availableClasses.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    Class {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-            {/* Sort Section */}
-            <div className="space-y-4 pt-3 border-t border-border/40">
-              <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider text-muted-foreground/80">
-                <ArrowUpDown className="size-4 text-indigo-500" />
-                <span>Sorting Options</span>
-              </h3>
+            {/* Category Filter */}
+            <Select value={categoryFilter} onValueChange={handleCategoryChange}>
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="Junior">Junior Section</SelectItem>
+                <SelectItem value="Senior">Senior Section</SelectItem>
+              </SelectContent>
+            </Select>
 
-              {/* Sort By */}
-              <div className="space-y-1.5">
-                <Label htmlFor="sortBy" className="text-[11px] text-muted-foreground/75 font-semibold">Sort Field</Label>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger id="sortBy" className="w-full h-10 text-sm cursor-pointer">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectItem value="name" className="text-sm">Student Name</SelectItem>
-                    <SelectItem value="group" className="text-sm">Group Batch</SelectItem>
-                    <SelectItem value="class" className="text-sm">Class</SelectItem>
-                    <SelectItem value="admDate" className="text-sm">Admission Date</SelectItem>
-                    <SelectItem value="feePerMonth" className="text-sm">Monthly Fee</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Sort Field */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[130px] text-xs sm:text-sm h-9 bg-card">
+                <span className="text-muted-foreground/60 mr-1 shrink-0 font-medium">Sort:</span>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="group">Group</SelectItem>
+                <SelectItem value="class">Class</SelectItem>
+                <SelectItem value="admDate">Adm. Date</SelectItem>
+                <SelectItem value="feePerMonth">Monthly Fee</SelectItem>
+              </SelectContent>
+            </Select>
 
-              {/* Sort Order */}
-              <div className="space-y-2">
-                <Label className="text-[11px] text-muted-foreground/75 font-semibold">Sort Order</Label>
-                <div className="flex flex-col gap-2">
-                  <Button
-                    type="button"
-                    variant={sortOrder === 'asc' ? 'default' : 'outline'}
-                    className="h-10 active:scale-95 transition-all text-sm cursor-pointer font-medium w-full px-3 text-left justify-start"
-                    onClick={() => setSortOrder('asc')}
-                  >
-                    <span className="flex-1 text-center">
-                      {sortBy === 'admDate' ? 'Oldest First' : sortBy === 'name' ? 'A-Z (Ascending)' : sortBy === 'feePerMonth' ? 'Lowest Fee first' : 'Ascending'}
-                    </span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={sortOrder === 'desc' ? 'default' : 'outline'}
-                    className="h-10 active:scale-95 transition-all text-sm cursor-pointer font-medium w-full px-3 text-left justify-start"
-                    onClick={() => setSortOrder('desc')}
-                  >
-                    <span className="flex-1 text-center">
-                      {sortBy === 'admDate' ? 'Newest First' : sortBy === 'name' ? 'Z-A (Descending)' : sortBy === 'feePerMonth' ? 'Highest Fee first' : 'Descending'}
-                    </span>
-                  </Button>
-                </div>
-              </div>
-            </div>
+            {/* Sort Order Toggle Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 shrink-0 cursor-pointer active:scale-95 transition-all text-xs bg-card"
+              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+              title={sortOrder === 'asc' ? 'Change to Descending' : 'Change to Ascending'}
+            >
+              <ArrowUpDown className={`h-3.5 w-3.5 transition-transform duration-200 ${sortOrder === 'desc' ? 'rotate-180 text-primary' : ''}`} />
+            </Button>
           </div>
+        </div>
 
-          <SheetFooter className="p-4 border-t bg-muted/10 flex flex-row gap-3 items-center justify-between shrink-0 mt-auto">
+        {/* Active Filters Summary Bar */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-muted/20 border text-xs animate-in fade-in duration-200">
+            <span className="text-[11px] font-bold text-muted-foreground mr-1 flex items-center gap-1">
+              <Filter className="h-3.5 w-3.5" />
+              <span>Active:</span>
+            </span>
+
+            {/* Search chip */}
+            {search.trim() !== '' && (
+              <Badge
+                variant="secondary"
+                className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
+              >
+                <span>Search: "{search}"</span>
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="rounded-full p-0.5 hover:bg-primary/20 cursor-pointer"
+                  title="Clear search filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+
+            {/* Category chip */}
+            {categoryFilter !== 'all' && (
+              <Badge
+                variant="secondary"
+                className={`h-6 gap-1 pl-2 pr-1 text-[11px] font-bold ${
+                  categoryFilter === 'Junior'
+                    ? 'bg-blue-600/15 text-blue-600 dark:text-blue-400 border-blue-600/30'
+                    : 'bg-red-600/15 text-red-600 dark:text-red-400 border-red-600/30'
+                }`}
+              >
+                <span>Category: {categoryFilter}</span>
+                <button
+                  type="button"
+                  onClick={() => handleCategoryChange('all')}
+                  className="rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer"
+                  title="Clear category filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+
+            {/* Group chip */}
+            {groupFilter !== 'all' && (
+              <Badge
+                variant="secondary"
+                className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+              >
+                <span>Group {groupFilter}</span>
+                <button
+                  type="button"
+                  onClick={() => handleGroupFilterChange('all')}
+                  className="rounded-full p-0.5 hover:bg-blue-500/20 cursor-pointer"
+                  title="Clear group filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+
+            {/* Class chip */}
+            {classFilter !== 'all' && (
+              <Badge
+                variant="secondary"
+                className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+              >
+                <span>Class {classFilter}</span>
+                <button
+                  type="button"
+                  onClick={() => handleClassChange('all')}
+                  className="rounded-full p-0.5 hover:bg-emerald-500/20 cursor-pointer"
+                  title="Clear class filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+
+            {/* Sort Tag */}
+            {(sortBy !== 'name' || sortOrder !== 'asc') && (
+              <Badge
+                variant="secondary"
+                className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20"
+              >
+                <span>
+                  Sort: {sortBy === 'name' ? 'Name' : sortBy === 'group' ? 'Group' : sortBy === 'class' ? 'Class' : sortBy === 'admDate' ? 'Adm Date' : 'Fee'} ({sortOrder.toUpperCase()})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setSortBy('name'); setSortOrder('asc'); }}
+                  className="rounded-full p-0.5 hover:bg-indigo-500/20 cursor-pointer"
+                  title="Reset sort"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+
+            {/* Clear All Button */}
             <Button
-              type="button"
               variant="ghost"
-              className="text-sm hover:bg-destructive/10 hover:text-destructive text-muted-foreground font-semibold h-10 cursor-pointer px-4"
+              size="xs"
               onClick={resetFilters}
-              disabled={activeFiltersCount === 0}
+              className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer font-medium"
             >
-              Reset All
+              <RotateCcw className="h-3 w-3 mr-1" />
+              <span>Reset All</span>
             </Button>
-            <Button
-              type="button"
-              className="h-10 cursor-pointer font-semibold px-5 text-sm"
-              onClick={() => setFilterOpen(false)}
-            >
-              Apply Filters
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+
+            <span className="text-[11px] text-muted-foreground ml-auto hidden sm:inline">
+              Showing <strong className="text-foreground font-bold">{filtered.length}</strong> of {students.length} students
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Table */}
       {filtered.length === 0 ? (

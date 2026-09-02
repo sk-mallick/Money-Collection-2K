@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,7 +10,7 @@ import { toast } from 'sonner';
 import { fetchRankings, fetchResultPeriods, type RankingGroup, type ResultPeriod } from '@/lib/reports-api';
 import { fetchSettings } from '@/lib/api';
 import { MONTH_NAMES, MONTH_CODES } from '@/lib/constants';
-import { Trophy, Medal, Award, Search, Filter, Printer } from 'lucide-react';
+import { Trophy, Medal, Award, Search, Filter, Printer, X, RotateCcw } from 'lucide-react';
 
 export default function RankingsPage() {
   const [academicYear, setAcademicYear] = useState('');
@@ -113,83 +114,102 @@ export default function RankingsPage() {
         </Button>
       </div>
 
-      {/* Filter Toolbar */}
-      <Card className="no-print">
-        <CardContent className="p-4 flex flex-col md:flex-row items-center gap-4 justify-between">
-          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-            {/* Academic Year */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Academic Year
-              </label>
-              <Select value={academicYear} onValueChange={setAcademicYear}>
-                <SelectTrigger className="w-[130px] h-9 text-xs">
-                  <SelectValue placeholder="Academic Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map((y) => (
-                    <SelectItem key={y} value={y}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Month */}
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Month
-              </label>
-              <Select value={month} onValueChange={setMonth}>
-                <SelectTrigger className="w-[130px] h-9 text-xs">
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTH_CODES.map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {MONTH_NAMES[m]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Search Input */}
-            <div className="space-y-1 flex-1 min-w-[180px]">
-              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Search Student
-              </label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Filter name or ID..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-9 pl-8 pr-3 text-xs rounded-md border border-input bg-transparent focus:outline-none focus:ring-1 focus:ring-ring"
-                />
-              </div>
-            </div>
+      {/* Filter Toolbar & Active Filters */}
+      <div className="no-print space-y-2">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3 justify-between">
+          {/* Search Input */}
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search student by name or ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 text-xs sm:text-sm h-9 bg-card"
+            />
           </div>
 
-          {/* Ranking Type Tabs */}
-          <Tabs
-            value={rankingType}
-            onValueChange={(val) => setRankingType(val as 'class' | 'group')}
-            className="w-full md:w-auto"
-          >
-            <TabsList className="grid grid-cols-2 w-full md:w-[260px]">
-              <TabsTrigger value="class" className="text-xs">
-                Class-Wise
-              </TabsTrigger>
-              <TabsTrigger value="group" className="text-xs">
-                Group-Wise
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardContent>
-      </Card>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            {/* Academic Year */}
+            <Select value={academicYear} onValueChange={setAcademicYear}>
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[130px] text-xs sm:text-sm h-9 bg-card">
+                <SelectValue placeholder="Academic Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map((y) => (
+                  <SelectItem key={y} value={y}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Month */}
+            <Select value={month} onValueChange={setMonth}>
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card">
+                <SelectValue placeholder="Month" />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTH_CODES.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {MONTH_NAMES[m]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Ranking Type Tabs */}
+            <Tabs
+              value={rankingType}
+              onValueChange={(val) => setRankingType(val as 'class' | 'group')}
+              className="w-full sm:w-auto"
+            >
+              <TabsList className="grid grid-cols-2 w-full sm:w-[220px] h-9 bg-muted/60 p-0.5">
+                <TabsTrigger value="class" className="text-xs h-8">
+                  Class-Wise
+                </TabsTrigger>
+                <TabsTrigger value="group" className="text-xs h-8">
+                  Group-Wise
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* Active Filters Summary Bar */}
+        {searchTerm.trim() !== '' && (
+          <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-muted/20 border text-xs animate-in fade-in duration-200">
+            <span className="text-[11px] font-bold text-muted-foreground mr-1 flex items-center gap-1">
+              <Filter className="h-3.5 w-3.5" />
+              <span>Active:</span>
+            </span>
+
+            <Badge
+              variant="secondary"
+              className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
+            >
+              <span>Search: "{searchTerm}"</span>
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="rounded-full p-0.5 hover:bg-primary/20 cursor-pointer"
+                title="Clear search filter"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setSearchTerm('')}
+              className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer font-medium"
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              <span>Reset</span>
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Rankings Display */}
       {loading ? (

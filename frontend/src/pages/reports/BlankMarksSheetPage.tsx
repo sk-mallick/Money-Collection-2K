@@ -88,66 +88,49 @@ export default function BlankMarksSheetPage() {
         </div>
 
         {/* Filter / Selector Bar */}
-        <Card className="p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Academic Year */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Academic Year
-              </label>
-              <Select value={academicYear} onValueChange={setAcademicYear}>
-                <SelectTrigger className="w-full text-xs">
-                  <SelectValue placeholder="Academic Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map((y) => (
-                    <SelectItem key={y} value={y}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="no-print flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Academic Year */}
+          <Select value={academicYear} onValueChange={setAcademicYear}>
+            <SelectTrigger className="flex-1 sm:w-[150px] text-xs sm:text-sm h-9 bg-card">
+              <SelectValue placeholder="Academic Year" />
+            </SelectTrigger>
+            <SelectContent>
+              {yearOptions.map((y) => (
+                <SelectItem key={y} value={y}>
+                  {y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            {/* Month */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Exam Month
-              </label>
-              <Select value={month} onValueChange={setMonth}>
-                <SelectTrigger className="w-full text-xs">
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTH_CODES.map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {MONTH_NAMES[m]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Month */}
+          <Select value={month} onValueChange={setMonth}>
+            <SelectTrigger className="flex-1 sm:w-[150px] text-xs sm:text-sm h-9 bg-card">
+              <SelectValue placeholder="Month" />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTH_CODES.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {MONTH_NAMES[m]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            {/* Group */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Select Group / Batch
-              </label>
-              <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-                <SelectTrigger className="w-full text-xs">
-                  <SelectValue placeholder="Select Group" />
-                </SelectTrigger>
-                <SelectContent>
-                  {groups.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>
-                      Group {g.id} — {g.class} ({g.category})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </Card>
+          {/* Group */}
+          <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+            <SelectTrigger className="flex-1 sm:w-[240px] text-xs sm:text-sm h-9 bg-card">
+              <SelectValue placeholder="Select Group" />
+            </SelectTrigger>
+            <SelectContent>
+              {groups.map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  Group {g.id} — {g.class} ({g.category})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Sheet Display Area */}

@@ -35,6 +35,8 @@ import {
   LayoutList,
   Table as TableIcon,
   ChevronsUpDown,
+  X,
+  Filter,
 } from 'lucide-react';
 
 export default function MarksEntryPage() {
@@ -513,24 +515,24 @@ export default function MarksEntryPage() {
         </div>
       </div>
 
-      {/* Filter and View Mode Toolbar */}
-      <Card className="border shadow-xs">
-        <CardContent className="p-3 sm:p-4 flex flex-col md:flex-row items-center gap-3 justify-between">
+      {/* Search, Filter, and View Mode Toolbar */}
+      <div className="space-y-2">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3 justify-between">
           {/* Search Bar */}
-          <div className="relative w-full md:w-72">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search student name, ID, school..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 text-xs sm:text-sm h-9"
+              className="pl-8 text-xs sm:text-sm h-9 bg-card"
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
             {/* Status Filter */}
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[140px] h-9 text-xs">
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[155px] text-xs sm:text-sm h-9 bg-card">
                 <SelectValue placeholder="Filter Students" />
               </SelectTrigger>
               <SelectContent>
@@ -544,12 +546,12 @@ export default function MarksEntryPage() {
 
             {/* Expand / Collapse All (in Accordion View) */}
             {viewMode === 'accordion' && (
-              <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-muted/40">
+              <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-muted/40 h-9">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleExpandAll}
-                  className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                  className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   Expand All
                 </Button>
@@ -558,7 +560,7 @@ export default function MarksEntryPage() {
                   variant="ghost"
                   size="sm"
                   onClick={handleCollapseAll}
-                  className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                  className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
                 >
                   Collapse All
                 </Button>
@@ -566,12 +568,12 @@ export default function MarksEntryPage() {
             )}
 
             {/* View Mode Switcher */}
-            <div className="flex items-center border rounded-lg p-0.5 bg-muted/40">
+            <div className="flex items-center border rounded-lg p-0.5 bg-muted/40 h-9">
               <Button
                 variant={viewMode === 'accordion' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('accordion')}
-                className="h-7 px-2.5 text-xs"
+                className="h-7 px-2.5 text-xs cursor-pointer"
               >
                 <LayoutList className="h-3.5 w-3.5 mr-1" />
                 Cards
@@ -580,15 +582,79 @@ export default function MarksEntryPage() {
                 variant={viewMode === 'table' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('table')}
-                className="h-7 px-2.5 text-xs"
+                className="h-7 px-2.5 text-xs cursor-pointer"
               >
                 <TableIcon className="h-3.5 w-3.5 mr-1" />
                 Table
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Active Filters Summary Bar */}
+        {(searchTerm.trim() !== '' || filterStatus !== 'all') && (
+          <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-muted/20 border text-xs animate-in fade-in duration-200">
+            <span className="text-[11px] font-bold text-muted-foreground mr-1 flex items-center gap-1">
+              <Filter className="h-3.5 w-3.5" />
+              <span>Active:</span>
+            </span>
+
+            {/* Search chip */}
+            {searchTerm.trim() !== '' && (
+              <Badge
+                variant="secondary"
+                className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
+              >
+                <span>Search: "{searchTerm}"</span>
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="rounded-full p-0.5 hover:bg-primary/20 cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+
+            {/* Status chip */}
+            {filterStatus !== 'all' && (
+              <Badge
+                variant="secondary"
+                className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+              >
+                <span>Status: {filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}</span>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus('all')}
+                  className="rounded-full p-0.5 hover:bg-blue-500/20 cursor-pointer"
+                  title="Clear status filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+
+            {/* Reset button */}
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => {
+                setSearchTerm('');
+                setFilterStatus('all');
+              }}
+              className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer font-medium"
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              <span>Reset All</span>
+            </Button>
+
+            <span className="text-[11px] text-muted-foreground ml-auto hidden sm:inline">
+              Showing <strong className="text-foreground font-bold">{filteredStudents.length}</strong> of {students.length} students
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* ─── VIEW MODE 1: ACCORDION / RESPONSIVE DROPDOWN STUDENT CARDS (DEFAULT) ─── */}
       {viewMode === 'accordion' && (

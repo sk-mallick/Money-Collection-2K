@@ -1030,7 +1030,7 @@ export default function StudentReportsPage() {
                 <SelectItem value="all">All Groups</SelectItem>
                 {availableGroups.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
-                    Group {g.id} ({g.class})
+                    Group {g.id}
                   </SelectItem>
                 ))}
               </SelectContent>
