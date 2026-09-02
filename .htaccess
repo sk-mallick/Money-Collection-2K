@@ -73,6 +73,14 @@ RewriteRule ^api/settings$ backend/api/settings.php [L,QSA]
 RewriteRule ^api/groups$ backend/api/groups.php [L,QSA]
 RewriteRule ^api/change-password$ backend/api/change_password.php [L,QSA]
 
+# Report Card API endpoints
+RewriteRule ^api/result-subjects$ backend/api/result_subjects.php [L,QSA]
+RewriteRule ^api/result-periods$ backend/api/result_periods.php [L,QSA]
+RewriteRule ^api/result-marks$ backend/api/result_marks.php [L,QSA]
+RewriteRule ^api/result-rankings$ backend/api/result_rankings.php [L,QSA]
+RewriteRule ^api/result-reports$ backend/api/result_reports.php [L,QSA]
+RewriteRule ^api/result-blank-sheet$ backend/api/result_blank_sheet.php [L,QSA]
+
 # ─── SPA Fallback ────────────────────────────────────
 # If the request is not a file or directory, serve the app index.php
 RewriteCond %{REQUEST_FILENAME} !-f

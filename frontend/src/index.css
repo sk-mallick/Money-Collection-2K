@@ -190,6 +190,56 @@
 
 /* ─── Print Styles ──────────────────────────────────── */
 @media print {
-  body { background: white !important; }
-  .no-print { display: none !important; }
+  @page {
+    size: A4 portrait;
+    margin: 12mm 12mm 12mm 12mm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .no-print,
+  [data-slot="sidebar"],
+  header,
+  nav,
+  button,
+  .sonner-toaster {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  .printable-report,
+  .printable-sheet {
+    box-shadow: none !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+    background: white !important;
+    break-inside: avoid;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border: 1px solid #e5e7eb !important;
+    color: black !important;
+    padding: 6px 8px !important;
+  }
+
+  thead {
+    background-color: #f3f4f6 !important;
+  }
 }

@@ -185,14 +185,31 @@ export function getApiBase(): string {
     return '';
   }
   let path = window.location.pathname;
-  const routes = ['/login', '/students', '/groups', '/collect', '/receipts', '/dues', '/settings', '/about'];
+  const routes = [
+    // Module selection
+    '/',
+    // MCMS routes
+    '/mcms/students', '/mcms/groups', '/mcms/collect', '/mcms/receipts', '/mcms/dues', '/mcms/settings', '/mcms/about', '/mcms',
+    // Reports routes
+    '/reports/dashboard', '/reports/monthly', '/reports/rankings', '/reports/student-reports', '/reports/blank-sheet', '/reports/settings', '/reports',
+    // Legacy routes (backward compat)
+    '/login', '/students', '/groups', '/collect', '/receipts', '/dues', '/settings', '/about',
+  ];
   for (const r of routes) {
+    if (r === '/') continue; // Skip root
     if (path.endsWith(r)) {
       path = path.slice(0, -r.length);
       break;
     }
     if (path.endsWith(r + '/')) {
       path = path.slice(0, -r.length - 1);
+      break;
+    }
+    // Handle nested routes like /reports/monthly/123/marks
+    const routeWithSlash = r + '/';
+    const idx = path.indexOf(routeWithSlash);
+    if (idx > 0) {
+      path = path.slice(0, idx);
       break;
     }
   }

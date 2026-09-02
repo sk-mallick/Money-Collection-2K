@@ -208,6 +208,22 @@ function get_db(): PDO {
         }
     }
 
+    // Self-healing: auto-import Report Card tables if they don't exist
+    try {
+        $rcCheck = $pdo->query("SHOW TABLES LIKE 'rc_subjects'");
+        if ($rcCheck->rowCount() === 0) {
+            $rcMigrationPath = __DIR__ . '/../database/migration_report_cards.sql';
+            if (file_exists($rcMigrationPath)) {
+                $rcSql = file_get_contents($rcMigrationPath);
+                $pdo->exec($rcSql);
+            }
+        }
+    } catch (Exception $rcEx) {
+        if (function_exists('write_log')) {
+            write_log('warning', 'Failed to auto-import report card tables', ['error' => $rcEx->getMessage()]);
+        }
+    }
+
     return $pdo;
 }
 
