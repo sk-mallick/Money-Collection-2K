@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ import { fetchResultPeriods, createResultPeriod, deleteResultPeriod, fetchSubjec
 import { fetchGroups, fetchSettings } from '@/lib/api';
 import type { Group } from '@/lib/constants';
 import { MONTH_NAMES, MONTH_CODES } from '@/lib/constants';
-import { Plus, Trash2, Pencil, Eye, ClipboardList } from 'lucide-react';
+import { Plus, Trash2, Pencil, Eye, ClipboardList, RotateCcw, Search, Filter, X } from 'lucide-react';
 
 export default function MonthlyResultsPage() {
   const navigate = useNavigate();
@@ -22,6 +22,7 @@ export default function MonthlyResultsPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [academicYear, setAcademicYear] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ResultPeriod | null>(null);
   const [creating, setCreating] = useState(false);
@@ -72,9 +73,47 @@ export default function MonthlyResultsPage() {
     }
   }, [formGroupId, formCategory]);
 
+  const existingPeriod = useMemo(() => {
+    if (!formYear || !formMonth || !formGroupId) return null;
+    return periods.find(p => p.academic_year === formYear && p.month === formMonth && p.group_id === formGroupId);
+  }, [periods, formYear, formMonth, formGroupId]);
+
+  const filteredPeriods = useMemo(() => {
+    if (!searchTerm.trim()) return periods;
+    const q = searchTerm.toLowerCase().trim();
+    return periods.filter(p => {
+      const monthName = (MONTH_NAMES[p.month] || p.month).toLowerCase();
+      const year = (p.academic_year || '').toLowerCase();
+      const group = `group ${p.group_id}`.toLowerCase();
+      const groupClass = (p.group_class || '').toLowerCase();
+      const category = (p.category || '').toLowerCase();
+      const status = (p.status || '').toLowerCase();
+      return (
+        monthName.includes(q) ||
+        year.includes(q) ||
+        group.includes(q) ||
+        p.group_id.toLowerCase().includes(q) ||
+        groupClass.includes(q) ||
+        category.includes(q) ||
+        status.includes(q)
+      );
+    });
+  }, [periods, searchTerm]);
+
+  const handleYearChange = (val: string) => {
+    setAcademicYear(val);
+    setFormYear(val);
+    fetchResultPeriods({ academic_year: val }).then(setPeriods);
+  };
+
   const handleCreate = async () => {
     if (!formYear || !formMonth || !formGroupId) {
       toast.error('Please fill all required fields');
+      return;
+    }
+
+    if (existingPeriod) {
+      navigate(`/reports/monthly/${existingPeriod.id}/marks`);
       return;
     }
 
@@ -137,22 +176,188 @@ export default function MonthlyResultsPage() {
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Monthly Results</h1>
           <p className="text-sm text-muted-foreground mt-1">Create and manage monthly examination results</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        
+        {/* Mobile Create Button (opens dialog) */}
+        <Button className="md:hidden" onClick={() => setCreateOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Create Result
         </Button>
       </div>
 
-      {/* Filter */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={academicYear} onValueChange={(val) => { setAcademicYear(val); fetchResultPeriods({ academic_year: val }).then(setPeriods); }}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Academic Year" />
-          </SelectTrigger>
-          <SelectContent>
-            {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      {/* Desktop Search & Step-by-Step Creation Toolbar */}
+      <div className="hidden md:flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-3">
+          {/* Search Box */}
+          <div className="relative w-64 lg:w-72 shrink-0">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search month, group, class..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 text-xs h-9 bg-card"
+            />
+          </div>
+
+          {/* Inline Step-by-Step Creation Bar */}
+          <div className="flex items-center gap-2 animate-in fade-in duration-200">
+            <span className="text-xs font-semibold text-muted-foreground mr-0.5 flex items-center gap-1 shrink-0">
+              <Plus className="h-3.5 w-3.5 text-primary" />
+              <span>New Result:</span>
+            </span>
+
+            {/* 1. Academic Year */}
+            <Select value={formYear || academicYear} onValueChange={handleYearChange}>
+              <SelectTrigger className="w-[115px] h-9 text-xs bg-card shrink-0">
+                <SelectValue placeholder="Academic Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            {/* 2. Month (Appears after Year is selected) */}
+            {(formYear || academicYear) && (
+              <Select value={formMonth} onValueChange={setFormMonth}>
+                <SelectTrigger className="w-[135px] h-9 text-xs bg-card shrink-0 animate-in fade-in duration-150">
+                  <SelectValue placeholder="Select Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTH_CODES.map(m => (
+                    <SelectItem key={m} value={m}>
+                      {MONTH_NAMES[m]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* 3. Group (Appears after Month is selected) */}
+            {formMonth && (
+              <Select value={formGroupId} onValueChange={setFormGroupId}>
+                <SelectTrigger className="w-[130px] h-9 text-xs bg-card shrink-0 animate-in fade-in duration-150">
+                  <SelectValue placeholder="Select Group" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map(g => (
+                    <SelectItem key={g.id} value={g.id}>
+                      Group {g.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* 4. Action Button (Appears in the same row once Group is selected) */}
+            {formGroupId && (
+              <div className="animate-in fade-in duration-150 flex items-center gap-1.5 shrink-0">
+                {existingPeriod ? (
+                  <Button
+                    size="sm"
+                    className="h-9 text-xs px-3.5 gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+                    onClick={() => navigate(`/reports/monthly/${existingPeriod.id}/marks`)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    <span>Open Marks Sheet</span>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="h-9 text-xs px-3.5 gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+                    onClick={handleCreate}
+                    disabled={creating}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>{creating ? 'Creating...' : 'Create & Enter Marks'}</span>
+                  </Button>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 text-muted-foreground hover:text-foreground cursor-pointer"
+                  onClick={() => {
+                    setFormMonth('');
+                    setFormGroupId('');
+                  }}
+                  title="Reset selection"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Active Search Tag */}
+        {searchTerm.trim() !== '' && (
+          <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-muted/20 border text-xs animate-in fade-in duration-200">
+            <span className="text-[11px] font-bold text-muted-foreground mr-1 flex items-center gap-1">
+              <Filter className="h-3.5 w-3.5" />
+              <span>Active:</span>
+            </span>
+
+            <Badge
+              variant="secondary"
+              className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
+            >
+              <span>Search: "{searchTerm}"</span>
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="rounded-full p-0.5 hover:bg-primary/20 cursor-pointer"
+                title="Clear search"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setSearchTerm('')}
+              className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer font-medium"
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              <span>Reset</span>
+            </Button>
+
+            <span className="text-[11px] text-muted-foreground ml-auto hidden sm:inline">
+              Showing <strong className="text-foreground font-bold">{filteredPeriods.length}</strong> of {periods.length} result periods
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile-Only Search & Filter */}
+      <div className="flex md:hidden flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search month, group..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 text-xs h-9 bg-card"
+            />
+          </div>
+          <Select value={academicYear} onValueChange={handleYearChange}>
+            <SelectTrigger className="w-[125px] h-9 text-xs bg-card shrink-0">
+              <SelectValue placeholder="Academic Year" />
+            </SelectTrigger>
+            <SelectContent>
+              {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {searchTerm.trim() !== '' && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span>Showing {filteredPeriods.length} of {periods.length} results</span>
+            <Button variant="ghost" size="xs" onClick={() => setSearchTerm('')} className="h-6 text-[11px] text-destructive">
+              Clear
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Results List */}
@@ -160,21 +365,31 @@ export default function MonthlyResultsPage() {
         <div className="space-y-3">
           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
         </div>
-      ) : periods.length === 0 ? (
+      ) : filteredPeriods.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
             <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <h3 className="text-base font-medium mb-1">No result periods yet</h3>
-            <p className="text-sm text-muted-foreground mb-4">Create your first monthly result to start managing student marks</p>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Result
-            </Button>
+            <h3 className="text-base font-medium mb-1">
+              {searchTerm ? 'No matching result periods' : 'No result periods yet'}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {searchTerm ? 'Try a different search term or clear the filter' : 'Create your first monthly result to start managing student marks'}
+            </p>
+            {searchTerm ? (
+              <Button variant="outline" size="sm" onClick={() => setSearchTerm('')}>
+                Clear Search
+              </Button>
+            ) : (
+              <Button className="md:hidden" onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Result
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
-          {periods.map(period => (
+          {filteredPeriods.map(period => (
             <Card key={period.id} className="hover:bg-accent/30 transition-colors">
               <CardContent className="p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -209,7 +424,7 @@ export default function MonthlyResultsPage() {
         </div>
       )}
 
-      {/* Create Dialog */}
+      {/* Create Dialog (Mobile only / fallback) */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -254,7 +469,7 @@ export default function MonthlyResultsPage() {
                 <SelectContent>
                   {groups.map(g => (
                     <SelectItem key={g.id} value={g.id}>
-                      Group {g.id} — {g.class} ({g.category})
+                      Group {g.id}
                     </SelectItem>
                   ))}
                 </SelectContent>
