@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,105 @@ import { fetchResultPeriods, createResultPeriod, deleteResultPeriod, fetchSubjec
 import { fetchGroups, fetchSettings } from '@/lib/api';
 import type { Group } from '@/lib/constants';
 import { MONTH_NAMES, MONTH_CODES } from '@/lib/constants';
-import { Plus, Trash2, Pencil, Eye, ClipboardList, RotateCcw, Search, Filter, X } from 'lucide-react';
+import { Plus, Trash2, Pencil, Eye, ClipboardList, RotateCcw, Search, Filter, X, ChevronDown, Check } from 'lucide-react';
+
+interface CustomDropdownProps {
+  value: string;
+  placeholder: string;
+  options: { label: string; value: string; disabled?: boolean }[];
+  onChange: (val: string) => void;
+  disabled?: boolean;
+  className?: string;
+  width?: string;
+}
+
+function CustomDropdown({
+  value,
+  placeholder,
+  options,
+  onChange,
+  disabled = false,
+  className = '',
+  width = 'w-[135px]',
+}: CustomDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const selectedOption = options.find((o) => o.value === value);
+
+  return (
+    <div ref={containerRef} className={`relative inline-block ${width} ${className}`}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`h-9 w-full px-2.5 text-xs rounded-md border flex items-center justify-between gap-1.5 transition-all outline-none select-none ${
+          disabled
+            ? 'opacity-50 cursor-not-allowed bg-muted/40 text-muted-foreground border-border/40'
+            : 'bg-card hover:bg-muted/40 cursor-pointer border-input text-foreground focus:ring-1 focus:ring-primary shadow-2xs'
+        }`}
+      >
+        <span className={`truncate font-medium ${selectedOption ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform duration-150 ${
+            isOpen ? 'rotate-180 text-primary' : ''
+          }`}
+        />
+      </button>
+
+      {isOpen && !disabled && (
+        <div
+          className="absolute left-0 top-full mt-1 z-50 w-full min-w-[130px] bg-popover text-popover-foreground border rounded-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+          style={{ maxHeight: '220px' }}
+        >
+          <div className="overflow-y-auto max-h-[210px] p-1 space-y-0.5 divide-y divide-border/10">
+            {options.length === 0 ? (
+              <div className="px-2.5 py-2 text-center text-xs text-muted-foreground">
+                No options
+              </div>
+            ) : (
+              options.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={opt.disabled}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full text-left px-2.5 py-1.5 text-xs rounded transition-colors cursor-pointer flex items-center justify-between ${
+                    opt.disabled
+                      ? 'opacity-40 cursor-not-allowed text-muted-foreground'
+                      : opt.value === value
+                      ? 'bg-primary/15 text-primary font-bold'
+                      : 'hover:bg-muted text-foreground'
+                  }`}
+                >
+                  <span className="truncate">{opt.label}</span>
+                  {opt.value === value && <Check className="h-3 w-3 text-primary shrink-0 ml-1" />}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function MonthlyResultsPage() {
   const navigate = useNavigate();
@@ -245,14 +343,13 @@ export default function MonthlyResultsPage() {
             </span>
 
             {/* 1. Academic Year */}
-            <Select value={formYear || academicYear} onValueChange={handleYearChange}>
-              <SelectTrigger className="w-[115px] h-9 text-xs bg-card shrink-0">
-                <SelectValue placeholder="Academic Year" />
-              </SelectTrigger>
-              <SelectContent>
-                {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <CustomDropdown
+              value={formYear || academicYear}
+              placeholder="Academic Year"
+              options={yearOptions.map(y => ({ label: y, value: y }))}
+              onChange={handleYearChange}
+              width="w-[115px]"
+            />
 
             {/* 2. Month (Appears after Year is selected) */}
             {(formYear || academicYear) && (
@@ -261,18 +358,16 @@ export default function MonthlyResultsPage() {
                   <span>All months complete</span>
                 </div>
               ) : (
-                <Select value={formMonth} onValueChange={setFormMonth}>
-                  <SelectTrigger className="w-[135px] h-9 text-xs bg-card shrink-0 animate-in fade-in duration-150">
-                    <SelectValue placeholder="Select Month" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableMonths.map(m => (
-                      <SelectItem key={m} value={m}>
-                        {MONTH_NAMES[m]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CustomDropdown
+                  value={formMonth}
+                  placeholder="Select Month"
+                  options={availableMonths.map(m => ({
+                    label: MONTH_NAMES[m],
+                    value: m,
+                  }))}
+                  onChange={setFormMonth}
+                  width="w-[135px]"
+                />
               )
             )}
 
@@ -283,18 +378,16 @@ export default function MonthlyResultsPage() {
                   <span>All groups created</span>
                 </div>
               ) : (
-                <Select value={formGroupId} onValueChange={setFormGroupId}>
-                  <SelectTrigger className="w-[130px] h-9 text-xs bg-card shrink-0 animate-in fade-in duration-150">
-                    <SelectValue placeholder="Select Group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableGroupsForMonth.map(g => (
-                      <SelectItem key={g.id} value={g.id}>
-                        Group {g.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CustomDropdown
+                  value={formGroupId}
+                  placeholder="Select Group"
+                  options={availableGroupsForMonth.map(g => ({
+                    label: `Group ${g.id}`,
+                    value: g.id,
+                  }))}
+                  onChange={setFormGroupId}
+                  width="w-[130px]"
+                />
               )
             )}
 
@@ -487,44 +580,39 @@ export default function MonthlyResultsPage() {
             {/* Academic Year */}
             <div className="space-y-1.5">
               <Label htmlFor="create-year">Academic Year</Label>
-              <Select value={formYear} onValueChange={setFormYear}>
-                <SelectTrigger id="create-year" className="w-full">
-                  <SelectValue placeholder="Select academic year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <CustomDropdown
+                value={formYear}
+                placeholder="Select academic year"
+                options={yearOptions.map(y => ({ label: y, value: y }))}
+                onChange={setFormYear}
+                width="w-full"
+              />
             </div>
 
             {/* Month */}
             <div className="space-y-1.5">
               <Label htmlFor="create-month">Month</Label>
-              <Select value={formMonth} onValueChange={setFormMonth} disabled={availableMonths.length === 0}>
-                <SelectTrigger id="create-month" className="w-full">
-                  <SelectValue placeholder={availableMonths.length === 0 ? "All months completed" : "Select month"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableMonths.map(m => <SelectItem key={m} value={m}>{MONTH_NAMES[m]}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <CustomDropdown
+                value={formMonth}
+                placeholder={availableMonths.length === 0 ? "All months completed" : "Select month"}
+                options={availableMonths.map(m => ({ label: MONTH_NAMES[m], value: m }))}
+                onChange={setFormMonth}
+                disabled={availableMonths.length === 0}
+                width="w-full"
+              />
             </div>
 
             {/* Group */}
             <div className="space-y-1.5">
               <Label htmlFor="create-group">Group / Batch</Label>
-              <Select value={formGroupId} onValueChange={setFormGroupId} disabled={!formMonth || availableGroupsForMonth.length === 0}>
-                <SelectTrigger id="create-group" className="w-full">
-                  <SelectValue placeholder={!formMonth ? "Select month first" : availableGroupsForMonth.length === 0 ? "All groups done for this month" : "Select group"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableGroupsForMonth.map(g => (
-                    <SelectItem key={g.id} value={g.id}>
-                      Group {g.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CustomDropdown
+                value={formGroupId}
+                placeholder={!formMonth ? "Select month first" : availableGroupsForMonth.length === 0 ? "All groups done for this month" : "Select group"}
+                options={availableGroupsForMonth.map(g => ({ label: `Group ${g.id}`, value: g.id }))}
+                onChange={setFormGroupId}
+                disabled={!formMonth || availableGroupsForMonth.length === 0}
+                width="w-full"
+              />
             </div>
 
             {/* Category & Info */}
