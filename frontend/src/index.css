@@ -275,6 +275,19 @@
     display: none !important;
   }
 
+  /* Reset any scaling/height on report parent container */
+  div:has(> #printable-a4-report),
+  div:has(> .printable-report) {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
   /* ── 6. Style the A4 report card ── */
   .printable-report {
     display: flex !important;

@@ -742,9 +742,9 @@ function drawFallbackPhoneIcon(doc: jsPDF, x: number, y: number, s: number = 3.2
 }
 
 /**
- * Generate official high-quality vector A4 Student Report Card PDF
+ * Internal builder to generate the exact vector A4 Student Report Card jsPDF instance
  */
-export async function generateStudentReportCardPDF(data: StudentReportPDFData): Promise<void> {
+export async function buildStudentReportCardDoc(data: StudentReportPDFData): Promise<jsPDF> {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = 210;
   const pageHeight = 297;
@@ -1213,13 +1213,30 @@ export async function generateStudentReportCardPDF(data: StudentReportPDFData): 
   doc.setLineWidth(0.65);
   doc.rect(margin, margin, contentWidth, pageHeight - margin * 2, 'S');
 
-  // ─── 10. SAVE FILE ───────────────────────────────────────
+  return doc;
+}
+
+/**
+ * Generate official high-quality vector A4 Student Report Card PDF & trigger download
+ */
+export async function generateStudentReportCardPDF(data: StudentReportPDFData): Promise<void> {
+  const doc = await buildStudentReportCardDoc(data);
+
+  const resultsList = data.results || [];
+  const attendedResults = resultsList.filter((r) => r.status !== 'Absent' && r.total_obtained !== null);
   const latestResult =
     attendedResults.length > 0
       ? attendedResults[attendedResults.length - 1]
       : resultsList.length > 0
       ? resultsList[resultsList.length - 1]
       : null;
+
+  const monthCodes = ['APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN', 'FEB', 'MAR'];
+  const monthNamesMap: Record<string, string> = {
+    APR: 'APRIL', MAY: 'MAY', JUN: 'JUNE', JUL: 'JULY', AUG: 'AUGUST',
+    SEP: 'SEPTEMBER', OCT: 'OCTOBER', NOV: 'NOVEMBER', DEC: 'DECEMBER',
+    JAN: 'JANUARY', FEB: 'FEBRUARY', MAR: 'MARCH'
+  };
 
   const monthCode = latestResult
     ? latestResult.month.toUpperCase()
@@ -1231,4 +1248,48 @@ export async function generateStudentReportCardPDF(data: StudentReportPDFData): 
   const fileName = `${cleanId}-${cleanName}-${monthDisplay}.pdf`;
 
   doc.save(fileName);
+}
+
+/**
+ * Direct Print official vector A4 Student Report Card PDF:
+ * Opens the exact vector PDF with autoPrint so the browser print dialog
+ * renders the exact same output as the downloaded PDF.
+ */
+export async function printStudentReportCardPDF(
+  data: StudentReportPDFData,
+  targetWindow?: Window | null
+): Promise<void> {
+  const doc = await buildStudentReportCardDoc(data);
+  doc.autoPrint();
+
+  const blob = doc.output('blob');
+  const blobUrl = URL.createObjectURL(blob);
+
+  if (targetWindow && !targetWindow.closed) {
+    targetWindow.location.href = blobUrl;
+  } else {
+    const win = window.open(blobUrl, '_blank');
+    if (!win) {
+      // Fallback: use an invisible iframe
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.bottom = '0';
+      iframe.style.right = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch {
+            window.location.href = blobUrl;
+          }
+        }, 150);
+      };
+    }
+  }
 }

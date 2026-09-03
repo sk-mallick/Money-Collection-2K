@@ -12,7 +12,7 @@ import { fetchStudentReport, type StudentReportResult } from '@/lib/reports-api'
 import { fetchStudents, fetchGroups } from '@/lib/api';
 import type { Student, Group } from '@/lib/constants';
 import { MONTH_NAMES } from '@/lib/constants';
-import { generateStudentReportCardPDF } from '@/lib/pdf';
+import { generateStudentReportCardPDF, printStudentReportCardPDF } from '@/lib/pdf';
 import logoUrl from '@/assets/logo.png';
 import {
   UserRound,
@@ -463,53 +463,75 @@ export default function StudentReportsPage() {
     }
   };
 
+  // Direct Print handler: prints the exact vector A4 PDF using autoPrint
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const handleDirectPrint = async () => {
+    if (!reportData) return;
+
+    setIsPrinting(true);
+    const toastId = toast.loading('Preparing exact report card for print...');
+
+    // Open an empty tab synchronously during click event to bypass popup blockers
+    let printWindow: Window | null = null;
+    try {
+      printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.title = 'Preparing Report Card...';
+        printWindow.document.body.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:system-ui,sans-serif;color:#1e293b;background:#f8fafc;">
+            <div style="width:40px;height:40px;border:3.5px solid #e2e8f0;border-top-color:#0284c7;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+            <p style="margin-top:16px;font-weight:600;font-size:15px;letter-spacing:-0.01em;">Preparing official report card for printing...</p>
+            <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+          </div>
+        `;
+      }
+    } catch (e) {
+      console.warn('Could not pre-open window:', e);
+    }
+
+    try {
+      await printStudentReportCardPDF(
+        {
+          student: reportData.student,
+          results: reportData.results,
+          settings: reportData.settings,
+          academicSession,
+        },
+        printWindow
+      );
+      toast.dismiss(toastId);
+    } catch (err) {
+      console.error('Failed to print vector PDF:', err);
+      if (printWindow && !printWindow.closed) {
+        printWindow.close();
+      }
+      toast.error('Failed to generate print PDF. Falling back to browser print...', { id: toastId });
+      window.print();
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
   // If a student is selected -> Show Detail View ("Inside")
   if (selectedStudentId) {
     return (
       <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
         {/* ─── TOP STREAMLINED RESPONSIVE TOOLBAR ─── */}
         <div className="no-print flex items-center justify-between gap-2.5 sm:gap-4 border-b pb-3.5">
-          {/* Left: Responsive Back Button & Student Header */}
+          {/* Left: Responsive Header: Only ID on mobile (< sm), ID + Name on desktop */}
           <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBackToList}
-              className="h-8 px-2.5 sm:px-3 gap-1.5 cursor-pointer shrink-0 rounded-md"
-              title="Back to Students Directory"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="text-xs font-semibold hidden sm:inline">Back</span>
-            </Button>
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <h1 className="text-sm sm:text-base md:text-lg font-bold tracking-tight truncate text-foreground">
-                {reportData?.student.name || 'Student Report'}
-              </h1>
-              {reportData && (
-                <>
-                  <span className="font-mono text-[11px] sm:text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground border shrink-0">
-                    {reportData.student.id}
-                  </span>
-                  <Badge
-                    className={`text-[9.5px] sm:text-[10px] px-1.5 sm:px-2 py-0.2 font-bold rounded-full border-0 text-white shrink-0 ${
-                      reportData.student.category === 'Junior'
-                        ? 'bg-blue-600 dark:bg-blue-500'
-                        : 'bg-red-600 dark:bg-red-500'
-                    }`}
-                  >
-                    {reportData.student.category}
-                  </Badge>
-                  {reportData.student.class && (
-                    <Badge variant="outline" className="text-[9.5px] sm:text-[10px] shrink-0 hidden md:inline-flex">
-                      Class {reportData.student.class}
-                    </Badge>
-                  )}
-                </>
-              )}
-            </div>
+            {reportData?.student.id && (
+              <span className="font-mono text-xs sm:text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground border shrink-0">
+                {reportData.student.id}
+              </span>
+            )}
+            <h1 className="text-sm sm:text-base md:text-lg font-bold tracking-tight truncate text-foreground hidden sm:inline">
+              {reportData?.student.name || 'Student Report'}
+            </h1>
           </div>
 
-          {/* Right: Navigator + Responsive Action Buttons */}
+          {/* Right: Navigator + Responsive Action Buttons + Right-most Back Button */}
           <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
             {/* Previous / Next Student Navigator */}
             <div className="flex items-center border rounded-md overflow-hidden bg-background shadow-2xs h-8">
@@ -540,25 +562,31 @@ export default function StudentReportsPage() {
               </Button>
             </div>
 
-            {/* Direct Print Button (Responsive: Icon-only on mobile, Icon+Text on desktop) */}
+            {/* Print Button (Hidden on phone screens, visible on sm and up) */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.print()}
-              disabled={!reportData}
-              className="h-8 gap-1.5 px-2.5 sm:px-3 text-xs font-semibold shadow-2xs cursor-pointer hover:bg-muted rounded-md"
-              title="Print Report"
+              onClick={handleDirectPrint}
+              disabled={!reportData || isPrinting}
+              className="hidden sm:inline-flex h-8 gap-1.5 px-2.5 sm:px-3 text-xs font-semibold shadow-2xs cursor-pointer hover:bg-muted rounded-md"
+              title="Print exact A4 report card"
             >
-              <Printer className="h-3.5 w-3.5 text-primary" />
-              <span className="hidden sm:inline">Direct Print</span>
+              {isPrinting ? (
+                <div className="h-3.5 w-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              ) : (
+                <Printer className="h-3.5 w-3.5 text-primary" />
+              )}
+              <span>
+                {isPrinting ? 'Printing...' : 'Print'}
+              </span>
             </Button>
 
-            {/* Download PDF Button (Responsive: Icon-only on mobile, Icon+Text on desktop) */}
+            {/* Download Button (Responsive: Icon-only on mobile, Icon+Text on desktop) */}
             <Button
               size="sm"
               onClick={handleDownloadPDF}
               disabled={!reportData || isDownloadingPdf}
-              className="h-8 gap-1.5 px-2.5 sm:px-3.5 text-xs bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer rounded-md"
+              className="h-8 gap-1.5 px-2.5 sm:px-3 text-xs bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer rounded-md"
               title="Download exact A4 PDF (studentid-Name-month.pdf)"
             >
               {isDownloadingPdf ? (
@@ -567,8 +595,20 @@ export default function StudentReportsPage() {
                 <Download className="h-3.5 w-3.5" />
               )}
               <span className="hidden sm:inline">
-                {isDownloadingPdf ? 'Generating...' : 'Download PDF'}
+                {isDownloadingPdf ? 'Downloading...' : 'Download'}
               </span>
+            </Button>
+
+            {/* Right-most Back Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBackToList}
+              className="h-8 px-2 sm:px-2.5 gap-1 cursor-pointer shrink-0 rounded-md text-xs font-semibold shadow-2xs hover:bg-muted"
+              title="Back to Students Directory"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Back</span>
             </Button>
           </div>
         </div>
@@ -600,6 +640,78 @@ export default function StudentReportsPage() {
                 LEFT SIDE (Desktop): PERFORMANCE KPIS, CONTACTS & DIRECT MARKS EDIT
                 ══════════════════════════════════════════════════════ */}
             <div className="no-print lg:col-span-4 xl:col-span-4 space-y-4 w-full">
+              {/* Responsive-Only Student Details Card (Hidden on Desktop: lg:hidden) */}
+              <Card className="lg:hidden bg-card/80 backdrop-blur-xs border shadow-xs overflow-hidden">
+                <CardHeader className="p-3 sm:p-3.5 pb-2 border-b border-border/50">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground border shrink-0">
+                          {reportData.student.id}
+                        </span>
+                        <h2 className="text-sm sm:text-base font-bold tracking-tight text-foreground truncate">
+                          {reportData.student.name}
+                        </h2>
+                      </div>
+                    </div>
+                    {reportData.student.category && (
+                      <Badge
+                        className={`text-[9.5px] px-2 py-0.5 font-bold rounded-full border-0 text-white shrink-0 ${
+                          reportData.student.category === 'Junior'
+                            ? 'bg-blue-600 dark:bg-blue-500'
+                            : 'bg-red-600 dark:bg-red-500'
+                        }`}
+                      >
+                        {reportData.student.category}
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-3.5 pt-2.5">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="p-2 sm:p-2.5 rounded-lg bg-muted/40 border border-border/40 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10.5px] text-muted-foreground font-medium mb-0.5">
+                        <GraduationCap className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                        <span>Class</span>
+                      </div>
+                      <div className="text-xs sm:text-sm font-bold text-foreground truncate">
+                        {reportData.student.class ? `Class ${reportData.student.class}` : 'NIL'}
+                      </div>
+                    </div>
+
+                    <div className="p-2 sm:p-2.5 rounded-lg bg-muted/40 border border-border/40 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10.5px] text-muted-foreground font-medium mb-0.5">
+                        <Users className="h-3.5 w-3.5 text-purple-500 shrink-0" />
+                        <span>Tuition Group</span>
+                      </div>
+                      <div className="text-xs sm:text-sm font-bold text-foreground truncate">
+                        Group {reportData.student.group_id || '—'}
+                      </div>
+                    </div>
+
+                    <div className="p-2 sm:p-2.5 rounded-lg bg-muted/40 border border-border/40 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10.5px] text-muted-foreground font-medium mb-0.5">
+                        <School className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        <span>School</span>
+                      </div>
+                      <div className="text-xs sm:text-sm font-bold text-foreground truncate" title={reportData.student.school || 'NIL'}>
+                        {reportData.student.school || 'NIL'}
+                      </div>
+                    </div>
+
+                    <div className="p-2 sm:p-2.5 rounded-lg bg-muted/40 border border-border/40 min-w-0">
+                      <div className="flex items-center gap-1.5 text-[10.5px] text-muted-foreground font-medium mb-0.5">
+                        <Calendar className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        <span>Admission Date</span>
+                      </div>
+                      <div className="text-xs sm:text-sm font-bold text-foreground font-mono truncate">
+                        {formatReportDate(reportData.student.adm_date)}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Performance KPIs Card */}
               <Card className="bg-card/70 backdrop-blur-xs border shadow-xs overflow-hidden">
                 <CardHeader className="p-3.5 pb-2 border-b border-border/50">
@@ -779,7 +891,7 @@ export default function StudentReportsPage() {
             <div className="lg:col-span-8 xl:col-span-8 w-full flex flex-col items-center">
               <div
                 ref={a4ContainerRef}
-                className="w-full flex justify-center items-start overflow-hidden py-1"
+                className="w-full flex justify-center items-start overflow-hidden py-1 print:overflow-visible print:h-auto print:py-0 print:block"
                 style={{
                   height: a4Scale < 1 ? `${Math.ceil(1123 * a4Scale)}px` : 'auto'
                 }}
@@ -793,7 +905,7 @@ export default function StudentReportsPage() {
                     transformOrigin: 'top center',
                     backgroundColor: '#ffffff',
                   }}
-                  className="printable-report bg-white text-black font-sans border-[2.5px] border-black rounded-none p-6 shadow-md flex flex-col justify-between shrink-0 box-border print:transform-none print:w-full print:min-h-0 print:border-[2px] print:shadow-none print:p-4"
+                  className="printable-report bg-white text-black font-sans border-[2.5px] border-black rounded-none p-6 shadow-md flex flex-col justify-between shrink-0 box-border print:transform-none print:w-full print:min-h-0 print:border-[2.5px] print:shadow-none print:p-6 print:m-0"
                 >
                   <div className="space-y-3.5">
                     {/* ─── 1. Header Block with Logo & Official Branding ─── */}
