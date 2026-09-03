@@ -269,15 +269,18 @@
     min-height: 0 !important;
   }
 
-  /* ── 5. Collapse wrapper div around the A4 report ── */
+  /* ── 5. Collapse wrapper div around the A4 report & sheet ── */
   #printable-a4-report ~ *,
-  .page-enter > *:not(:has(#printable-a4-report)):not(.printable-report):not(#printable-a4-report) {
+  #printable-a4-sheet ~ *,
+  .page-enter > *:not(:has(#printable-a4-report)):not(:has(#printable-a4-sheet)):not(.printable-report):not(.printable-sheet):not(#printable-a4-report):not(#printable-a4-sheet) {
     display: none !important;
   }
 
-  /* Reset any scaling/height on report parent container */
+  /* Reset any scaling/height on report and sheet parent container */
   div:has(> #printable-a4-report),
-  div:has(> .printable-report) {
+  div:has(> #printable-a4-sheet),
+  div:has(> .printable-report),
+  div:has(> .printable-sheet) {
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
@@ -317,6 +320,32 @@
   /* ── 6b. Professional spacing between content sections ── */
   .printable-report > div:first-child > * + * {
     margin-top: 14px !important;
+  }
+
+  /* ── 6c. Style the A4 Landscape blank marks sheet ── */
+  .printable-sheet {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-shadow: none !important;
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    padding: 16px !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    height: auto !important;
+    min-height: calc(210mm - 12mm) !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    margin: 0 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    overflow: visible !important;
   }
 
   /* ── 7. Preserve grid layouts INSIDE the report ── */

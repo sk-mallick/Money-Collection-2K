@@ -1293,3 +1293,353 @@ export async function printStudentReportCardPDF(
     }
   }
 }
+
+// ─── BLANK MARKS ENTRY SHEET (A4 LANDSCAPE MULTI-GROUP) ───────────────
+
+export interface BlankMarksSheetStudent {
+  id: string;
+  name: string;
+  class?: string;
+  school?: string;
+}
+
+export interface BlankMarksSheetSubject {
+  id: number | string;
+  name: string;
+  category?: string;
+}
+
+export interface BlankMarksSheetGroupItem {
+  group: {
+    id: string;
+    class?: string;
+    timing?: string;
+    category?: string;
+  };
+  students: BlankMarksSheetStudent[];
+  subjects: BlankMarksSheetSubject[];
+}
+
+export interface BlankMarksSheetPDFOptions {
+  groupsData: BlankMarksSheetGroupItem[];
+  month: string;
+  academicYear: string;
+  settings?: Record<string, string>;
+}
+
+/**
+ * Builds an official A4 Landscape jsPDF document for Offline Blank Marks Entry Sheets.
+ * Each selected group starts on a separate page.
+ * Each page contains exactly 25 fixed rows.
+ */
+export async function buildBlankMarksSheetsDoc(options: BlankMarksSheetPDFOptions): Promise<jsPDF> {
+  const { groupsData, month, academicYear, settings = {} } = options;
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pageWidth = 297;
+  const pageHeight = 210;
+  const margin = 7;
+  const contentWidth = pageWidth - margin * 2; // 283mm
+  const contentHeight = pageHeight - margin * 2; // 196mm
+
+  // Asset loading (logo, send icon, phone icon)
+  const sendSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`;
+  const phoneSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+
+  const [logoBase64, sendIconUrl, phoneIconUrl] = await Promise.all([
+    loadImageBase64(logoUrl).catch(() => ''),
+    createSvgIconDataUrl(sendSvg),
+    createSvgIconDataUrl(phoneSvg),
+  ]);
+
+  const blackColor: [number, number, number] = [0, 0, 0];
+  const redColor: [number, number, number] = [220, 38, 38];
+  const monthName = MONTH_NAMES[month] || month;
+
+  let isFirstPageOfDoc = true;
+
+  for (const groupItem of groupsData) {
+    const { group, students, subjects } = groupItem;
+    const prefix = (group.id || 'A').trim().toUpperCase();
+
+    // Map students by numeric ID and string ID
+    const studentMapByNumber = new Map<number, BlankMarksSheetStudent>();
+    const studentMapById = new Map<string, BlankMarksSheetStudent>();
+    let maxIdNum = 25;
+
+    for (const s of students) {
+      studentMapById.set(s.id.toUpperCase(), s);
+      const match = s.id.match(/\d+/);
+      if (match) {
+        const n = parseInt(match[0], 10);
+        if (!isNaN(n)) {
+          studentMapByNumber.set(n, s);
+          if (n > maxIdNum) maxIdNum = n;
+        }
+      }
+    }
+
+    const totalStudents = students.length;
+    const totalPagesForGroup = Math.max(1, Math.ceil(maxIdNum / 25));
+
+    for (let pageIdx = 0; pageIdx < totalPagesForGroup; pageIdx++) {
+      if (!isFirstPageOfDoc) {
+        doc.addPage('a4', 'l');
+      }
+      isFirstPageOfDoc = false;
+
+      // 1. Outer Border
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.6);
+      doc.rect(margin, margin, contentWidth, contentHeight, 'S');
+
+      // 2. Compact Streamlined Header Section (Less area used, maximizing row height)
+      const headerCenterX = pageWidth / 2;
+
+      // Title: "ENGLISHJIBI CLASSES"
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14.5);
+      const part1 = 'ENGLISH';
+      const part2 = 'JIBI';
+      const part3 = ' CLASSES';
+      const w1 = doc.getTextWidth(part1);
+      const w2 = doc.getTextWidth(part2);
+      const w3 = doc.getTextWidth(part3);
+      const totalW = w1 + w2 + w3;
+      const titleX = headerCenterX - totalW / 2;
+
+      doc.setTextColor(...blackColor);
+      doc.text(part1, titleX, 12.0);
+      doc.setTextColor(...redColor);
+      doc.text(part2, titleX + w1, 12.0);
+      doc.setTextColor(...blackColor);
+      doc.text(part3, titleX + w1 + w2, 12.0);
+
+      // Title Banner
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.0);
+      doc.setTextColor(0, 0, 0);
+      const sheetTitle = `MONTHLY EXAMINATION MARKS ENTRY SHEET — ${monthName.toUpperCase()} ${academicYear}`;
+      doc.text(sheetTitle, headerCenterX, 15.6, { align: 'center' });
+
+      // Red Divider
+      doc.setFillColor(220, 38, 38);
+      doc.rect(margin + 1.5, 17.5, contentWidth - 3, 0.7, 'F');
+
+      // Group & Batch Meta Banner
+      const metaY = 19.5;
+      const metaH = 5.0;
+      const tableLeftX = margin + 1.5;
+      const tableWidth = contentWidth - 3; // 280mm
+      doc.setFillColor(245, 246, 248);
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.3);
+      doc.rect(tableLeftX, metaY, tableWidth, metaH, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const colSpacing = tableWidth / 5;
+      doc.text(`BATCH: Group ${group.id} (${group.class || '—'})`, tableLeftX + 3, metaY + 3.5);
+      doc.text(`CATEGORY: ${group.category || '—'}`, tableLeftX + colSpacing + 2, metaY + 3.5);
+      doc.text(`TIMING: ${group.timing || '—'}`, tableLeftX + colSpacing * 2 + 2, metaY + 3.5);
+      doc.text(`ENROLLED: ${totalStudents} Students`, tableLeftX + colSpacing * 3 + 2, metaY + 3.5);
+      doc.text(`PAGE: ${pageIdx + 1} OF ${totalPagesForGroup}`, tableLeftX + colSpacing * 4 + 2, metaY + 3.5);
+
+      // 3. Marks Table (Exactly 25 rows with increased row height: 6.8mm)
+      const tableTopY = 26.0;
+      const headerH = 6.0;
+      const rowH = 6.8; // 25 * 6.8 = 170mm, total table = 176mm (ends at 202.0mm inside 203mm outer border)
+
+      // Column widths: Class & School reduced as requested to allocate max width to subjects
+      const colIdW = 16;
+      const colNameW = 56;
+      const colClassW = 12; // reduced width (fits 'Class' and '6th'/'10th')
+      const colSchoolW = 18; // reduced width (fits 'School' and school acronyms)
+      const colTotalW = 16;
+      const colNotesW = 24;
+
+      const fixedWidths = colIdW + colNameW + colClassW + colSchoolW + colTotalW + colNotesW; // 142mm
+      const remainingForSubjects = tableWidth - fixedWidths; // 138mm
+      const numSubjects = subjects.length > 0 ? subjects.length : 5;
+      const subColW = remainingForSubjects / numSubjects;
+
+      interface ColDef {
+        title: string;
+        width: number;
+        align: 'left' | 'center' | 'right';
+      }
+
+      const columns: ColDef[] = [
+        { title: 'ID', width: colIdW, align: 'center' },
+        { title: 'Student Name', width: colNameW, align: 'left' },
+        { title: 'Class', width: colClassW, align: 'center' },
+        { title: 'School', width: colSchoolW, align: 'left' },
+      ];
+
+      // Subjects header: NO "Max: ___" as requested
+      for (const sub of subjects) {
+        columns.push({
+          title: sub.name,
+          width: subColW,
+          align: 'center',
+        });
+      }
+
+      // Total header: NO "Max: ___" as requested
+      columns.push({ title: 'Total', width: colTotalW, align: 'center' });
+      columns.push({ title: 'Teacher Notes', width: colNotesW, align: 'center' });
+
+      // Draw Header Row
+      doc.setFillColor(235, 237, 240);
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.3);
+      doc.rect(tableLeftX, tableTopY, tableWidth, headerH, 'FD');
+
+      let curColX = tableLeftX;
+      for (const col of columns) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(0, 0, 0);
+
+        const textX = col.align === 'center'
+          ? curColX + col.width / 2
+          : curColX + 2;
+
+        doc.text(col.title, textX, tableTopY + 4.1, { align: col.align });
+
+        // Column vertical border
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.2);
+        doc.line(curColX + col.width, tableTopY, curColX + col.width, tableTopY + headerH);
+
+        curColX += col.width;
+      }
+
+      // 25 Fixed Rows (Ordered ID 1 to 25; even if student absent, show ID and leave blank)
+      for (let r = 0; r < 25; r++) {
+        const curRowY = tableTopY + headerH + r * rowH;
+        const serialNo = pageIdx * 25 + r + 1;
+        const formattedId = `${prefix}${serialNo < 10 ? '0' + serialNo : serialNo}`;
+        const student = studentMapById.get(formattedId) || studentMapByNumber.get(serialNo) || null;
+
+        // Alternating subtle background tint
+        if (r % 2 === 1) {
+          doc.setFillColor(250, 250, 252);
+          doc.rect(tableLeftX, curRowY, tableWidth, rowH, 'F');
+        }
+
+        // Row border
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineWidth(0.2);
+        doc.line(tableLeftX, curRowY + rowH, tableLeftX + tableWidth, curRowY + rowH);
+
+        let cellX = tableLeftX;
+        for (let c = 0; c < columns.length; c++) {
+          const col = columns[c];
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          doc.setTextColor(0, 0, 0);
+
+          if (c === 0) {
+            // ID in order 1..25 (always written even if student does not exist)
+            doc.setFont('courier', 'bold');
+            doc.text(formattedId, cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+          } else if (c === 1) {
+            // Student Name (blank if not enrolled)
+            if (student) {
+              doc.setFont('helvetica', 'bold');
+              doc.text(student.name, cellX + 2, curRowY + 4.4);
+            }
+          } else if (c === 2) {
+            // Class (blank if not enrolled)
+            if (student) {
+              doc.text(student.class || '—', cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+            }
+          } else if (c === 3) {
+            // School (blank if not enrolled)
+            if (student) {
+              const sch = student.school || '—';
+              const maxW = col.width - 2.5;
+              const schText = doc.getTextWidth(sch) > maxW ? sch.slice(0, 9) + '..' : sch;
+              doc.text(schText, cellX + 1.5, curRowY + 4.4);
+            }
+          }
+          // Note: Subject, Total, and Teacher Notes cells are kept completely blank as requested
+
+          // Vertical column line
+          doc.setDrawColor(200, 200, 200);
+          doc.setLineWidth(0.2);
+          doc.line(cellX + col.width, curRowY, cellX + col.width, curRowY + rowH);
+
+          cellX += col.width;
+        }
+      }
+
+      // Outer table border outline
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.4);
+      doc.rect(tableLeftX, tableTopY, tableWidth, headerH + 25 * rowH, 'S');
+    }
+  }
+
+  return doc;
+}
+
+/**
+ * Generates and downloads the official A4 Landscape Blank Marks Sheets PDF for all selected groups.
+ */
+export async function generateBlankMarksSheetPDF(options: BlankMarksSheetPDFOptions): Promise<void> {
+  const doc = await buildBlankMarksSheetsDoc(options);
+  const { groupsData, month, academicYear } = options;
+  const fileName = groupsData.length === 1
+    ? `Group_${groupsData[0].group.id}_${month}_${academicYear}_Blank_Marks_Sheet.pdf`
+    : `Selected_Groups_${month}_${academicYear}_Blank_Marks_Sheet.pdf`;
+  doc.save(fileName);
+}
+
+/**
+ * Direct Print official vector A4 Landscape Blank Marks Sheet PDF.
+ */
+export async function printBlankMarksSheetPDF(
+  options: BlankMarksSheetPDFOptions,
+  targetWindow?: Window | null
+): Promise<void> {
+  const doc = await buildBlankMarksSheetsDoc(options);
+  doc.autoPrint();
+
+  const blob = doc.output('blob');
+  const blobUrl = URL.createObjectURL(blob);
+
+  if (targetWindow && !targetWindow.closed) {
+    targetWindow.location.href = blobUrl;
+  } else {
+    const win = window.open(blobUrl, '_blank');
+    if (!win) {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.bottom = '0';
+      iframe.style.right = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch {
+            window.location.href = blobUrl;
+          }
+        }, 150);
+      };
+    }
+  }
+}
