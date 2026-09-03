@@ -9,7 +9,7 @@ import { fetchBlankSheet, type BlankSheetData } from '@/lib/reports-api';
 import { fetchGroups, fetchSettings } from '@/lib/api';
 import type { Group } from '@/lib/constants';
 import { MONTH_NAMES, MONTH_CODES } from '@/lib/constants';
-import logoUrl from '@/assets/favicon.png';
+import logoUrl from '@/assets/logo.png';
 import { Printer, FileText, GraduationCap, Users } from 'lucide-react';
 
 export default function BlankMarksSheetPage() {

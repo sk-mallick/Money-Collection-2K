@@ -92,7 +92,7 @@ function McmsLayout() {
     <SidebarProvider>
       <McmsSidebar />
       <SidebarInset className="min-w-0 min-h-screen">
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b bg-background/80 backdrop-blur-md px-4 gap-4">
+        <header className="no-print sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b bg-background/80 backdrop-blur-md px-4 gap-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 !h-4" />
@@ -120,7 +120,7 @@ function ReportsLayout() {
     <SidebarProvider>
       <ReportsSidebar />
       <SidebarInset className="min-w-0 min-h-screen">
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b bg-background/80 backdrop-blur-md px-4 gap-4">
+        <header className="no-print sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b bg-background/80 backdrop-blur-md px-4 gap-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 !h-4" />

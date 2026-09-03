@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,13 @@ import { fetchStudentReport, type StudentReportResult } from '@/lib/reports-api'
 import { fetchStudents, fetchGroups } from '@/lib/api';
 import type { Student, Group } from '@/lib/constants';
 import { MONTH_NAMES } from '@/lib/constants';
-import logoUrl from '@/assets/favicon.png';
+import { generateStudentReportCardPDF } from '@/lib/pdf';
+import logoUrl from '@/assets/logo.png';
 import {
   UserRound,
   Search,
   Printer,
+  Download,
   Calendar,
   Send,
   Phone,
@@ -79,6 +81,34 @@ export default function StudentReportsPage() {
   
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // Scalable A4 Preview to fit available container width without squishing or horizontal scrollbars
+  const a4ContainerRef = useRef<HTMLDivElement>(null);
+  const [a4Scale, setA4Scale] = useState<number>(1);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (a4ContainerRef.current) {
+        const containerWidth = a4ContainerRef.current.clientWidth;
+        if (containerWidth > 0) {
+          const calculatedScale = Math.min(1, (containerWidth - 4) / 794);
+          setA4Scale(calculatedScale > 0.1 ? calculatedScale : 1);
+        }
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    const resizeObserver = new ResizeObserver(handleResize);
+    if (a4ContainerRef.current) {
+      resizeObserver.observe(a4ContainerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
+    };
+  }, [reportData]);
 
   // Load students & groups on mount
   useEffect(() => {
@@ -387,93 +417,158 @@ export default function StudentReportsPage() {
     return 'E';
   };
 
+  // Download PDF handler: captures printable report card as exact A4 PDF
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    if (!reportData) return;
+
+    setIsDownloadingPdf(true);
+    const toastId = toast.loading('Generating exact A4 PDF...');
+
+    try {
+      await generateStudentReportCardPDF({
+        student: reportData.student,
+        results: reportData.results,
+        settings: reportData.settings,
+        academicSession,
+      });
+
+      const attendedResults = reportData.results
+        ? reportData.results.filter((r) => r.status !== 'Absent' && r.total_obtained !== null)
+        : [];
+      const latestResult =
+        attendedResults.length > 0
+          ? attendedResults[attendedResults.length - 1]
+          : reportData.results && reportData.results.length > 0
+          ? reportData.results[reportData.results.length - 1]
+          : null;
+
+      const monthCode = latestResult
+        ? latestResult.month.toUpperCase()
+        : new Date().toLocaleString('en-US', { month: 'short' }).toUpperCase();
+      const monthDisplay = MONTH_NAMES[monthCode] || monthCode;
+
+      const cleanId = (reportData.student.id || 'Student').trim().replace(/[/\\?%*:|"<>]/g, '');
+      const cleanName = (reportData.student.name || 'Report').trim().replace(/[/\\?%*:|"<>]/g, '');
+      const filename = `${cleanId}-${cleanName}-${monthDisplay}.pdf`;
+
+      toast.success(`Downloaded ${filename}`, { id: toastId });
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+      toast.error('Failed to generate PDF. Opening print dialog...', { id: toastId });
+      window.print();
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
   // If a student is selected -> Show Detail View ("Inside")
   if (selectedStudentId) {
     return (
       <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
-        {/* ─── TOP HEADER & ACTION BAR ─── */}
-        <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b pb-4">
-          <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* ─── TOP STREAMLINED RESPONSIVE TOOLBAR ─── */}
+        <div className="no-print flex items-center justify-between gap-2.5 sm:gap-4 border-b pb-3.5">
+          {/* Left: Responsive Back Button & Student Header */}
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <Button
               variant="outline"
               size="sm"
               onClick={handleBackToList}
-              className="h-8.5 px-3 gap-1.5 cursor-pointer shrink-0"
+              className="h-8 px-2.5 sm:px-3 gap-1.5 cursor-pointer shrink-0 rounded-md"
+              title="Back to Students Directory"
             >
               <ArrowLeft className="h-4 w-4" />
-              <span>Back to Students</span>
+              <span className="text-xs font-semibold hidden sm:inline">Back</span>
             </Button>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate">
-                  {reportData?.student.name || 'Student Report'}
-                </h1>
-                {reportData && (
-                  <>
-                    <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground border">
-                      {reportData.student.id}
-                    </span>
-                    <Badge
-                      className={`text-[10px] px-2 py-0.5 font-bold rounded-full border-0 text-white ${
-                        reportData.student.category === 'Junior'
-                          ? 'bg-blue-600 dark:bg-blue-500'
-                          : 'bg-red-600 dark:bg-red-500'
-                      }`}
-                    >
-                      {reportData.student.category}
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <h1 className="text-sm sm:text-base md:text-lg font-bold tracking-tight truncate text-foreground">
+                {reportData?.student.name || 'Student Report'}
+              </h1>
+              {reportData && (
+                <>
+                  <span className="font-mono text-[11px] sm:text-xs font-bold px-1.5 py-0.5 rounded bg-muted text-foreground border shrink-0">
+                    {reportData.student.id}
+                  </span>
+                  <Badge
+                    className={`text-[9.5px] sm:text-[10px] px-1.5 sm:px-2 py-0.2 font-bold rounded-full border-0 text-white shrink-0 ${
+                      reportData.student.category === 'Junior'
+                        ? 'bg-blue-600 dark:bg-blue-500'
+                        : 'bg-red-600 dark:bg-red-500'
+                    }`}
+                  >
+                    {reportData.student.category}
+                  </Badge>
+                  {reportData.student.class && (
+                    <Badge variant="outline" className="text-[9.5px] sm:text-[10px] shrink-0 hidden md:inline-flex">
+                      Class {reportData.student.class}
                     </Badge>
-                    {reportData.student.class && (
-                      <Badge variant="outline" className="text-[10px]">
-                        Class {reportData.student.class}
-                      </Badge>
-                    )}
-                  </>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5 truncate hidden sm:block">
-                Academic progress details and official printable A4 report card
-              </p>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+          {/* Right: Navigator + Responsive Action Buttons */}
+          <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
             {/* Previous / Next Student Navigator */}
-            <div className="flex items-center border rounded-lg overflow-hidden bg-background shadow-2xs">
+            <div className="flex items-center border rounded-md overflow-hidden bg-background shadow-2xs h-8">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8.5 px-2.5 rounded-none cursor-pointer"
+                className="h-8 px-1.5 sm:px-2 rounded-none cursor-pointer text-xs"
                 onClick={handlePrevStudent}
                 disabled={currentStudentIndex <= 0}
                 title="Previous Student"
               >
-                <ChevronLeft className="h-4 w-4 mr-0.5" />
-                <span className="text-xs hidden md:inline">Prev</span>
+                <ChevronLeft className="h-3.5 w-3.5 sm:mr-0.5" />
+                <span className="hidden md:inline">Prev</span>
               </Button>
-              <span className="text-[11px] font-semibold text-muted-foreground px-2 border-x">
+              <span className="text-[10.5px] sm:text-[11px] font-semibold text-muted-foreground px-1.5 sm:px-2 border-x leading-8">
                 {currentStudentIndex >= 0 ? `${currentStudentIndex + 1} / ${filteredStudents.length}` : ''}
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8.5 px-2.5 rounded-none cursor-pointer"
+                className="h-8 px-1.5 sm:px-2 rounded-none cursor-pointer text-xs"
                 onClick={handleNextStudent}
                 disabled={currentStudentIndex >= filteredStudents.length - 1 || currentStudentIndex === -1}
                 title="Next Student"
               >
-                <span className="text-xs hidden md:inline">Next</span>
-                <ChevronRight className="h-4 w-4 ml-0.5" />
+                <span className="hidden md:inline">Next</span>
+                <ChevronRight className="h-3.5 w-3.5 sm:ml-0.5" />
               </Button>
             </div>
 
-            {/* Print / Download Button */}
+            {/* Direct Print Button (Responsive: Icon-only on mobile, Icon+Text on desktop) */}
             <Button
+              variant="outline"
+              size="sm"
               onClick={() => window.print()}
               disabled={!reportData}
-              className="h-8.5 gap-1.5 px-3.5 bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer"
+              className="h-8 gap-1.5 px-2.5 sm:px-3 text-xs font-semibold shadow-2xs cursor-pointer hover:bg-muted rounded-md"
+              title="Print Report"
             >
-              <Printer className="h-4 w-4" />
-              <span>Download PDF</span>
+              <Printer className="h-3.5 w-3.5 text-primary" />
+              <span className="hidden sm:inline">Direct Print</span>
+            </Button>
+
+            {/* Download PDF Button (Responsive: Icon-only on mobile, Icon+Text on desktop) */}
+            <Button
+              size="sm"
+              onClick={handleDownloadPDF}
+              disabled={!reportData || isDownloadingPdf}
+              className="h-8 gap-1.5 px-2.5 sm:px-3.5 text-xs bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer rounded-md"
+              title="Download exact A4 PDF (studentid-Name-month.pdf)"
+            >
+              {isDownloadingPdf ? (
+                <div className="h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {isDownloadingPdf ? 'Generating...' : 'Download PDF'}
+              </span>
             </Button>
           </div>
         </div>
@@ -490,7 +585,7 @@ export default function StudentReportsPage() {
             </div>
           </div>
         ) : !reportData ? (
-          <Card className="p-12 text-center text-muted-foreground">
+          <Card className="p-12 text-center text-muted-foreground max-w-md mx-auto">
             <UserRound className="h-12 w-12 mx-auto mb-3 opacity-40" />
             <h3 className="text-base font-semibold mb-1">Student Not Found</h3>
             <p className="text-xs text-muted-foreground mb-4">The selected student could not be loaded.</p>
@@ -502,47 +597,19 @@ export default function StudentReportsPage() {
           /* ─── MAIN TWO-COLUMN SPLIT LAYOUT ─── */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start w-full">
             {/* ══════════════════════════════════════════════════════
-                LEFT SIDE (Desktop): STUDENT PROFILE & PERFORMANCE DETAILS
+                LEFT SIDE (Desktop): PERFORMANCE KPIS, CONTACTS & DIRECT MARKS EDIT
                 ══════════════════════════════════════════════════════ */}
             <div className="no-print lg:col-span-4 xl:col-span-4 space-y-4 w-full">
-              {/* Profile Card */}
+              {/* Performance KPIs Card */}
               <Card className="bg-card/70 backdrop-blur-xs border shadow-xs overflow-hidden">
-                <CardContent className="p-4 space-y-3.5">
-                  <div className="flex items-start gap-3">
-                    <div
-                      className={`h-13 w-13 rounded-2xl flex items-center justify-center font-black text-lg shrink-0 text-white shadow-xs ${
-                        reportData.student.category === 'Junior'
-                          ? 'bg-gradient-to-br from-blue-600 to-indigo-700'
-                          : 'bg-gradient-to-br from-red-600 to-rose-700'
-                      }`}
-                    >
-                      {reportData.student.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-sm sm:text-base leading-tight truncate">
-                          {reportData.student.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-muted text-foreground border">
-                          {reportData.student.id}
-                        </span>
-                        <Badge
-                          className={`text-[10px] px-2 py-0.2 font-bold rounded-full border-0 text-white ${
-                            reportData.student.category === 'Junior'
-                              ? 'bg-blue-600 dark:bg-blue-500'
-                              : 'bg-red-600 dark:bg-red-500'
-                          }`}
-                        >
-                          {reportData.student.category}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 2x2 Performance KPIs */}
-                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/60">
+                <CardHeader className="p-3.5 pb-2 border-b border-border/50">
+                  <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <Award className="h-3.5 w-3.5 text-primary" />
+                    <span>Academic Performance</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3.5 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="p-2.5 rounded-lg bg-muted/40 border border-border/40">
                       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium mb-0.5">
                         <BookOpen className="h-3.5 w-3.5 text-blue-500" />
@@ -590,51 +657,17 @@ export default function StudentReportsPage() {
                 </CardContent>
               </Card>
 
-              {/* Academic & Personal Information Card */}
-              <Card className="bg-card/70 backdrop-blur-xs border shadow-xs">
-                <CardHeader className="p-3.5 pb-2 border-b border-border/50">
-                  <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <GraduationCap className="h-3.5 w-3.5 text-primary" />
-                    <span>Academic & Student Info</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-3.5 space-y-2 text-xs">
-                  <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted-foreground font-medium">Class / Standard</span>
-                    <span className="font-bold text-foreground">{reportData.student.class || 'NIL'}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted-foreground font-medium">School</span>
-                    <span className="font-semibold text-foreground text-right max-w-[180px] truncate" title={reportData.student.school || ''}>
-                      {reportData.student.school || 'NIL'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted-foreground font-medium">Tuition Group</span>
-                    <span className="font-bold text-foreground">Group {reportData.student.group_id || 'NIL'}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-border/30">
-                    <span className="text-muted-foreground font-medium">Admission Date</span>
-                    <span className="font-mono text-foreground">{formatReportDate(reportData.student.adm_date)}</span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground font-medium">Date of Birth</span>
-                    <span className="font-mono text-foreground">{formatReportDate(reportData.student.dob)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Contact Information Card */}
+              {/* Quick Contacts Card */}
               <Card className="bg-card/70 backdrop-blur-xs border shadow-xs">
                 <CardHeader className="p-3.5 pb-2 border-b border-border/50">
                   <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                     <Phone className="h-3.5 w-3.5 text-primary" />
-                    <span>Contact Information</span>
+                    <span>Quick Contacts</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-3.5 space-y-2 text-xs">
                   <div className="flex items-center justify-between py-1 border-b border-border/30">
-                    <span className="text-muted-foreground font-medium">Father's Contact</span>
+                    <span className="text-muted-foreground font-medium">Father</span>
                     {reportData.student.father_no ? (
                       <a
                         href={`tel:${reportData.student.father_no}`}
@@ -649,7 +682,7 @@ export default function StudentReportsPage() {
                   </div>
 
                   <div className="flex items-center justify-between py-1 border-b border-border/30">
-                    <span className="text-muted-foreground font-medium">Mother's Contact</span>
+                    <span className="text-muted-foreground font-medium">Mother</span>
                     {reportData.student.mother_no ? (
                       <a
                         href={`tel:${reportData.student.mother_no}`}
@@ -664,7 +697,7 @@ export default function StudentReportsPage() {
                   </div>
 
                   <div className="flex items-center justify-between py-1">
-                    <span className="text-muted-foreground font-medium">Personal Contact</span>
+                    <span className="text-muted-foreground font-medium">Personal</span>
                     {reportData.student.contact_no ? (
                       <a
                         href={`tel:${reportData.student.contact_no}`}
@@ -680,7 +713,7 @@ export default function StudentReportsPage() {
                 </CardContent>
               </Card>
 
-              {/* Monthly Results History Drilldown */}
+              {/* Monthly Results History & Direct Edit Drilldown */}
               {reportData.results && reportData.results.length > 0 && (
                 <Card className="bg-card/70 backdrop-blur-xs border shadow-xs">
                   <CardHeader className="p-3.5 pb-2 border-b border-border/50">
@@ -743,284 +776,293 @@ export default function StudentReportsPage() {
             {/* ══════════════════════════════════════════════════════
                 RIGHT SIDE (Desktop) / BELOW (Mobile): AUTHENTIC A4 REPORT CARD
                 ══════════════════════════════════════════════════════ */}
-            <div className="lg:col-span-8 xl:col-span-8 w-full">
-              <div className="printable-report w-full bg-white text-black font-sans border-[2.5px] border-black rounded-lg p-3 sm:p-5 lg:p-6 shadow-sm space-y-3 sm:space-y-4">
-                {/* ─── 1. Header Block with Logo & Official Branding ─── */}
-                <div className="flex items-center gap-3 sm:gap-4 pb-1">
-                  {/* Logo */}
-                  <div className="shrink-0 flex items-center justify-center">
-                    <img
-                      src={logoUrl}
-                      alt="EnglishJibi"
-                      className="h-14 w-14 sm:h-18 sm:w-18 object-contain rounded-full border border-gray-300 shadow-2xs"
-                    />
-                  </div>
+            <div className="lg:col-span-8 xl:col-span-8 w-full flex flex-col items-center">
+              <div
+                ref={a4ContainerRef}
+                className="w-full flex justify-center items-start overflow-hidden py-1"
+                style={{
+                  height: a4Scale < 1 ? `${Math.ceil(1123 * a4Scale)}px` : 'auto'
+                }}
+              >
+                <div
+                  id="printable-a4-report"
+                  style={{
+                    width: '794px',
+                    minHeight: '1123px',
+                    transform: a4Scale < 1 ? `scale(${a4Scale})` : undefined,
+                    transformOrigin: 'top center',
+                    backgroundColor: '#ffffff',
+                  }}
+                  className="printable-report bg-white text-black font-sans border-[2.5px] border-black rounded-none p-6 shadow-md flex flex-col justify-between shrink-0 box-border print:transform-none print:w-full print:min-h-0 print:border-[2px] print:shadow-none print:p-4"
+                >
+                  <div className="space-y-3.5">
+                    {/* ─── 1. Header Block with Logo & Official Branding ─── */}
+                    <div className="flex items-center gap-4 sm:gap-5 pb-1">
+                      {/* Logo */}
+                      <div className="shrink-0 flex items-center justify-center">
+                        <img
+                          src={logoUrl}
+                          alt="EnglishJibi"
+                          className="h-20 w-20 sm:h-[84px] sm:w-[84px] object-contain drop-shadow-xs"
+                        />
+                      </div>
 
-                  {/* Institution Details */}
-                  <div className="flex-1 text-center pr-2 sm:pr-4">
-                    <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight leading-tight uppercase font-sans">
-                      <span className="text-black">ENGLISH</span>
-                      <span className="text-red-600">JIBI</span>{' '}
-                      <span className="text-black">CLASSES</span>
-                    </h1>
-                    <p className="text-[11px] sm:text-xs italic font-semibold text-gray-800 tracking-wide mt-0.5">
-                      Your Child, Our Responsibility
-                    </p>
-                    <p className="text-[10px] sm:text-[11px] text-gray-700 font-medium mt-0.5 leading-tight">
-                      {reportData.settings.address || 'Duplex - 37, In front of DAV School, Sailashree Vihar, BBSR.'}
-                    </p>
-                    <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 text-[9px] sm:text-[10.5px] font-semibold text-sky-700 pt-0.5">
-                      <span className="inline-flex items-center gap-1">
-                        <Send className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-sky-500 fill-sky-500" />
-                        {reportData.settings.instagram || '@englishwithchiranjibisir'}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-sky-800">
-                        <Phone className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-sky-600" />
-                        {reportData.settings.phone1 || '+91 83289 22917'} / {reportData.settings.phone2 || '+91 7735812335'}
-                      </span>
+                      {/* Institution Details */}
+                      <div className="flex-1 text-center pr-2 min-w-0">
+                        <h1 className="text-2xl sm:text-[26px] font-black tracking-tight leading-tight uppercase font-sans">
+                          <span className="text-black">ENGLISH</span>
+                          <span className="text-red-600">JIBI</span>{' '}
+                          <span className="text-black">CLASSES</span>
+                        </h1>
+                        <p className="text-xs italic font-semibold text-gray-800 tracking-wide mt-0.5">
+                          Your Child, Our Responsibility
+                        </p>
+                        <p className="text-[11px] text-gray-700 font-medium mt-0.5 leading-tight">
+                          {reportData.settings.address || 'Duplex - 37, In front of DAV School, Sailashree Vihar, Bhubaneswar.'}
+                        </p>
+                        <div className="flex items-center justify-center gap-4 text-[10.5px] font-semibold text-sky-700 pt-1">
+                          <span className="inline-flex items-center gap-1">
+                            <Send className="h-3 w-3 text-sky-500 fill-sky-500" />
+                            {reportData.settings.instagram || '@englishwithchiranjibisir'}
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-sky-800">
+                            <Phone className="h-3 w-3 text-sky-600" />
+                            {reportData.settings.phone1 || '+91 83289 22917'} / {reportData.settings.phone2 || '+91 7735812335'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* ─── 2. Red Separator Line ─── */}
-                <div className="h-1 bg-red-600 w-full" />
+                    {/* ─── 2. Red Separator Line ─── */}
+                    <div className="h-1 bg-red-600 w-full" style={{ backgroundColor: '#dc2626' }} />
 
-                {/* ─── 3. Academic Session & Sub-Title ─── */}
-                <div className="text-center py-0.5 space-y-0.5">
-                  <h2 className="text-[11px] sm:text-xs font-black uppercase text-amber-700 tracking-wider">
-                    ACADEMIC SESSION: {academicSession}
-                  </h2>
-                  <div className="text-[10px] sm:text-[11px] font-bold text-gray-800">
-                    Official Annual Report Card
-                  </div>
-                  <div className="text-[11px] sm:text-xs font-bold text-black underline underline-offset-2 pt-0.5">
-                    Student's Profile
-                  </div>
-                </div>
-
-                {/* ─── 4. Student Profile Info Grid (2-Column Aligned with Colons) ─── */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-1 text-[10.5px] sm:text-xs font-semibold py-1 px-1 border-b border-gray-300 pb-2">
-                  {/* Left Column */}
-                  <div className="space-y-0.5">
-                    <div className="flex">
-                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">STUDENT ID</span>
-                      <span className="mr-1">:</span>
-                      <span className="font-mono font-bold text-black">{reportData.student.id}</span>
+                    {/* ─── 3. Academic Session & Sub-Title ─── */}
+                    <div className="text-center py-0.5 space-y-0.5">
+                      <h2 className="text-xs font-black uppercase text-amber-800 tracking-wider">
+                        ACADEMIC SESSION: {academicSession}
+                      </h2>
+                      <div className="text-[11px] font-bold text-gray-900">
+                        Official Annual Report Card
+                      </div>
+                      <div className="text-xs font-bold text-black underline underline-offset-2 pt-0.5">
+                        Student's Profile
+                      </div>
                     </div>
-                    <div className="flex">
-                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">STUDENT NAME</span>
-                      <span className="mr-1">:</span>
-                      <span className="font-bold text-black">{reportData.student.name}</span>
+
+                    {/* ─── 4. Student Profile Info Grid (Exact 2-Column Format) ─── */}
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs font-semibold py-1 px-1 border-b border-gray-300 pb-2">
+                      {/* Left Column */}
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center min-w-0">
+                          <span className="w-36 text-gray-700 uppercase font-bold text-[10.5px] shrink-0">STUDENT ID</span>
+                          <span className="mr-1.5 shrink-0">:</span>
+                          <span className="font-mono font-bold text-black truncate">{reportData.student.id}</span>
+                        </div>
+                        <div className="flex items-center min-w-0">
+                          <span className="w-36 text-gray-700 uppercase font-bold text-[10.5px] shrink-0">STUDENT NAME</span>
+                          <span className="mr-1.5 shrink-0">:</span>
+                          <span className="font-bold text-black uppercase truncate">{reportData.student.name}</span>
+                        </div>
+                        <div className="flex items-center min-w-0">
+                          <span className="w-36 text-gray-700 uppercase font-bold text-[10.5px] shrink-0">FATHER'S CONTACT</span>
+                          <span className="mr-1.5 shrink-0">:</span>
+                          <span className="font-mono text-gray-900 truncate">{reportData.student.father_no || 'NIL'}</span>
+                        </div>
+                        <div className="flex items-center min-w-0">
+                          <span className="w-36 text-gray-700 uppercase font-bold text-[10.5px] shrink-0">MOTHER'S CONTACT</span>
+                          <span className="mr-1.5 shrink-0">:</span>
+                          <span className="font-mono text-gray-900 truncate">{reportData.student.mother_no || 'NIL'}</span>
+                        </div>
+                        <div className="flex items-center min-w-0">
+                          <span className="w-36 text-gray-700 uppercase font-bold text-[10.5px] shrink-0">PERSONAL CONTACT</span>
+                          <span className="mr-1.5 shrink-0">:</span>
+                          <span className="font-mono text-gray-900 truncate">{reportData.student.contact_no || 'NIL'}</span>
+                        </div>
+                      </div>
+
+                      {/* Right Column */}
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center min-w-0">
+                          <span className="w-36 text-gray-700 uppercase font-bold text-[10.5px] shrink-0">CLASS</span>
+                          <span className="mr-1.5 shrink-0">:</span>
+                          <span className="font-bold text-black truncate">{reportData.student.class || 'NIL'}</span>
+                        </div>
+                        <div className="flex items-center min-w-0">
+                          <span className="w-36 text-gray-700 uppercase font-bold text-[10.5px] shrink-0">SCHOOL</span>
+                          <span className="mr-1.5 shrink-0">:</span>
+                          <span className="font-bold text-black truncate" title={reportData.student.school || ''}>
+                            {reportData.student.school || 'NIL'}
+                          </span>
+                        </div>
+                        <div className="flex items-center min-w-0">
+                          <span className="w-36 text-gray-700 uppercase font-bold text-[10.5px] shrink-0">ADMISSION DATE</span>
+                          <span className="mr-1.5 shrink-0">:</span>
+                          <span className="font-mono text-gray-900 truncate">{formatReportDate(reportData.student.adm_date)}</span>
+                        </div>
+                        <div className="flex items-center min-w-0">
+                          <span className="w-36 text-gray-700 uppercase font-bold text-[10.5px] shrink-0">DATE OF BIRTH</span>
+                          <span className="mr-1.5 shrink-0">:</span>
+                          <span className="font-mono text-gray-900 truncate">{formatReportDate(reportData.student.dob)}</span>
+                        </div>
+                        <div className="flex items-center min-w-0">
+                          <span className="w-36 text-gray-700 uppercase font-bold text-[10.5px] shrink-0">TUITION GROUP</span>
+                          <span className="mr-1.5 shrink-0">:</span>
+                          <span className="font-bold text-black truncate">Group {reportData.student.group_id || 'NIL'}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex">
-                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">FATHER'S CONTACT</span>
-                      <span className="mr-1">:</span>
-                      <span className="font-mono text-gray-900">{reportData.student.father_no || 'NIL'}</span>
+
+                    {/* ─── 5. Section Heading: RESULT SUMMARY ─── */}
+                    <div className="text-center pt-0.5">
+                      <h3 className="text-xs font-black uppercase text-amber-800 tracking-wider underline underline-offset-2">
+                        RESULT SUMMARY
+                      </h3>
                     </div>
-                    <div className="flex">
-                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">MOTHER'S CONTACT</span>
-                      <span className="mr-1">:</span>
-                      <span className="font-mono text-gray-900">{reportData.student.mother_no || 'NIL'}</span>
-                    </div>
-                    <div className="flex">
-                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">PERSONAL CONTACT</span>
-                      <span className="mr-1">:</span>
-                      <span className="font-mono text-gray-900">{reportData.student.contact_no || 'NIL'}</span>
-                    </div>
-                  </div>
 
-                  {/* Right Column */}
-                  <div className="space-y-0.5">
-                    <div className="flex">
-                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">CLASS</span>
-                      <span className="mr-1">:</span>
-                      <span className="font-bold text-black">{reportData.student.class || 'NIL'}</span>
-                    </div>
-                    <div className="flex">
-                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">SCHOOL</span>
-                      <span className="mr-1">:</span>
-                      <span className="font-bold text-black truncate" title={reportData.student.school || ''}>
-                        {reportData.student.school || 'NIL'}
-                      </span>
-                    </div>
-                    <div className="flex">
-                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">ADMISSION DATE</span>
-                      <span className="mr-1">:</span>
-                      <span className="font-mono text-gray-900">{formatReportDate(reportData.student.adm_date)}</span>
-                    </div>
-                    <div className="flex">
-                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">DATE OF BIRTH</span>
-                      <span className="mr-1">:</span>
-                      <span className="font-mono text-gray-900">{formatReportDate(reportData.student.dob)}</span>
-                    </div>
-                    <div className="flex">
-                      <span className="w-28 sm:w-32 text-gray-800 uppercase font-bold text-[10px] sm:text-[11px]">TUITION GROUP</span>
-                      <span className="mr-1">:</span>
-                      <span className="font-bold text-black">Group {reportData.student.group_id || 'NIL'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ─── 5. Section Heading: RESULT SUMMARY ─── */}
-                <div className="text-center pt-0.5">
-                  <h3 className="text-[11px] sm:text-xs font-black uppercase text-amber-700 tracking-wider underline underline-offset-2">
-                    RESULT SUMMARY
-                  </h3>
-                </div>
-
-                {/* ─── 6. Performance Matrix Table (All 12 Months) ─── */}
-                {/* Fits all screen sizes cleanly without horizontal scrolling */}
-                <div className="w-full">
-                  <table className="w-full text-center border-collapse border-[1.5px] border-black text-[9px] sm:text-[11px] leading-tight">
-                    <thead className="bg-gray-100 font-bold border-b-[1.5px] border-black text-black">
-                      <tr>
-                        <th className="p-1 sm:p-1.5 border border-black font-black uppercase text-left pl-1.5 sm:pl-2 w-[16%]">
-                          MONTH
-                        </th>
-                        {subjectsList.map((subName) => (
-                          <th key={subName} className="p-0.5 sm:p-1.5 border border-black font-bold uppercase w-[12%]">
-                            {subName}
-                          </th>
-                        ))}
-                        <th className="p-0.5 sm:p-1.5 border border-black font-bold uppercase w-[14%]">
-                          Total
-                        </th>
-                        <th className="p-0.5 sm:p-1.5 border border-black font-bold uppercase w-[10%]">
-                          %
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-black font-medium">
-                      {SESSION_MONTHS.map((mCode) => {
-                        const monthName = MONTH_NAMES[mCode]?.toUpperCase() || mCode;
-                        const monthResult = resultsByMonth.get(mCode);
-                        const isAbsent = monthResult?.status === 'Absent';
-
-                        // Build marks map for this month
-                        const marksMap = new Map<string, { obt: number | null; max: number; isAbsent?: boolean }>();
-                        if (monthResult && monthResult.marks) {
-                          monthResult.marks.forEach((mk) => {
-                            marksMap.set(mk.subject_name.toLowerCase(), {
-                              obt: mk.obtained_marks,
-                              max: mk.max_marks,
-                              isAbsent: Boolean(mk.is_absent),
-                            });
-                          });
-                        }
-
-                        return (
-                          <tr key={mCode} className="h-6 sm:h-6.5 hover:bg-gray-50/50">
-                            {/* Month Column */}
-                            <td className="p-0.5 sm:p-1 border border-black font-bold uppercase text-left pl-1.5 sm:pl-2 text-black">
-                              {monthName}
-                            </td>
-
-                            {/* Subject Marks Columns */}
-                            {subjectsList.map((subName) => {
-                              const mk = marksMap.get(subName.toLowerCase());
-
-                              if (!monthResult) {
-                                return <td key={subName} className="p-0.5 border border-black" />;
-                              }
-
-                              if (isAbsent || mk?.isAbsent) {
-                                return (
-                                  <td key={subName} className="p-0.5 border border-black font-bold text-red-600">
-                                    A
-                                  </td>
-                                );
-                              }
-
-                              if (!mk || mk.obt === null) {
-                                return <td key={subName} className="p-0.5 border border-black" />;
-                              }
-
-                              return (
-                                <td key={subName} className="p-0.5 border border-black font-mono font-semibold text-black">
-                                  {formatMark(mk.obt)}/{formatMark(mk.max)}
-                                </td>
-                              );
-                            })}
-
-                            {/* Total Column */}
-                            <td className="p-0.5 border border-black font-mono font-bold text-black">
-                              {monthResult
-                                ? isAbsent
-                                  ? 'A'
-                                  : monthResult.total_obtained !== null
-                                  ? `${formatMark(monthResult.total_obtained)}/${formatMark(monthResult.total_max)}`
-                                  : ''
-                                : ''}
-                            </td>
-
-                            {/* Percentage Column */}
-                            <td className="p-0.5 border border-black font-mono font-bold text-black">
-                              {monthResult
-                                ? isAbsent
-                                  ? '-'
-                                  : monthResult.percentage !== null
-                                  ? `${Math.round(Number(monthResult.percentage))}%`
-                                  : ''
-                                : ''}
-                            </td>
+                    {/* ─── 6. Performance Matrix Table (All 12 Months) ─── */}
+                    <div className="w-full">
+                      <table className="w-full table-fixed text-center border-collapse border-[1.5px] border-black text-[11px] leading-tight">
+                        <thead className="bg-gray-100 font-bold border-b-[1.5px] border-black text-black" style={{ backgroundColor: '#f3f4f6' }}>
+                          <tr>
+                            <th className="p-1 border border-black font-black uppercase text-left pl-2.5 w-[16%]">
+                              MONTH
+                            </th>
+                            {subjectsList.map((subName) => (
+                              <th key={subName} className="p-1 border border-black font-bold uppercase truncate">
+                                {subName}
+                              </th>
+                            ))}
+                            <th className="p-1 border border-black font-bold uppercase w-[14%]">
+                              Total
+                            </th>
+                            <th className="p-1 border border-black font-bold uppercase w-[10%]">
+                              %
+                            </th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                        </thead>
+                        <tbody className="divide-y divide-black font-medium">
+                          {SESSION_MONTHS.map((mCode) => {
+                            const monthName = MONTH_NAMES[mCode]?.toUpperCase() || mCode;
+                            const monthResult = resultsByMonth.get(mCode);
+                            const isAbsent = monthResult?.status === 'Absent';
 
-                {/* ─── 7. Cumulative Evaluation Summary Box ─── */}
-                <div className="grid grid-cols-3 border-[1.5px] border-black bg-gray-50 text-[10px] sm:text-xs font-bold text-center">
-                  <div className="p-1.5 sm:p-2 border-r border-black">
-                    <span className="text-gray-600 block text-[9px] sm:text-[10px] uppercase font-semibold">Exams Attended</span>
-                    <span className="font-bold text-black">{stats.totalExams} of 12 Months</span>
-                  </div>
-                  <div className="p-1.5 sm:p-2 border-r border-black">
-                    <span className="text-gray-600 block text-[9px] sm:text-[10px] uppercase font-semibold">Cumulative Avg</span>
-                    <span className="font-bold text-black">{stats.avgPercentage}%</span>
-                  </div>
-                  <div className="p-1.5 sm:p-2">
-                    <span className="text-gray-600 block text-[9px] sm:text-[10px] uppercase font-semibold">Overall Grade</span>
-                    <span className="font-black text-red-600">{getGrade(stats.avgPercentage)}</span>
-                  </div>
-                </div>
+                            // Build marks map for this month
+                            const marksMap = new Map<string, { obt: number | null; max: number; isAbsent?: boolean }>();
+                            if (monthResult && monthResult.marks) {
+                              monthResult.marks.forEach((mk) => {
+                                marksMap.set(mk.subject_name.toLowerCase(), {
+                                  obt: mk.obtained_marks,
+                                  max: mk.max_marks,
+                                  isAbsent: Boolean(mk.is_absent),
+                                });
+                              });
+                            }
 
-                {/* ─── 8. Feedback Box ─── */}
-                <div className="border-[1.5px] border-black rounded-xs overflow-hidden">
-                  <div className="border-b-[1.5px] border-black bg-gray-50 px-2.5 py-0.5 font-bold text-[10px] sm:text-xs uppercase w-28 border-r">
-                    FEEDBACK
-                  </div>
-                  <div className="h-12 sm:h-14 p-1.5 text-[10px] sm:text-xs text-gray-700 italic flex items-center">
-                    {stats.avgPercentage >= 80 ? (
-                      <span>Outstanding academic performance and consistent dedication throughout the academic year.</span>
-                    ) : stats.avgPercentage >= 60 ? (
-                      <span>Good progress shown with steady potential. Focus on consistent practice and revisions.</span>
-                    ) : stats.totalExams > 0 ? (
-                      <span>Needs regular improvement in core foundation areas. Extra guidance is encouraged.</span>
-                    ) : (
-                      <span className="text-gray-400">Official teacher's assessment will be provided upon examination completion.</span>
-                    )}
-                  </div>
-                </div>
+                            return (
+                              <tr key={mCode} className="h-6.5 hover:bg-gray-50/50">
+                                {/* Month Column */}
+                                <td className="p-1 border border-black font-bold uppercase text-left pl-2.5 text-black truncate">
+                                  {monthName}
+                                </td>
 
-                {/* ─── 9. Teacher and Parent Signature Block ─── */}
-                <div className="pt-4 sm:pt-6 pb-1 grid grid-cols-2 gap-6 text-[10.5px] sm:text-xs font-bold text-black">
-                  <div className="space-y-0.5">
-                    <div className="text-[10px] sm:text-[11px] font-mono font-bold text-black">
-                      * {reportData.settings.teacherName || reportData.settings.adminName || 'CHIRANJIBI SIR'}
+                                {/* Subject Marks Columns */}
+                                {subjectsList.map((subName) => {
+                                  const mk = marksMap.get(subName.toLowerCase());
+
+                                  if (!monthResult) {
+                                    return <td key={subName} className="p-1 border border-black" />;
+                                  }
+
+                                  if (isAbsent || mk?.isAbsent) {
+                                    return (
+                                      <td key={subName} className="p-1 border border-black font-bold text-red-600">
+                                        A
+                                      </td>
+                                    );
+                                  }
+
+                                  if (!mk || mk.obt === null) {
+                                    return <td key={subName} className="p-1 border border-black" />;
+                                  }
+
+                                  return (
+                                    <td key={subName} className="p-1 border border-black font-mono font-semibold text-black">
+                                      {formatMark(mk.obt)}/{formatMark(mk.max)}
+                                    </td>
+                                  );
+                                })}
+
+                                {/* Total Column */}
+                                <td className="p-1 border border-black font-mono font-bold text-black">
+                                  {monthResult
+                                    ? isAbsent
+                                      ? 'A'
+                                      : monthResult.total_obtained !== null
+                                      ? `${formatMark(monthResult.total_obtained)}/${formatMark(monthResult.total_max)}`
+                                      : ''
+                                    : ''}
+                                </td>
+
+                                {/* Percentage Column */}
+                                <td className="p-1 border border-black font-mono font-bold text-black">
+                                  {monthResult
+                                    ? isAbsent
+                                      ? '-'
+                                      : monthResult.percentage !== null
+                                      ? `${Math.round(Number(monthResult.percentage))}%`
+                                      : ''
+                                    : ''}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
-                    <div className="text-[10px] sm:text-[11px] font-sans font-semibold text-gray-800 border-t border-black/40 pt-0.5 inline-block pr-6">
-                      Teacher's Signature
+
+                    {/* ─── 7. Cumulative Evaluation Summary Box ─── */}
+                    <div className="grid grid-cols-3 border-[1.5px] border-black bg-gray-50 text-xs font-bold text-center" style={{ backgroundColor: '#f9fafb' }}>
+                      <div className="p-1.5 sm:p-2 border-r border-black">
+                        <span className="text-gray-600 block text-[10px] uppercase font-semibold">Exams Attended</span>
+                        <span className="font-bold text-black">{stats.totalExams} of 12 Months</span>
+                      </div>
+                      <div className="p-1.5 sm:p-2 border-r border-black">
+                        <span className="text-gray-600 block text-[10px] uppercase font-semibold">Cumulative Avg</span>
+                        <span className="font-bold text-black">{stats.avgPercentage}%</span>
+                      </div>
+                      <div className="p-1.5 sm:p-2">
+                        <span className="text-gray-600 block text-[10px] uppercase font-semibold">Overall Grade</span>
+                        <span className="font-black text-red-600">{getGrade(stats.avgPercentage)}</span>
+                      </div>
+                    </div>
+
+                    {/* ─── 8. Feedback Box ─── */}
+                    <div className="border-[1.5px] border-black rounded-xs overflow-hidden">
+                      <div className="border-b-[1.5px] border-black bg-gray-50 px-2.5 py-0.5 font-bold text-xs uppercase w-28 border-r" style={{ backgroundColor: '#f9fafb' }}>
+                        FEEDBACK
+                      </div>
+                      <div className="h-14 p-1.5" />
                     </div>
                   </div>
 
-                  <div className="text-right space-y-0.5">
-                    <div className="text-[10px] sm:text-[11px] font-mono font-bold text-black">
-                      {formatReportDate(new Date().toISOString())}
+                  {/* ─── 9. Teacher and Parent Signature Block ─── */}
+                  <div className="pt-6 pb-1 grid grid-cols-2 gap-8 text-xs font-bold text-black">
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="text-[11px] font-mono font-bold text-black truncate">
+                        * {reportData.settings.teacherName || reportData.settings.adminName || 'CHIRANJIBI SIR'}
+                      </div>
+                      <div className="text-[11px] font-sans font-semibold text-gray-800 border-t border-black/50 pt-0.5 inline-block pr-8">
+                        Teacher's Signature
+                      </div>
                     </div>
-                    <div className="text-[10px] sm:text-[11px] font-sans font-semibold text-gray-800 border-t border-black/40 pt-0.5 inline-block pl-6">
-                      Parent's Signature & Date
+
+                    <div className="text-right space-y-0.5 min-w-0">
+                      <div className="text-[11px] font-mono font-bold text-black truncate">
+                        {formatReportDate(new Date().toISOString())}
+                      </div>
+                      <div className="text-[11px] font-sans font-semibold text-gray-800 border-t border-black/50 pt-0.5 inline-block pl-8">
+                        Parent's Signature & Date
+                      </div>
                     </div>
                   </div>
                 </div>

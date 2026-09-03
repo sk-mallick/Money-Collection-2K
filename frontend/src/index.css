@@ -192,54 +192,172 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm 12mm 12mm 12mm;
+    margin: 4mm;
   }
 
-  body {
-    background: white !important;
-    color: black !important;
-    font-size: 11pt;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  /* ── 1. Clean canvas ── */
+  *,
+  *::before,
+  *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
   }
 
+  html,
+  html.dark,
+  body,
+  body.dark {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ── 2. REMOVE non-print elements (display:none = zero layout space) ── */
   .no-print,
   [data-slot="sidebar"],
+  [data-slot="sidebar-container"],
+  [data-slot="sidebar-gap"],
+  [data-slot="sidebar-rail"],
+  [data-slot="sidebar-inner"],
+  [data-slot="sidebar-trigger"],
+  [data-mobile="true"],
   header,
   nav,
+  aside,
   button,
-  .sonner-toaster {
+  .sonner-toaster,
+  [data-radix-popper-content-wrapper],
+  [data-state="open"] > [data-radix-portal] {
     display: none !important;
   }
 
-  main {
-    padding: 0 !important;
+  /* ── 3. Strip ancestor containers to minimal zero-height wrappers ── */
+  #root,
+  [data-slot="sidebar-wrapper"],
+  [data-slot="sidebar-inset"],
+  main,
+  .page-enter {
+    display: block !important;
     margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
     overflow: visible !important;
   }
 
-  .printable-report,
-  .printable-sheet {
-    box-shadow: none !important;
-    border: 1px solid #d1d5db !important;
-    border-radius: 8px !important;
-    padding: 16px !important;
-    background: white !important;
-    break-inside: avoid;
+  /* ── 4. Collapse outer grids to block (prevents extra layout height) ── */
+  .grid {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
-  table {
+  /* ── 5. Collapse wrapper div around the A4 report ── */
+  #printable-a4-report ~ *,
+  .page-enter > *:not(:has(#printable-a4-report)):not(.printable-report):not(#printable-a4-report) {
+    display: none !important;
+  }
+
+  /* ── 6. Style the A4 report card ── */
+  .printable-report {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-shadow: none !important;
+    border: 2.5px solid #000000 !important;
+    border-radius: 0 !important;
+    padding: 24px 24px !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    height: auto !important;
+    min-height: calc(297mm - 12mm) !important;
+    box-sizing: border-box !important;
+    transform: none !important;
+    margin: 0 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    overflow: visible !important;
+  }
+
+  /* ── 6b. Professional spacing between content sections ── */
+  .printable-report > div:first-child > * + * {
+    margin-top: 14px !important;
+  }
+
+  /* ── 7. Preserve grid layouts INSIDE the report ── */
+  .printable-report .grid,
+  .printable-report.grid {
+    display: grid !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  .printable-report .grid-cols-2,
+  .printable-report.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .printable-report .grid-cols-3,
+  .printable-report.grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  /* ── 8. Preserve flex layouts INSIDE the report ── */
+  .printable-report .flex {
+    display: flex !important;
+  }
+  .printable-report .inline-flex {
+    display: inline-flex !important;
+  }
+
+  /* ── 9. Table styling ── */
+  .printable-report table {
     width: 100% !important;
     border-collapse: collapse !important;
+    table-layout: fixed !important;
   }
 
-  th, td {
-    border: 1px solid #e5e7eb !important;
-    color: black !important;
-    padding: 6px 8px !important;
+  .printable-report th,
+  .printable-report td {
+    border: 1.2px solid #000000 !important;
+    color: #000000 !important;
+    padding: 2.5px 4px !important;
+    font-size: 11px !important;
   }
 
-  thead {
-    background-color: #f3f4f6 !important;
+  /* ── 10. Blank marks sheet print styling ── */
+  .printable-sheet {
+    box-shadow: none !important;
+    border: 2px solid #000000 !important;
+    border-radius: 0 !important;
+    padding: 16px !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
   }
 }
