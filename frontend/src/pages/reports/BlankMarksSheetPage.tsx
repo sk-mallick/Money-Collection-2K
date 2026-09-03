@@ -558,7 +558,7 @@ export default function BlankMarksSheetPage() {
                 transformOrigin: 'top center',
                 backgroundColor: '#ffffff',
               }}
-              className="printable-sheet bg-white text-black font-sans border-[2.5px] border-black rounded-none p-5 sm:p-6 shadow-md flex flex-col justify-start shrink-0 box-border print:transform-none print:w-full print:border-[2px] print:shadow-none print:p-4"
+              className="printable-sheet bg-white text-black font-sans border-[2.5px] border-black rounded-none pt-8 pb-5 px-5 sm:pt-9 sm:pb-6 sm:px-6 shadow-md flex flex-col justify-start shrink-0 box-border print:transform-none print:w-full print:border-[2px] print:shadow-none print:p-4"
             >
               <div className="space-y-1.5">
                 {/* ─── 1. Header & Title Banner (Compact, Less Area) ─── */}

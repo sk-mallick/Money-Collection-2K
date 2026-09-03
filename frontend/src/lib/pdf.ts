@@ -1342,9 +1342,11 @@ export async function buildBlankMarksSheetsDoc(options: BlankMarksSheetPDFOption
 
   const pageWidth = 297;
   const pageHeight = 210;
-  const margin = 7;
-  const contentWidth = pageWidth - margin * 2; // 283mm
-  const contentHeight = pageHeight - margin * 2; // 196mm
+  const marginX = 7;
+  const marginTop = 12; // 7mm base + 5mm (0.5cm) extra top margin for stapling
+  const marginBottom = 6;
+  const contentWidth = pageWidth - marginX * 2; // 283mm
+  const contentHeight = pageHeight - marginTop - marginBottom; // 192mm
 
   // Asset loading (logo, send icon, phone icon)
   const sendSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`;
@@ -1392,12 +1394,12 @@ export async function buildBlankMarksSheetsDoc(options: BlankMarksSheetPDFOption
       }
       isFirstPageOfDoc = false;
 
-      // 1. Outer Border
+      // 1. Outer Border (Starts at Y=12mm for 0.5cm extra top stapling margin)
       doc.setDrawColor(0, 0, 0);
       doc.setLineWidth(0.6);
-      doc.rect(margin, margin, contentWidth, contentHeight, 'S');
+      doc.rect(marginX, marginTop, contentWidth, contentHeight, 'S');
 
-      // 2. Compact Streamlined Header Section (Less area used, maximizing row height)
+      // 2. Compact Streamlined Header Section
       const headerCenterX = pageWidth / 2;
 
       // Title: "ENGLISHJIBI CLASSES"
@@ -1413,27 +1415,27 @@ export async function buildBlankMarksSheetsDoc(options: BlankMarksSheetPDFOption
       const titleX = headerCenterX - totalW / 2;
 
       doc.setTextColor(...blackColor);
-      doc.text(part1, titleX, 12.0);
+      doc.text(part1, titleX, marginTop + 4.8);
       doc.setTextColor(...redColor);
-      doc.text(part2, titleX + w1, 12.0);
+      doc.text(part2, titleX + w1, marginTop + 4.8);
       doc.setTextColor(...blackColor);
-      doc.text(part3, titleX + w1 + w2, 12.0);
+      doc.text(part3, titleX + w1 + w2, marginTop + 4.8);
 
       // Title Banner
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.0);
       doc.setTextColor(0, 0, 0);
       const sheetTitle = `MONTHLY EXAMINATION MARKS ENTRY SHEET — ${monthName.toUpperCase()} ${academicYear}`;
-      doc.text(sheetTitle, headerCenterX, 15.6, { align: 'center' });
+      doc.text(sheetTitle, headerCenterX, marginTop + 8.4, { align: 'center' });
 
       // Red Divider
       doc.setFillColor(220, 38, 38);
-      doc.rect(margin + 1.5, 17.5, contentWidth - 3, 0.7, 'F');
+      doc.rect(marginX + 1.5, marginTop + 10.3, contentWidth - 3, 0.7, 'F');
 
       // Group & Batch Meta Banner
-      const metaY = 19.5;
+      const metaY = marginTop + 12.3;
       const metaH = 5.0;
-      const tableLeftX = margin + 1.5;
+      const tableLeftX = marginX + 1.5;
       const tableWidth = contentWidth - 3; // 280mm
       doc.setFillColor(245, 246, 248);
       doc.setDrawColor(0, 0, 0);
@@ -1450,10 +1452,10 @@ export async function buildBlankMarksSheetsDoc(options: BlankMarksSheetPDFOption
       doc.text(`ENROLLED: ${totalStudents} Students`, tableLeftX + colSpacing * 3 + 2, metaY + 3.5);
       doc.text(`PAGE: ${pageIdx + 1} OF ${totalPagesForGroup}`, tableLeftX + colSpacing * 4 + 2, metaY + 3.5);
 
-      // 3. Marks Table (Exactly 25 rows with increased row height: 6.8mm)
-      const tableTopY = 26.0;
+      // 3. Marks Table (Exactly 25 rows with row height: 6.65mm)
+      const tableTopY = marginTop + 18.5; // Y = 30.5mm
       const headerH = 6.0;
-      const rowH = 6.8; // 25 * 6.8 = 170mm, total table = 176mm (ends at 202.0mm inside 203mm outer border)
+      const rowH = 6.65; // 25 * 6.65 = 166.25mm, total table = 172.25mm (ends at 202.75mm inside 204mm border)
 
       // Column widths: Class & School reduced as requested to allocate max width to subjects
       const colIdW = 16;
