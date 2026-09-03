@@ -73,6 +73,45 @@ export default function MonthlyResultsPage() {
     }
   }, [formGroupId, formCategory]);
 
+  const activeFormYear = formYear || academicYear;
+
+  // Filter available months: only show months that don't already have all groups created
+  const availableMonths = useMemo(() => {
+    if (groups.length === 0) return MONTH_CODES;
+    return MONTH_CODES.filter((m) => {
+      const createdCount = periods.filter(
+        (p) => p.academic_year === activeFormYear && p.month === m
+      ).length;
+      return createdCount < groups.length;
+    });
+  }, [groups, periods, activeFormYear]);
+
+  // Filter available groups for the selected month: only show groups that haven't been created yet for this month
+  const availableGroupsForMonth = useMemo(() => {
+    if (!formMonth) return groups;
+    const createdGroupIds = new Set(
+      periods
+        .filter((p) => p.academic_year === activeFormYear && p.month === formMonth)
+        .map((p) => p.group_id)
+    );
+    return groups.filter((g) => !createdGroupIds.has(g.id));
+  }, [groups, periods, activeFormYear, formMonth]);
+
+  // Auto-reset formMonth if it's no longer in availableMonths
+  useEffect(() => {
+    if (formMonth && !availableMonths.some((m) => m === formMonth)) {
+      setFormMonth('');
+      setFormGroupId('');
+    }
+  }, [formMonth, availableMonths]);
+
+  // Auto-reset formGroupId if it's no longer in availableGroupsForMonth
+  useEffect(() => {
+    if (formGroupId && !availableGroupsForMonth.some((g) => g.id === formGroupId)) {
+      setFormGroupId('');
+    }
+  }, [formGroupId, availableGroupsForMonth]);
+
   const existingPeriod = useMemo(() => {
     if (!formYear || !formMonth || !formGroupId) return null;
     return periods.find(p => p.academic_year === formYear && p.month === formMonth && p.group_id === formGroupId);
@@ -217,34 +256,46 @@ export default function MonthlyResultsPage() {
 
             {/* 2. Month (Appears after Year is selected) */}
             {(formYear || academicYear) && (
-              <Select value={formMonth} onValueChange={setFormMonth}>
-                <SelectTrigger className="w-[135px] h-9 text-xs bg-card shrink-0 animate-in fade-in duration-150">
-                  <SelectValue placeholder="Select Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MONTH_CODES.map(m => (
-                    <SelectItem key={m} value={m}>
-                      {MONTH_NAMES[m]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              availableMonths.length === 0 ? (
+                <div className="h-9 px-3 flex items-center text-xs text-muted-foreground bg-muted/40 border rounded-md">
+                  <span>All months complete</span>
+                </div>
+              ) : (
+                <Select value={formMonth} onValueChange={setFormMonth}>
+                  <SelectTrigger className="w-[135px] h-9 text-xs bg-card shrink-0 animate-in fade-in duration-150">
+                    <SelectValue placeholder="Select Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMonths.map(m => (
+                      <SelectItem key={m} value={m}>
+                        {MONTH_NAMES[m]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )
             )}
 
             {/* 3. Group (Appears after Month is selected) */}
             {formMonth && (
-              <Select value={formGroupId} onValueChange={setFormGroupId}>
-                <SelectTrigger className="w-[130px] h-9 text-xs bg-card shrink-0 animate-in fade-in duration-150">
-                  <SelectValue placeholder="Select Group" />
-                </SelectTrigger>
-                <SelectContent>
-                  {groups.map(g => (
-                    <SelectItem key={g.id} value={g.id}>
-                      Group {g.id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              availableGroupsForMonth.length === 0 ? (
+                <div className="h-9 px-3 flex items-center text-xs text-muted-foreground bg-muted/40 border rounded-md">
+                  <span>All groups created</span>
+                </div>
+              ) : (
+                <Select value={formGroupId} onValueChange={setFormGroupId}>
+                  <SelectTrigger className="w-[130px] h-9 text-xs bg-card shrink-0 animate-in fade-in duration-150">
+                    <SelectValue placeholder="Select Group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableGroupsForMonth.map(g => (
+                      <SelectItem key={g.id} value={g.id}>
+                        Group {g.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )
             )}
 
             {/* 4. Action Button (Appears in the same row once Group is selected) */}
@@ -449,12 +500,12 @@ export default function MonthlyResultsPage() {
             {/* Month */}
             <div className="space-y-1.5">
               <Label htmlFor="create-month">Month</Label>
-              <Select value={formMonth} onValueChange={setFormMonth}>
+              <Select value={formMonth} onValueChange={setFormMonth} disabled={availableMonths.length === 0}>
                 <SelectTrigger id="create-month" className="w-full">
-                  <SelectValue placeholder="Select month" />
+                  <SelectValue placeholder={availableMonths.length === 0 ? "All months completed" : "Select month"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {MONTH_CODES.map(m => <SelectItem key={m} value={m}>{MONTH_NAMES[m]}</SelectItem>)}
+                  {availableMonths.map(m => <SelectItem key={m} value={m}>{MONTH_NAMES[m]}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -462,12 +513,12 @@ export default function MonthlyResultsPage() {
             {/* Group */}
             <div className="space-y-1.5">
               <Label htmlFor="create-group">Group / Batch</Label>
-              <Select value={formGroupId} onValueChange={setFormGroupId} disabled={groups.length === 0}>
+              <Select value={formGroupId} onValueChange={setFormGroupId} disabled={!formMonth || availableGroupsForMonth.length === 0}>
                 <SelectTrigger id="create-group" className="w-full">
-                  <SelectValue placeholder="Select group" />
+                  <SelectValue placeholder={!formMonth ? "Select month first" : availableGroupsForMonth.length === 0 ? "All groups done for this month" : "Select group"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {groups.map(g => (
+                  {availableGroupsForMonth.map(g => (
                     <SelectItem key={g.id} value={g.id}>
                       Group {g.id}
                     </SelectItem>

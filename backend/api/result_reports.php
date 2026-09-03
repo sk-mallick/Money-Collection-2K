@@ -120,7 +120,27 @@ function getFullHistory(PDO $pdo, string $studentId, array $student): void {
                 ORDER BY s.display_order ASC
             ");
             $marksStmt->execute([$r['id']]);
-            $r['marks'] = $marksStmt->fetchAll();
+            $rawMarks = $marksStmt->fetchAll();
+            $formattedMarks = [];
+            foreach ($rawMarks as $m) {
+                $formattedMarks[] = [
+                    'id' => (int)$m['id'],
+                    'student_result_id' => (int)$m['student_result_id'],
+                    'subject_id' => (int)$m['subject_id'],
+                    'max_marks' => (int)$m['max_marks'],
+                    'obtained_marks' => $m['obtained_marks'] !== null ? (float)$m['obtained_marks'] : null,
+                    'is_absent' => (bool)($m['is_absent'] ?? 0),
+                    'is_default_max' => (bool)$m['is_default_max'],
+                    'subject_name' => $m['subject_name'],
+                    'subject_category' => $m['subject_category'],
+                ];
+            }
+            $r['total_obtained'] = $r['total_obtained'] !== null ? (float)$r['total_obtained'] : null;
+            $r['total_max'] = $r['total_max'] !== null ? (float)$r['total_max'] : null;
+            $r['percentage'] = $r['percentage'] !== null ? (float)$r['percentage'] : null;
+            $r['class_rank'] = $r['class_rank'] !== null ? (int)$r['class_rank'] : null;
+            $r['group_rank'] = $r['group_rank'] !== null ? (int)$r['group_rank'] : null;
+            $r['marks'] = $formattedMarks;
             $filteredResults[] = $r;
         }
     }

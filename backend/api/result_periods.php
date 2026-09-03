@@ -71,7 +71,7 @@ function listResultPeriods(PDO $pdo): void {
             FROM rc_result_periods rp
             LEFT JOIN `groups` g ON rp.group_id = g.id
             $whereClause
-            ORDER BY rp.academic_year DESC, FIELD(rp.month, 'MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC','JAN','FEB') ASC, rp.group_id ASC";
+            ORDER BY rp.academic_year DESC, FIELD(rp.month, 'MAR','FEB','JAN','DEC','NOV','OCT','SEP','AUG','JUL','JUN','MAY','APR') ASC, rp.group_id DESC";
     
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);

@@ -334,21 +334,33 @@ export default function StudentReportsPage() {
     if (!reportData || !reportData.results || reportData.results.length === 0) {
       return { totalExams: 0, avgPercentage: 0, highestPercentage: 0, bestMonth: '—' };
     }
-    const attended = reportData.results.filter(r => r.status !== 'Absent' && r.percentage !== null);
+    const attended = reportData.results.filter(
+      (r) => r.status !== 'Absent' && r.percentage !== null && r.percentage !== undefined
+    );
     if (attended.length === 0) {
       return { totalExams: reportData.results.length, avgPercentage: 0, highestPercentage: 0, bestMonth: '—' };
     }
 
-    const percentages = attended.map(r => r.percentage || 0);
-    const sum = percentages.reduce((a, b) => a + b, 0);
-    const avg = Math.round(sum / percentages.length);
-    const highest = Math.max(...percentages);
-    const bestResult = attended.find(r => r.percentage === highest);
+    const validScores = attended
+      .map((r) => ({
+        month: r.month,
+        percentage: Number(r.percentage),
+      }))
+      .filter((s) => !isNaN(s.percentage));
+
+    if (validScores.length === 0) {
+      return { totalExams: reportData.results.length, avgPercentage: 0, highestPercentage: 0, bestMonth: '—' };
+    }
+
+    const sum = validScores.reduce((acc, curr) => acc + curr.percentage, 0);
+    const avg = Math.round(sum / validScores.length);
+    const highest = Math.max(...validScores.map((s) => s.percentage));
+    const bestResult = validScores.find((s) => Math.abs(s.percentage - highest) < 0.01);
 
     return {
       totalExams: reportData.results.length,
-      avgPercentage: avg,
-      highestPercentage: Math.round(highest),
+      avgPercentage: isNaN(avg) ? 0 : avg,
+      highestPercentage: isNaN(highest) ? 0 : Math.round(highest),
       bestMonth: bestResult ? (MONTH_NAMES[bestResult.month] || bestResult.month) : '—',
     };
   }, [reportData]);
