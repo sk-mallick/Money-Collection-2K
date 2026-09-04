@@ -42,7 +42,7 @@ export default function ReportsDashboard() {
   const completedCount = periods.filter(p => p.status === 'Completed' || p.status === 'Published').length;
   const draftCount = periods.filter(p => p.status === 'Draft').length;
   const absentTotal = periods.reduce((sum, p) => sum + (Number(p.absent_count) || 0), 0);
-  const latestPeriod = periods.length > 0 ? periods[0] : null;
+  const latestPeriod = periods.find(p => (Number(p.ranked_count) > 0) || p.status === 'Completed' || p.status === 'Published') || (periods.length > 0 ? periods[0] : null);
 
   const stats = [
     { label: 'Total Students', value: totalStudents, icon: Users, color: 'text-blue-500' },

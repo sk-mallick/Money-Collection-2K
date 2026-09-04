@@ -139,7 +139,7 @@ function CustomDropdown({
 }
 
 export default function RankingsPage() {
-  const [academicYear, setAcademicYear] = useState('');
+  const [academicYear, setAcademicYear] = useState('2026-27');
   const [month, setMonth] = useState('AUG');
   const [rankingType, setRankingType] = useState<'class' | 'group'>('class');
   const [rankings, setRankings] = useState<RankingGroup[]>([]);
@@ -147,7 +147,7 @@ export default function RankingsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilterKey, setSelectedFilterKey] = useState<string>('all');
   const [settings, setSettings] = useState<Record<string, string>>({});
-  const [, setPeriods] = useState<ResultPeriod[]>([]);
+  const [periods, setPeriods] = useState<ResultPeriod[]>([]);
 
   // View Mode: 'standard' (interactive cards view) vs 'sheet' (exact A4 offline sheet preview)
   const [viewMode, setViewMode] = useState<'standard' | 'sheet'>(() => {
@@ -171,6 +171,25 @@ export default function RankingsPage() {
   const a4ContainerRef = useRef<HTMLDivElement>(null);
   const [a4Scale, setA4Scale] = useState<number>(1);
 
+  // Smart default month selector: prioritizes months with evaluated rankings, then published/completed, then 'AUG'
+  const pickBestMonth = useCallback((pList: ResultPeriod[]): string => {
+    if (!pList || pList.length === 0) return 'AUG';
+
+    // 1. First preference: Period with evaluated/ranked students (> 0)
+    const withRankings = pList.find((p) => Number(p.ranked_count) > 0);
+    if (withRankings) return withRankings.month;
+
+    // 2. Second preference: Period with Published or Completed status
+    const published = pList.find((p) => p.status === 'Published' || p.status === 'Completed');
+    if (published) return published.month;
+
+    // 3. Third preference: AUG if present in periods
+    if (pList.some((p) => p.month === 'AUG')) return 'AUG';
+
+    // 4. Fallback: First period or 'AUG'
+    return pList[0].month || 'AUG';
+  }, []);
+
   // Load initial settings and periods
   useEffect(() => {
     async function init() {
@@ -182,15 +201,26 @@ export default function RankingsPage() {
 
         const pList = await fetchResultPeriods({ academic_year: ay });
         setPeriods(pList);
-        if (pList.length > 0) {
-          setMonth(pList[0].month);
-        }
+        const bestMonth = pickBestMonth(pList);
+        setMonth(bestMonth);
       } catch (err) {
         console.error('Failed to init rankings:', err);
       }
     }
     init();
-  }, []);
+  }, [pickBestMonth]);
+
+  const handleAcademicYearChange = async (newYear: string) => {
+    setAcademicYear(newYear);
+    try {
+      const pList = await fetchResultPeriods({ academic_year: newYear });
+      setPeriods(pList);
+      const bestMonth = pickBestMonth(pList);
+      setMonth(bestMonth);
+    } catch (err) {
+      console.error('Failed to fetch periods for academic year:', err);
+    }
+  };
 
   const loadRankings = useCallback(async () => {
     if (!academicYear || !month) return;
@@ -272,6 +302,43 @@ export default function RankingsPage() {
 
     return [{ value: 'all', label: allLabel }, ...items];
   }, [rankings, rankingType]);
+
+  // Available months with rankings in the current academic year
+  const availableMonthsWithRankings = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of periods) {
+      const count = Number(p.ranked_count) || 0;
+      if (count > 0 || p.status === 'Published' || p.status === 'Completed') {
+        map.set(p.month, (map.get(p.month) || 0) + count);
+      }
+    }
+    return Array.from(map.entries()).map(([m, count]) => ({
+      month: m,
+      name: MONTH_NAMES[m] || m,
+      count,
+    }));
+  }, [periods]);
+
+  // Enhanced month dropdown options showing evaluated student count
+  const monthDropdownOptions = useMemo(() => {
+    return RANKING_MONTH_CODES.map((m) => {
+      const mPeriods = periods.filter((p) => p.month === m);
+      const totalRanked = mPeriods.reduce((sum, p) => sum + (Number(p.ranked_count) || 0), 0);
+      const hasPublished = mPeriods.some((p) => p.status === 'Published' || p.status === 'Completed');
+
+      let suffix = '';
+      if (totalRanked > 0) {
+        suffix = ` (${totalRanked})`;
+      } else if (mPeriods.length > 0) {
+        suffix = hasPublished ? ' (Completed)' : ' (Draft)';
+      }
+
+      return {
+        label: `${MONTH_NAMES[m] || m}${suffix}`,
+        value: m,
+      };
+    });
+  }, [periods]);
 
   // Active bucket for A4 sheet preview
   const activeBucket = displayedRankings[previewBucketIndex] || displayedRankings[0] || null;
@@ -602,7 +669,7 @@ export default function RankingsPage() {
             value={academicYear}
             placeholder="Academic Year"
             options={yearOptions.map((y) => ({ label: y, value: y }))}
-            onChange={setAcademicYear}
+            onChange={handleAcademicYearChange}
             width="w-[125px]"
           />
 
@@ -610,12 +677,9 @@ export default function RankingsPage() {
           <CustomDropdown
             value={month}
             placeholder="Month"
-            options={RANKING_MONTH_CODES.map((m) => ({
-              label: MONTH_NAMES[m],
-              value: m,
-            }))}
+            options={monthDropdownOptions}
             onChange={setMonth}
-            width="w-[125px]"
+            width="w-[155px]"
           />
 
           {/* Class / Group Filter Dropdown */}
@@ -784,12 +848,43 @@ export default function RankingsPage() {
           ))}
         </div>
       ) : displayedRankings.length === 0 ? (
-        <Card className="p-12 text-center text-muted-foreground max-w-md mx-auto">
-          <Trophy className="h-12 w-12 mx-auto mb-3 opacity-40" />
-          <h3 className="text-base font-semibold">No Rankings Found</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            There are no completed results for {MONTH_NAMES[month] || month} {academicYear}.
+        <Card className="p-8 sm:p-12 text-center text-muted-foreground max-w-lg mx-auto border-dashed shadow-xs">
+          <div className="mx-auto w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+            <Trophy className="h-6 w-6 text-muted-foreground opacity-50" />
+          </div>
+          <h3 className="text-base font-semibold text-foreground">No Rankings Found</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+            There are no completed or evaluated results for{' '}
+            <span className="font-semibold text-foreground">
+              {MONTH_NAMES[month] || month} {academicYear}
+            </span>.
           </p>
+
+          {availableMonthsWithRankings.length > 0 && (
+            <div className="mt-5 pt-4 border-t space-y-2.5">
+              <p className="text-xs font-medium text-muted-foreground">
+                Switch to an available month with completed rankings:
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {availableMonthsWithRankings.map((am) => (
+                  <Button
+                    key={am.month}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMonth(am.month)}
+                    className="h-7 text-xs gap-1.5 cursor-pointer bg-card hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
+                  >
+                    <span>{am.name}</span>
+                    {am.count > 0 && (
+                      <Badge variant="secondary" className="px-1.5 py-0 text-[10px] font-bold">
+                        {am.count}
+                      </Badge>
+                    )}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
       ) : viewMode === 'standard' ? (
         /* ══════════════════════════════════════════════════════════════════════════

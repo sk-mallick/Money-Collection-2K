@@ -67,7 +67,8 @@ function listResultPeriods(PDO $pdo): void {
     
     $sql = "SELECT rp.*, g.class as group_class, g.timing as group_timing,
             (SELECT COUNT(*) FROM rc_student_results sr WHERE sr.result_period_id = rp.id) as student_count,
-            (SELECT COUNT(*) FROM rc_student_results sr WHERE sr.result_period_id = rp.id AND sr.status = 'Absent') as absent_count
+            (SELECT COUNT(*) FROM rc_student_results sr WHERE sr.result_period_id = rp.id AND sr.status = 'Absent') as absent_count,
+            (SELECT COUNT(*) FROM rc_student_results sr WHERE sr.result_period_id = rp.id AND sr.status = 'Present' AND sr.percentage IS NOT NULL) as ranked_count
             FROM rc_result_periods rp
             LEFT JOIN `groups` g ON rp.group_id = g.id
             $whereClause

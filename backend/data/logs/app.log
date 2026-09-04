@@ -458,3 +458,10 @@
 {"timestamp":"2026-09-04 05:15:52","level":"WARNING","message":"Failed login attempt","context":{"ip":"127.0.1.207","username":"subham"},"ip":"::1","uri":"\/Money%20Collection%202K\/backend\/auth\/login.php"}
 {"timestamp":"2026-09-04 05:15:52","level":"WARNING","message":"Failed login attempt","context":{"ip":"127.0.1.208","username":"subham"},"ip":"::1","uri":"\/Money%20Collection%202K\/backend\/auth\/login.php"}
 {"timestamp":"2026-09-04 05:15:52","level":"INFO","message":"Successful login","context":{"username":"subham"},"ip":"::1","uri":"\/Money%20Collection%202K\/backend\/auth\/login.php"}
+{"timestamp":"2026-09-04 18:20:09","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"subham"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-04 18:20:43","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"subham"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-04 18:20:43","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"subham"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-04 18:20:46","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"subham"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-04 18:20:49","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-04 18:25:58","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-04 18:38:31","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}

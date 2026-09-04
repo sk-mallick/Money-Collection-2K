@@ -25,6 +25,7 @@ export interface ResultPeriod {
   group_timing?: string;
   student_count?: number;
   absent_count?: number;
+  ranked_count?: number;
 }
 
 export interface StudentMark {
