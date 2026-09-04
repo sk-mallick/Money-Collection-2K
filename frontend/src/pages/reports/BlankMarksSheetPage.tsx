@@ -649,7 +649,7 @@ export default function BlankMarksSheetPage() {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-300">
                       {Array.from({ length: 25 }).map((_, r) => {
                         const serialNo = previewPageIndex * 25 + r + 1;
                         const formattedId = `${activePrefix}${serialNo < 10 ? '0' + serialNo : serialNo}`;
@@ -661,36 +661,40 @@ export default function BlankMarksSheetPage() {
                         return (
                           <tr
                             key={r}
-                            className={`h-[27px] text-[11px] ${
-                              r % 2 === 1 ? 'bg-gray-50/60' : 'bg-white'
-                            }`}
+                            className="h-[27px] text-[11px] bg-white"
                           >
                             <td className="p-1 text-center font-mono font-bold text-black border-r border-gray-300 w-16">
                               {formattedId}
                             </td>
                             <td className="p-1 font-semibold text-black border-r border-gray-300 w-[210px] truncate">
-                              {student ? student.name : ''}
+                              {student ? student.name : <span className="opacity-0 select-none">-</span>}
                             </td>
                             <td className="p-1 text-center text-gray-800 border-r border-gray-300 w-12 truncate">
-                              {student ? student.class || '—' : ''}
+                              {student ? student.class || '—' : <span className="opacity-0 select-none">-</span>}
                             </td>
                             <td
                               className="p-1 text-gray-800 border-r border-gray-300 w-[75px] truncate"
                               title={student?.school || ''}
                             >
-                              {student ? student.school || '—' : ''}
+                              {student ? student.school || '—' : <span className="opacity-0 select-none">-</span>}
                             </td>
 
-                            {/* Completely blank subject and total entry cells as requested */}
+                            {/* Completely blank subject and total entry cells with identical cell baseline */}
                             {activeSheetData.subjects.map((sub) => (
                               <td
                                 key={sub.id}
                                 className="p-1 text-center border-r border-gray-300"
-                              />
+                              >
+                                <span className="opacity-0 select-none">-</span>
+                              </td>
                             ))}
 
-                            <td className="p-1 text-center border-r border-gray-300 w-18" />
-                            <td className="p-1 text-center w-[110px]" />
+                            <td className="p-1 text-center border-r border-gray-300 w-16">
+                              <span className="opacity-0 select-none">-</span>
+                            </td>
+                            <td className="p-1 text-center w-[105px]">
+                              <span className="opacity-0 select-none">-</span>
+                            </td>
                           </tr>
                         );
                       })}

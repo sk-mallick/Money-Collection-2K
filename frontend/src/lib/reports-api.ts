@@ -59,7 +59,18 @@ export interface StudentResult {
 export interface RankingGroup {
   key: string;
   label: string;
+  type?: 'class' | 'group';
+  timing?: string;
+  category?: string;
+  groupClass?: string;
+  subjects?: {
+    id: number;
+    name: string;
+    category?: string;
+    display_order: number;
+  }[];
   students: {
+    studentResultId?: number;
     studentId: string;
     name: string;
     class: string;
@@ -70,6 +81,16 @@ export interface RankingGroup {
     percentage: number;
     classRank: number | null;
     groupRank: number | null;
+    displayRank?: number;
+    marks?: {
+      subjectId: number;
+      subjectName: string;
+      subjectCategory?: string;
+      maxMarks: number;
+      obtainedMarks: number | null;
+      isAbsent?: boolean;
+      displayOrder: number;
+    }[];
   }[];
 }
 

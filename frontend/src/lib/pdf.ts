@@ -1497,11 +1497,11 @@ export async function buildBlankMarksSheetsDoc(options: BlankMarksSheetPDFOption
       columns.push({ title: 'Teacher Notes', width: colNotesW, align: 'center' });
 
       // Draw Header Row
+      // Draw Header Row background
       doc.setFillColor(235, 237, 240);
-      doc.setDrawColor(0, 0, 0);
-      doc.setLineWidth(0.3);
-      doc.rect(tableLeftX, tableTopY, tableWidth, headerH, 'FD');
+      doc.rect(tableLeftX, tableTopY, tableWidth, headerH, 'F');
 
+      // Draw Header column titles
       let curColX = tableLeftX;
       for (const col of columns) {
         doc.setFont('helvetica', 'bold');
@@ -1513,32 +1513,15 @@ export async function buildBlankMarksSheetsDoc(options: BlankMarksSheetPDFOption
           : curColX + 2;
 
         doc.text(col.title, textX, tableTopY + 4.1, { align: col.align });
-
-        // Column vertical border
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(0.2);
-        doc.line(curColX + col.width, tableTopY, curColX + col.width, tableTopY + headerH);
-
         curColX += col.width;
       }
 
-      // 25 Fixed Rows (Ordered ID 1 to 25; even if student absent, show ID and leave blank)
+      // 25 Fixed Rows Content (Ordered ID 1 to 25; pure clean background for completely uniform appearance)
       for (let r = 0; r < 25; r++) {
         const curRowY = tableTopY + headerH + r * rowH;
         const serialNo = pageIdx * 25 + r + 1;
         const formattedId = `${prefix}${serialNo < 10 ? '0' + serialNo : serialNo}`;
         const student = studentMapById.get(formattedId) || studentMapByNumber.get(serialNo) || null;
-
-        // Alternating subtle background tint
-        if (r % 2 === 1) {
-          doc.setFillColor(250, 250, 252);
-          doc.rect(tableLeftX, curRowY, tableWidth, rowH, 'F');
-        }
-
-        // Row border
-        doc.setDrawColor(180, 180, 180);
-        doc.setLineWidth(0.2);
-        doc.line(tableLeftX, curRowY + rowH, tableLeftX + tableWidth, curRowY + rowH);
 
         let cellX = tableLeftX;
         for (let c = 0; c < columns.length; c++) {
@@ -1574,18 +1557,35 @@ export async function buildBlankMarksSheetsDoc(options: BlankMarksSheetPDFOption
           }
           // Note: Subject, Total, and Teacher Notes cells are kept completely blank as requested
 
-          // Vertical column line
-          doc.setDrawColor(200, 200, 200);
-          doc.setLineWidth(0.2);
-          doc.line(cellX + col.width, curRowY, cellX + col.width, curRowY + rowH);
-
           cellX += col.width;
         }
       }
 
-      // Outer table border outline
+      const tableBottomY = tableTopY + headerH + 25 * rowH;
+
+      // Draw all horizontal row divider lines (perfectly uniform 0.25 width across all 25 rows)
+      doc.setDrawColor(150, 150, 150);
+      doc.setLineWidth(0.25);
+      for (let r = 0; r < 24; r++) {
+        const lineY = tableTopY + headerH + (r + 1) * rowH;
+        doc.line(tableLeftX, lineY, tableLeftX + tableWidth, lineY);
+      }
+
+      // Draw continuous vertical grid lines from table top to bottom (uniform across all rows)
+      let curLineX = tableLeftX;
+      for (let c = 0; c < columns.length - 1; c++) {
+        curLineX += columns[c].width;
+        doc.line(curLineX, tableTopY, curLineX, tableBottomY);
+      }
+
+      // Header bottom border
       doc.setDrawColor(0, 0, 0);
-      doc.setLineWidth(0.4);
+      doc.setLineWidth(0.35);
+      doc.line(tableLeftX, tableTopY + headerH, tableLeftX + tableWidth, tableTopY + headerH);
+
+      // Outer table border outline (crisp, solid, uniform outer rectangle)
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.45);
       doc.rect(tableLeftX, tableTopY, tableWidth, headerH + 25 * rowH, 'S');
     }
   }
@@ -1613,6 +1613,436 @@ export async function printBlankMarksSheetPDF(
   targetWindow?: Window | null
 ): Promise<void> {
   const doc = await buildBlankMarksSheetsDoc(options);
+  doc.autoPrint();
+
+  const blob = doc.output('blob');
+  const blobUrl = URL.createObjectURL(blob);
+
+  if (targetWindow && !targetWindow.closed) {
+    targetWindow.location.href = blobUrl;
+  } else {
+    const win = window.open(blobUrl, '_blank');
+    if (!win) {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.bottom = '0';
+      iframe.style.right = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch {
+            window.location.href = blobUrl;
+          }
+        }, 150);
+      };
+    }
+  }
+}
+
+// ─── Academic Rankings PDF Generator (A4 Landscape Vector Exact Offline Layout) ───
+
+export interface RankingsGroupItem {
+  key: string;
+  label: string;
+  type?: 'class' | 'group';
+  timing?: string;
+  category?: string;
+  groupClass?: string;
+  subjects?: { id: number; name: string; display_order?: number }[];
+  students: {
+    studentId: string;
+    name: string;
+    class: string;
+    school: string;
+    groupId: string;
+    totalObtained: number;
+    totalMax: number;
+    percentage: number;
+    classRank: number | null;
+    groupRank: number | null;
+    displayRank?: number;
+    marks?: {
+      subjectId: number;
+      subjectName: string;
+      obtainedMarks: number | null;
+      isAbsent?: boolean;
+    }[];
+  }[];
+}
+
+export interface RankingsPDFOptions {
+  groupsData: RankingsGroupItem[];
+  month: string;
+  academicYear: string;
+  settings?: Record<string, string>;
+  rankingType: 'class' | 'group';
+}
+
+/**
+ * Builds the official A4 Landscape Vector jsPDF document for Academic Rankings
+ * matching the exact offline sheet layout (0.5cm top clearance for stapling,
+ * streamlined header, metadata banner, continuous uniform grid lines,
+ * individual subject marks, total, percentage, and Rank in the LAST column).
+ */
+export async function buildRankingsDoc(options: RankingsPDFOptions): Promise<jsPDF> {
+  const { groupsData, month, academicYear, rankingType } = options;
+
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4',
+    compress: true,
+  });
+
+  const pageWidth = 297;
+  const pageHeight = 210;
+  const marginX = 7;
+  const marginTop = 12; // 12mm = 0.5cm extra top margin for stapling
+  const marginBottom = 6;
+  const contentWidth = pageWidth - marginX * 2; // 283mm
+  const contentHeight = pageHeight - marginTop - marginBottom; // 192mm
+
+  const blackColor: [number, number, number] = [0, 0, 0];
+  const redColor: [number, number, number] = [220, 38, 38];
+  const monthName = MONTH_NAMES[month] || month;
+
+  let isFirstPageOfDoc = true;
+
+  for (const groupItem of groupsData) {
+    // Determine and sort subjects
+    let groupSubjects = groupItem.subjects || [];
+    if (groupSubjects.length === 0) {
+      const subMap = new Map<number, string>();
+      for (const st of groupItem.students) {
+        for (const m of st.marks || []) {
+          if (!subMap.has(m.subjectId)) {
+            subMap.set(m.subjectId, m.subjectName);
+          }
+        }
+      }
+      if (subMap.size > 0) {
+        groupSubjects = Array.from(subMap.entries()).map(([id, name], idx) => ({
+          id,
+          name,
+          display_order: idx + 1,
+        }));
+      } else {
+        groupSubjects = [
+          { id: 1, name: 'Grammar', display_order: 1 },
+          { id: 2, name: 'Creative', display_order: 2 },
+          { id: 3, name: 'Passage', display_order: 3 },
+          { id: 4, name: 'Vocabulary', display_order: 4 },
+          { id: 5, name: 'Literature', display_order: 5 },
+        ];
+      }
+    }
+
+    // Sort students by Rank ascending (Rank 1, Rank 2, ...)
+    const sortedStudents = [...groupItem.students].sort((a, b) => {
+      const rankA = (groupItem.type === 'group' ? a.groupRank : a.classRank) ?? a.displayRank ?? 9999;
+      const rankB = (groupItem.type === 'group' ? b.groupRank : b.classRank) ?? b.displayRank ?? 9999;
+      if (rankA !== rankB) return rankA - rankB;
+      if (b.percentage !== a.percentage) return b.percentage - a.percentage;
+      return (b.totalObtained || 0) - (a.totalObtained || 0);
+    });
+
+    const totalStudents = sortedStudents.length;
+    const totalPages = Math.max(1, Math.ceil(totalStudents / 25));
+
+    for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+      if (!isFirstPageOfDoc) {
+        doc.addPage('a4', 'l');
+      }
+      isFirstPageOfDoc = false;
+
+      // 1. Outer Border (Starts at Y=12mm for 0.5cm top stapling margin)
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.6);
+      doc.rect(marginX, marginTop, contentWidth, contentHeight, 'S');
+
+      // 2. Compact Streamlined Header Section
+      const headerCenterX = pageWidth / 2;
+
+      // Title: "ENGLISHJIBI CLASSES"
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14.5);
+      const part1 = 'ENGLISH';
+      const part2 = 'JIBI';
+      const part3 = ' CLASSES';
+      const w1 = doc.getTextWidth(part1);
+      const w2 = doc.getTextWidth(part2);
+      const w3 = doc.getTextWidth(part3);
+      const totalW = w1 + w2 + w3;
+      const titleX = headerCenterX - totalW / 2;
+
+      doc.setTextColor(...blackColor);
+      doc.text(part1, titleX, marginTop + 4.8);
+      doc.setTextColor(...redColor);
+      doc.text(part2, titleX + w1, marginTop + 4.8);
+      doc.setTextColor(...blackColor);
+      doc.text(part3, titleX + w1 + w2, marginTop + 4.8);
+
+      // Title Banner
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.0);
+      doc.setTextColor(0, 0, 0);
+      const modeLabel = rankingType === 'group' ? 'BATCH MERIT LIST' : 'CLASS MERIT LIST';
+      const sheetTitle = `MONTHLY EXAMINATION ACADEMIC RANKINGS — ${monthName.toUpperCase()} ${academicYear} (${modeLabel})`;
+      doc.text(sheetTitle, headerCenterX, marginTop + 8.4, { align: 'center' });
+
+      // Red Divider
+      doc.setFillColor(220, 38, 38);
+      doc.rect(marginX + 1.5, marginTop + 10.3, contentWidth - 3, 0.7, 'F');
+
+      // Group & Batch Meta Banner
+      const metaY = marginTop + 12.3;
+      const metaH = 5.0;
+      const tableLeftX = marginX + 1.5;
+      const tableWidth = contentWidth - 3; // 280mm
+      doc.setFillColor(245, 246, 248);
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.3);
+      doc.rect(tableLeftX, metaY, tableWidth, metaH, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(0, 0, 0);
+      const colSpacing = tableWidth / 5;
+
+      if (rankingType === 'group') {
+        doc.text(`BATCH: Group ${groupItem.key} (${groupItem.groupClass || '—'})`, tableLeftX + 3, metaY + 3.5);
+        doc.text(`CATEGORY: ${groupItem.category || '—'}`, tableLeftX + colSpacing + 2, metaY + 3.5);
+        doc.text(`TIMING: ${groupItem.timing || '—'}`, tableLeftX + colSpacing * 2 + 2, metaY + 3.5);
+        doc.text(`STUDENTS: ${totalStudents} Ranked`, tableLeftX + colSpacing * 3 + 2, metaY + 3.5);
+        doc.text(`PAGE: ${pageIdx + 1} OF ${totalPages}`, tableLeftX + colSpacing * 4 + 2, metaY + 3.5);
+      } else {
+        doc.text(`CLASS: Class ${groupItem.key}`, tableLeftX + 3, metaY + 3.5);
+        doc.text(`SESSION: ${academicYear}`, tableLeftX + colSpacing + 2, metaY + 3.5);
+        doc.text(`EXAM MONTH: ${monthName}`, tableLeftX + colSpacing * 2 + 2, metaY + 3.5);
+        doc.text(`STUDENTS: ${totalStudents} Ranked`, tableLeftX + colSpacing * 3 + 2, metaY + 3.5);
+        doc.text(`PAGE: ${pageIdx + 1} OF ${totalPages}`, tableLeftX + colSpacing * 4 + 2, metaY + 3.5);
+      }
+
+      // 3. Rankings Table (25 rows with row height: 6.65mm)
+      const tableTopY = marginTop + 18.5; // Y = 30.5mm
+      const headerH = 6.0;
+      const rowH = 6.65;
+
+      // Fixed Column widths
+      const colIdW = 16;
+      const colNameW = 50;
+      const colClassW = 12; // compact width
+      const colSchoolW = 18; // compact width
+      const colTotalW = 16;
+      const colPctW = 15;
+      const colRankW = 15; // LAST column
+
+      const fixedWidths = colIdW + colNameW + colClassW + colSchoolW + colTotalW + colPctW + colRankW; // 142mm
+      const remainingForSubjects = tableWidth - fixedWidths; // 138mm
+      const numSubjects = groupSubjects.length > 0 ? groupSubjects.length : 5;
+      const subColW = remainingForSubjects / numSubjects;
+
+      interface ColDef {
+        title: string;
+        width: number;
+        align: 'left' | 'center' | 'right';
+        isSubject?: boolean;
+        subjectId?: number;
+        subjectName?: string;
+      }
+
+      const columns: ColDef[] = [
+        { title: 'ID', width: colIdW, align: 'center' },
+        { title: 'Student Name', width: colNameW, align: 'left' },
+        { title: 'Class', width: colClassW, align: 'center' },
+        { title: 'School', width: colSchoolW, align: 'left' },
+      ];
+
+      // Dynamic Subject Columns
+      for (const sub of groupSubjects) {
+        columns.push({
+          title: sub.name,
+          width: subColW,
+          align: 'center',
+          isSubject: true,
+          subjectId: sub.id,
+          subjectName: sub.name,
+        });
+      }
+
+      // Total, Percentage, and Rank in the LAST column
+      columns.push({ title: 'Total', width: colTotalW, align: 'center' });
+      columns.push({ title: '%', width: colPctW, align: 'center' });
+      columns.push({ title: 'Rank', width: colRankW, align: 'center' });
+
+      // Draw Header Row background
+      doc.setFillColor(235, 237, 240);
+      doc.rect(tableLeftX, tableTopY, tableWidth, headerH, 'F');
+
+      // Draw Header column titles
+      let curColX = tableLeftX;
+      for (const col of columns) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(0, 0, 0);
+
+        const textX = col.align === 'center'
+          ? curColX + col.width / 2
+          : curColX + 2;
+
+        doc.text(col.title, textX, tableTopY + 4.1, { align: col.align });
+        curColX += col.width;
+      }
+
+      // 25 Fixed Rows Content (Ordered by Rank)
+      for (let r = 0; r < 25; r++) {
+        const curRowY = tableTopY + headerH + r * rowH;
+        const studentIdx = pageIdx * 25 + r;
+        const student = sortedStudents[studentIdx] || null;
+
+        let cellX = tableLeftX;
+        for (let c = 0; c < columns.length; c++) {
+          const col = columns[c];
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          doc.setTextColor(0, 0, 0);
+
+          if (student) {
+            if (c === 0) {
+              // ID
+              doc.setFont('courier', 'bold');
+              doc.text(student.studentId, cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+            } else if (c === 1) {
+              // Student Name
+              doc.setFont('helvetica', 'bold');
+              const maxNW = col.width - 3;
+              const nameText = doc.getTextWidth(student.name) > maxNW ? student.name.slice(0, 24) + '..' : student.name;
+              doc.text(nameText, cellX + 2, curRowY + 4.4);
+            } else if (c === 2) {
+              // Class
+              doc.text(student.class || '—', cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+            } else if (c === 3) {
+              // School
+              const sch = student.school || '—';
+              const maxSW = col.width - 2.5;
+              const schText = doc.getTextWidth(sch) > maxSW ? sch.slice(0, 9) + '..' : sch;
+              doc.text(schText, cellX + 1.5, curRowY + 4.4);
+            } else if (col.isSubject) {
+              // Subject Mark
+              const markItem = student.marks?.find(
+                (m) => (col.subjectId && m.subjectId === col.subjectId) || m.subjectName === col.subjectName
+              );
+
+              if (markItem) {
+                if (markItem.isAbsent) {
+                  doc.setFont('helvetica', 'bold');
+                  doc.setTextColor(180, 83, 9); // Amber absent
+                  doc.text('Ab', cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+                } else if (markItem.obtainedMarks !== null && markItem.obtainedMarks !== undefined) {
+                  doc.setFont('helvetica', 'bold');
+                  doc.text(String(markItem.obtainedMarks), cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+                } else {
+                  doc.setTextColor(150, 150, 150);
+                  doc.text('—', cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+                }
+              } else {
+                doc.setTextColor(150, 150, 150);
+                doc.text('—', cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+              }
+            } else if (c === columns.length - 3) {
+              // Total
+              doc.setFont('helvetica', 'bold');
+              doc.text(String(student.totalObtained), cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+            } else if (c === columns.length - 2) {
+              // Percentage
+              doc.setFont('helvetica', 'bold');
+              if (student.percentage >= 80) {
+                doc.setTextColor(5, 150, 105); // emerald-600
+              }
+              doc.text(`${student.percentage.toFixed(2)}%`, cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+            } else if (c === columns.length - 1) {
+              // Rank (LAST column)
+              const rankVal = (groupItem.type === 'group' ? student.groupRank : student.classRank) ?? student.displayRank ?? (studentIdx + 1);
+              doc.setFont('helvetica', 'bold');
+              if (rankVal === 1) {
+                doc.setTextColor(217, 119, 6); // gold
+                doc.text('Rank 1', cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+              } else if (rankVal === 2) {
+                doc.setTextColor(71, 85, 105); // silver
+                doc.text('Rank 2', cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+              } else if (rankVal === 3) {
+                doc.setTextColor(180, 83, 9); // bronze
+                doc.text('Rank 3', cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+              } else {
+                doc.setTextColor(0, 0, 0);
+                doc.text(`#${rankVal}`, cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+              }
+            }
+          }
+
+          cellX += col.width;
+        }
+      }
+
+      const tableBottomY = tableTopY + headerH + 25 * rowH;
+
+      // Draw all horizontal row divider lines (uniform 0.25 width across all 25 rows)
+      doc.setDrawColor(150, 150, 150);
+      doc.setLineWidth(0.25);
+      for (let r = 0; r < 24; r++) {
+        const lineY = tableTopY + headerH + (r + 1) * rowH;
+        doc.line(tableLeftX, lineY, tableLeftX + tableWidth, lineY);
+      }
+
+      // Draw continuous vertical grid lines from table top to bottom
+      let curLineX = tableLeftX;
+      for (let c = 0; c < columns.length - 1; c++) {
+        curLineX += columns[c].width;
+        doc.line(curLineX, tableTopY, curLineX, tableBottomY);
+      }
+
+      // Header bottom border
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.35);
+      doc.line(tableLeftX, tableTopY + headerH, tableLeftX + tableWidth, tableTopY + headerH);
+
+      // Outer table border outline
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.45);
+      doc.rect(tableLeftX, tableTopY, tableWidth, headerH + 25 * rowH, 'S');
+    }
+  }
+
+  return doc;
+}
+
+/**
+ * Generates and downloads the official vector A4 Landscape Academic Rankings PDF.
+ */
+export async function generateRankingsPDF(options: RankingsPDFOptions): Promise<void> {
+  const doc = await buildRankingsDoc(options);
+  const { month, academicYear, rankingType, groupsData } = options;
+  const targetLabel = groupsData.length === 1 ? `_${groupsData[0].key}` : '_All';
+  const fileName = `Academic_Rankings_${rankingType.toUpperCase()}${targetLabel}_${month}_${academicYear}.pdf`;
+  doc.save(fileName);
+}
+
+/**
+ * Direct Print official vector A4 Landscape Academic Rankings PDF.
+ */
+export async function printRankingsPDF(
+  options: RankingsPDFOptions,
+  targetWindow?: Window | null
+): Promise<void> {
+  const doc = await buildRankingsDoc(options);
   doc.autoPrint();
 
   const blob = doc.output('blob');

@@ -35,14 +35,16 @@ if (!$periodId && $academicYear && $month) {
     $placeholders = implode(',', array_fill(0, count($periodIds), '?'));
     
     if ($type === 'group') {
-        $sql = "SELECT sr.*, rp.group_id, rp.academic_year, rp.month, g.class as group_class
+        $sql = "SELECT sr.*, rp.group_id, rp.academic_year, rp.month, rp.category as period_category,
+                       g.class as group_class, g.timing as group_timing, g.category as group_category
                 FROM rc_student_results sr
                 JOIN rc_result_periods rp ON sr.result_period_id = rp.id
                 LEFT JOIN `groups` g ON rp.group_id = g.id
                 WHERE sr.result_period_id IN ($placeholders) AND sr.status = 'Present' AND sr.percentage IS NOT NULL
                 ORDER BY sr.snapshot_group_id ASC, sr.percentage DESC";
     } else {
-        $sql = "SELECT sr.*, rp.group_id, rp.academic_year, rp.month, g.class as group_class
+        $sql = "SELECT sr.*, rp.group_id, rp.academic_year, rp.month, rp.category as period_category,
+                       g.class as group_class, g.timing as group_timing, g.category as group_category
                 FROM rc_student_results sr
                 JOIN rc_result_periods rp ON sr.result_period_id = rp.id
                 LEFT JOIN `groups` g ON rp.group_id = g.id
@@ -58,14 +60,16 @@ if (!$periodId && $academicYear && $month) {
     }
     
     if ($type === 'group') {
-        $sql = "SELECT sr.*, rp.group_id, rp.academic_year, rp.month, g.class as group_class
+        $sql = "SELECT sr.*, rp.group_id, rp.academic_year, rp.month, rp.category as period_category,
+                       g.class as group_class, g.timing as group_timing, g.category as group_category
                 FROM rc_student_results sr
                 JOIN rc_result_periods rp ON sr.result_period_id = rp.id
                 LEFT JOIN `groups` g ON rp.group_id = g.id
                 WHERE sr.result_period_id = ? AND sr.status = 'Present' AND sr.percentage IS NOT NULL
                 ORDER BY sr.group_rank ASC, sr.percentage DESC";
     } else {
-        $sql = "SELECT sr.*, rp.group_id, rp.academic_year, rp.month, g.class as group_class
+        $sql = "SELECT sr.*, rp.group_id, rp.academic_year, rp.month, rp.category as period_category,
+                       g.class as group_class, g.timing as group_timing, g.category as group_category
                 FROM rc_student_results sr
                 JOIN rc_result_periods rp ON sr.result_period_id = rp.id
                 LEFT JOIN `groups` g ON rp.group_id = g.id
@@ -92,8 +96,41 @@ function normalizeRankClass(?string $cls): string {
 
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Fetch all subject marks for these student results
+$marksBySrId = [];
+if (!empty($results)) {
+    $srIds = array_unique(array_column($results, 'id'));
+    if (!empty($srIds)) {
+        $srPlaceholders = implode(',', array_fill(0, count($srIds), '?'));
+        $mStmt = $pdo->prepare("
+            SELECT sm.student_result_id, sm.subject_id, sm.max_marks, sm.obtained_marks, sm.is_absent,
+                   s.name as subject_name, s.category as subject_category, s.display_order
+            FROM rc_student_marks sm
+            JOIN rc_subjects s ON sm.subject_id = s.id
+            WHERE sm.student_result_id IN ($srPlaceholders)
+            ORDER BY s.display_order ASC, s.id ASC
+        ");
+        $mStmt->execute(array_values($srIds));
+        $allMarks = $mStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($allMarks as $m) {
+            $marksBySrId[$m['student_result_id']][] = [
+                'subjectId' => (int)$m['subject_id'],
+                'subjectName' => $m['subject_name'],
+                'subjectCategory' => $m['subject_category'],
+                'maxMarks' => (int)$m['max_marks'],
+                'obtainedMarks' => $m['obtained_marks'] !== null ? (float)$m['obtained_marks'] : null,
+                'isAbsent' => (bool)$m['is_absent'],
+                'displayOrder' => (int)$m['display_order'],
+            ];
+        }
+    }
+}
+
 // Group results by class or group
 $rankings = [];
+$bucketSubjects = [];
+
 foreach ($results as $r) {
     $normalizedClass = normalizeRankClass($r['snapshot_class']);
     $key = $type === 'group' ? ($r['snapshot_group_id'] ?? 'Unknown') : $normalizedClass;
@@ -102,10 +139,19 @@ foreach ($results as $r) {
             'key' => $key,
             'label' => $type === 'group' ? "Group $key" . ($r['group_class'] ? " ({$r['group_class']})" : '') : "Class $key",
             'type' => $type,
+            'timing' => $r['group_timing'] ?? '',
+            'category' => $r['period_category'] ?? $r['group_category'] ?? $r['snapshot_category'] ?? '',
+            'groupClass' => $r['group_class'] ?? '',
+            'subjects' => [],
             'students' => [],
         ];
+        $bucketSubjects[$key] = [];
     }
+
+    $sMarks = $marksBySrId[$r['id']] ?? [];
+
     $rankings[$key]['students'][] = [
+        'studentResultId' => (int)$r['id'],
         'studentId' => $r['student_id'],
         'name' => $r['snapshot_name'],
         'class' => $normalizedClass,
@@ -116,8 +162,32 @@ foreach ($results as $r) {
         'percentage' => (float)$r['percentage'],
         'classRank' => $r['class_rank'] !== null ? (int)$r['class_rank'] : null,
         'groupRank' => $r['group_rank'] !== null ? (int)$r['group_rank'] : null,
+        'marks' => $sMarks,
     ];
+
+    // Collect subjects for this bucket
+    foreach ($sMarks as $sm) {
+        $subId = $sm['subjectId'];
+        if (!isset($bucketSubjects[$key][$subId])) {
+            $bucketSubjects[$key][$subId] = [
+                'id' => $subId,
+                'name' => $sm['subjectName'],
+                'category' => $sm['subjectCategory'],
+                'display_order' => $sm['displayOrder'],
+            ];
+        }
+    }
 }
+
+// Assign sorted subjects list to each bucket
+foreach ($rankings as $k => &$bucket) {
+    if (isset($bucketSubjects[$k])) {
+        $subs = array_values($bucketSubjects[$k]);
+        usort($subs, fn($a, $b) => $a['display_order'] <=> $b['display_order']);
+        $bucket['subjects'] = $subs;
+    }
+}
+unset($bucket);
 
 // Calculate true distinct sequential ranking (1, 2, 3, 4, 5...) per bucket
 foreach ($rankings as &$bucket) {
