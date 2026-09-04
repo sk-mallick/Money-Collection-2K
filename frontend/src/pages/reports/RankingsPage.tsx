@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ import {
   ArrowUp,
   ArrowDown,
   FileText,
+  LayoutList,
 } from 'lucide-react';
 import {
   generateRankingsPDF,
@@ -148,7 +149,18 @@ export default function RankingsPage() {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [, setPeriods] = useState<ResultPeriod[]>([]);
 
-  // Preview & Pagination state
+  // View Mode: 'standard' (interactive cards view) vs 'sheet' (exact A4 offline sheet preview)
+  const [viewMode, setViewMode] = useState<'standard' | 'sheet'>(() => {
+    const saved = localStorage.getItem('rankings_view_mode');
+    return saved === 'sheet' ? 'sheet' : 'standard';
+  });
+
+  const handleViewModeChange = (mode: 'standard' | 'sheet') => {
+    setViewMode(mode);
+    localStorage.setItem('rankings_view_mode', mode);
+  };
+
+  // Preview & Pagination state (used in Sheet Preview)
   const [previewBucketIndex, setPreviewBucketIndex] = useState(0);
   const [previewPageIndex, setPreviewPageIndex] = useState(0);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -225,6 +237,7 @@ export default function RankingsPage() {
 
   // Handle auto-scaling for A4 Landscape preview (width: 1123px, height: 794px)
   useEffect(() => {
+    if (viewMode !== 'sheet') return;
     const handleResize = () => {
       if (a4ContainerRef.current) {
         const containerWidth = a4ContainerRef.current.clientWidth;
@@ -245,7 +258,7 @@ export default function RankingsPage() {
       window.removeEventListener('resize', handleResize);
       resizeObserver.disconnect();
     };
-  }, [displayedRankings, previewBucketIndex, previewPageIndex]);
+  }, [displayedRankings, previewBucketIndex, previewPageIndex, viewMode]);
 
   // Options for the single unified dynamic Class/Group dropdown
   const filterDropdownOptions = useMemo(() => {
@@ -260,18 +273,18 @@ export default function RankingsPage() {
     return [{ value: 'all', label: allLabel }, ...items];
   }, [rankings, rankingType]);
 
-  // Active bucket for preview
+  // Active bucket for A4 sheet preview
   const activeBucket = displayedRankings[previewBucketIndex] || displayedRankings[0] || null;
 
-  // Subjects for active bucket
-  const activeSubjects = useMemo(() => {
-    if (!activeBucket) return [];
-    if (activeBucket.subjects && activeBucket.subjects.length > 0) {
-      return activeBucket.subjects;
+  // Subjects helper for any bucket
+  const getBucketSubjects = useCallback((bucket: RankingGroup | null) => {
+    if (!bucket) return [];
+    if (bucket.subjects && bucket.subjects.length > 0) {
+      return bucket.subjects;
     }
     // Fallback extract from student marks
     const subMap = new Map<number, string>();
-    for (const st of activeBucket.students) {
+    for (const st of bucket.students) {
       for (const m of st.marks || []) {
         if (!subMap.has(m.subjectId)) {
           subMap.set(m.subjectId, m.subjectName);
@@ -292,10 +305,12 @@ export default function RankingsPage() {
       { id: 4, name: 'Vocabulary', display_order: 4 },
       { id: 5, name: 'Literature', display_order: 5 },
     ];
-  }, [activeBucket]);
+  }, []);
 
-  // Filtered and Sorted students for the active bucket
-  const sortedStudents = useMemo(() => {
+  const activeSubjects = useMemo(() => getBucketSubjects(activeBucket), [activeBucket, getBucketSubjects]);
+
+  // Filtered and Sorted students for the active bucket (Sheet Preview)
+  const sortedStudentsForSheet = useMemo(() => {
     if (!activeBucket) return [];
     const q = searchTerm.trim().toLowerCase();
     const list = activeBucket.students.filter((s) => {
@@ -321,8 +336,8 @@ export default function RankingsPage() {
   }, [activeBucket, searchTerm, sortDirection]);
 
   // Pagination for active bucket
-  const totalPagesForActiveBucket = Math.max(1, Math.ceil(sortedStudents.length / 25));
-  const currentStudentsPage = sortedStudents.slice(previewPageIndex * 25, (previewPageIndex + 1) * 25);
+  const totalPagesForActiveBucket = Math.max(1, Math.ceil(sortedStudentsForSheet.length / 25));
+  const currentStudentsPage = sortedStudentsForSheet.slice(previewPageIndex * 25, (previewPageIndex + 1) * 25);
 
   // Toggle rank sort
   const toggleRankSort = () => {
@@ -339,7 +354,7 @@ export default function RankingsPage() {
       timing: b.timing,
       category: b.category,
       groupClass: b.groupClass,
-      subjects: b.subjects && b.subjects.length > 0 ? b.subjects : activeSubjects,
+      subjects: b.subjects && b.subjects.length > 0 ? b.subjects : getBucketSubjects(b),
       students: b.students,
     }));
   };
@@ -399,36 +414,70 @@ export default function RankingsPage() {
     }
   };
 
-  // Render Rank Badge for UI table
-  const renderRankCell = (rankVal: number | null | undefined) => {
-    if (!rankVal) return <span className="text-gray-400 font-bold">—</span>;
-    if (rankVal === 1) {
+  // Render Rank Badge for Standard View (matches the exact previous UI/UX with dark mode support)
+  const getStandardRankBadge = (rank: number | null | undefined) => {
+    if (!rank) return <span className="text-muted-foreground">—</span>;
+    if (rank === 1) {
       return (
-        <span className="inline-flex items-center justify-center gap-1 bg-amber-500/15 text-amber-800 font-black px-2 py-0.5 rounded-full text-[10.5px] border border-amber-500/30 whitespace-nowrap shadow-2xs">
-          <Trophy className="h-3 w-3 text-amber-500 shrink-0" />
+        <span className="inline-flex items-center justify-center gap-1.5 bg-amber-500/15 text-amber-800 dark:text-amber-300 font-bold px-3 py-1 rounded-full text-xs shadow-2xs whitespace-nowrap border border-amber-500/20">
+          <Trophy className="h-4 w-4 text-amber-500 shrink-0" />
           <span>Rank 1</span>
         </span>
       );
     }
-    if (rankVal === 2) {
+    if (rank === 2) {
       return (
-        <span className="inline-flex items-center justify-center gap-1 bg-slate-300/30 text-slate-800 font-black px-2 py-0.5 rounded-full text-[10.5px] border border-slate-400/40 whitespace-nowrap shadow-2xs">
-          <Medal className="h-3 w-3 text-slate-500 shrink-0" />
+        <span className="inline-flex items-center justify-center gap-1.5 bg-slate-300/25 text-slate-800 dark:text-slate-200 font-bold px-3 py-1 rounded-full text-xs shadow-2xs whitespace-nowrap border border-slate-400/30">
+          <Medal className="h-4 w-4 text-slate-500 shrink-0" />
           <span>Rank 2</span>
         </span>
       );
     }
-    if (rankVal === 3) {
+    if (rank === 3) {
       return (
-        <span className="inline-flex items-center justify-center gap-1 bg-amber-700/15 text-amber-900 font-black px-2 py-0.5 rounded-full text-[10.5px] border border-amber-700/30 whitespace-nowrap shadow-2xs">
-          <Award className="h-3 w-3 text-amber-600 shrink-0" />
+        <span className="inline-flex items-center justify-center gap-1.5 bg-amber-700/15 text-amber-900 dark:text-amber-300 font-bold px-3 py-1 rounded-full text-xs shadow-2xs whitespace-nowrap border border-amber-700/20">
+          <Award className="h-4 w-4 text-amber-600 shrink-0" />
+          <span>Rank 3</span>
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center justify-center font-mono font-bold text-xs text-muted-foreground px-2.5 py-0.5 rounded-md bg-muted/60 border">
+        #{rank}
+      </span>
+    );
+  };
+
+  // Render Rank Badge for Printable A4 Sheet (fixed paper colors, unaffected by dark mode)
+  const getSheetRankBadge = (rank: number | null | undefined) => {
+    if (!rank) return <span className="text-gray-400 font-bold">—</span>;
+    if (rank === 1) {
+      return (
+        <span className="inline-flex items-center justify-center gap-1 bg-amber-100 text-amber-900 font-bold px-2.5 py-0.5 rounded-full text-[10.5px] border border-amber-400 whitespace-nowrap shadow-2xs">
+          <Trophy className="h-3 w-3 text-amber-600 shrink-0" />
+          <span>Rank 1</span>
+        </span>
+      );
+    }
+    if (rank === 2) {
+      return (
+        <span className="inline-flex items-center justify-center gap-1 bg-slate-200 text-slate-900 font-bold px-2.5 py-0.5 rounded-full text-[10.5px] border border-slate-400 whitespace-nowrap shadow-2xs">
+          <Medal className="h-3 w-3 text-slate-600 shrink-0" />
+          <span>Rank 2</span>
+        </span>
+      );
+    }
+    if (rank === 3) {
+      return (
+        <span className="inline-flex items-center justify-center gap-1 bg-amber-200/80 text-amber-950 font-bold px-2.5 py-0.5 rounded-full text-[10.5px] border border-amber-500 whitespace-nowrap shadow-2xs">
+          <Award className="h-3 w-3 text-amber-700 shrink-0" />
           <span>Rank 3</span>
         </span>
       );
     }
     return (
       <span className="inline-flex items-center justify-center font-mono font-bold text-[11px] text-gray-800 px-2 py-0.5 rounded-xs bg-gray-100 border border-gray-300">
-        #{rankVal}
+        #{rank}
       </span>
     );
   };
@@ -444,12 +493,44 @@ export default function RankingsPage() {
               <span>Academic Rankings</span>
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              Exact A4 Landscape official merit sheet with 25 fixed rows, individual subject scores, total, percentage, and rank
+              Official merit list with all individual subject scores, total, percentage, and rank
             </p>
           </div>
 
-          {/* Action Buttons (Print & Download) */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Action Buttons: View Mode Switcher, Print & Download */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* ─── VIEW MODE TOGGLE SWITCH (Standard View vs A4 Sheet Preview) ─── */}
+            <div className="flex items-center border rounded-md p-0.5 bg-muted/60 shadow-2xs h-8">
+              <button
+                type="button"
+                onClick={() => handleViewModeChange('standard')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-xs transition-all cursor-pointer ${
+                  viewMode === 'standard'
+                    ? 'bg-background text-foreground shadow-xs font-bold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                title="Standard Interactive Dashboard View"
+              >
+                <LayoutList className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Standard View</span>
+                <span className="sm:hidden">Standard</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleViewModeChange('sheet')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-xs transition-all cursor-pointer ${
+                  viewMode === 'sheet'
+                    ? 'bg-background text-foreground shadow-xs font-bold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                title="A4 Landscape Offline PDF Print Preview"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">A4 Sheet Preview</span>
+                <span className="sm:hidden">A4 Sheet</span>
+              </button>
+            </div>
+
             {/* Direct Print Button (Hidden on phone screens, visible on sm and up) */}
             <Button
               variant="outline"
@@ -567,72 +648,74 @@ export default function RankingsPage() {
             </TabsList>
           </Tabs>
 
-          {/* Preview Navigation Switcher (When Multiple Buckets or Multiple Pages) */}
-          <div className="ml-auto flex items-center gap-2">
-            {displayedRankings.length > 1 && (
-              <div className="flex items-center border rounded-md overflow-hidden bg-background shadow-2xs h-8">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 rounded-none cursor-pointer text-xs"
-                  onClick={() => {
-                    setPreviewBucketIndex((p) => Math.max(0, p - 1));
-                    setPreviewPageIndex(0);
-                  }}
-                  disabled={previewBucketIndex <= 0}
-                  title="Previous Group / Class"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                  <span className="hidden md:inline ml-0.5">Prev</span>
-                </Button>
-                <span className="text-[11px] font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap">
-                  {rankingType === 'group' ? 'Group' : 'Class'} {previewBucketIndex + 1} / {displayedRankings.length}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 rounded-none cursor-pointer text-xs"
-                  onClick={() => {
-                    setPreviewBucketIndex((p) => Math.min(displayedRankings.length - 1, p + 1));
-                    setPreviewPageIndex(0);
-                  }}
-                  disabled={previewBucketIndex >= displayedRankings.length - 1}
-                  title="Next Group / Class"
-                >
-                  <span className="hidden md:inline mr-0.5">Next</span>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            )}
+          {/* Preview Navigation Switcher (Active in Sheet Mode when Multiple Buckets or Pages) */}
+          {viewMode === 'sheet' && (
+            <div className="ml-auto flex items-center gap-2">
+              {displayedRankings.length > 1 && (
+                <div className="flex items-center border rounded-md overflow-hidden bg-background shadow-2xs h-8">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                    onClick={() => {
+                      setPreviewBucketIndex((p) => Math.max(0, p - 1));
+                      setPreviewPageIndex(0);
+                    }}
+                    disabled={previewBucketIndex <= 0}
+                    title="Previous Group / Class"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                    <span className="hidden md:inline ml-0.5">Prev</span>
+                  </Button>
+                  <span className="text-[11px] font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap">
+                    {rankingType === 'group' ? 'Group' : 'Class'} {previewBucketIndex + 1} / {displayedRankings.length}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                    onClick={() => {
+                      setPreviewBucketIndex((p) => Math.min(displayedRankings.length - 1, p + 1));
+                      setPreviewPageIndex(0);
+                    }}
+                    disabled={previewBucketIndex >= displayedRankings.length - 1}
+                    title="Next Group / Class"
+                  >
+                    <span className="hidden md:inline mr-0.5">Next</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
 
-            {totalPagesForActiveBucket > 1 && (
-              <div className="flex items-center border rounded-md overflow-hidden bg-background shadow-2xs h-8">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 rounded-none cursor-pointer text-xs"
-                  onClick={() => setPreviewPageIndex((p) => Math.max(0, p - 1))}
-                  disabled={previewPageIndex <= 0}
-                  title="Previous Page"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </Button>
-                <span className="text-[11px] font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap">
-                  Page {previewPageIndex + 1} / {totalPagesForActiveBucket}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-2 rounded-none cursor-pointer text-xs"
-                  onClick={() => setPreviewPageIndex((p) => Math.min(totalPagesForActiveBucket - 1, p + 1))}
-                  disabled={previewPageIndex >= totalPagesForActiveBucket - 1}
-                  title="Next Page"
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            )}
-          </div>
+              {totalPagesForActiveBucket > 1 && (
+                <div className="flex items-center border rounded-md overflow-hidden bg-background shadow-2xs h-8">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                    onClick={() => setPreviewPageIndex((p) => Math.max(0, p - 1))}
+                    disabled={previewPageIndex <= 0}
+                    title="Previous Page"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </Button>
+                  <span className="text-[11px] font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap">
+                    Page {previewPageIndex + 1} / {totalPagesForActiveBucket}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                    onClick={() => setPreviewPageIndex((p) => Math.min(totalPagesForActiveBucket - 1, p + 1))}
+                    disabled={previewPageIndex >= totalPagesForActiveBucket - 1}
+                    title="Next Page"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Active Filters Summary Bar */}
@@ -693,21 +776,259 @@ export default function RankingsPage() {
         )}
       </div>
 
-      {/* ─── PREVIEW DISPLAY AREA (EXACT A4 LANDSCAPE OFFLINE FORMAT, NO HORIZONTAL SCROLL) ─── */}
+      {/* ─── LOADING STATE ─── */}
       {loading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-28 w-full rounded-xl" />
-          <Skeleton className="h-96 w-full rounded-xl" />
+        <div className="space-y-6">
+          {[1, 2].map((i) => (
+            <Skeleton key={i} className="h-64 w-full rounded-xl" />
+          ))}
         </div>
-      ) : !activeBucket || displayedRankings.length === 0 ? (
+      ) : displayedRankings.length === 0 ? (
         <Card className="p-12 text-center text-muted-foreground max-w-md mx-auto">
-          <FileText className="h-12 w-12 mx-auto mb-3 opacity-40" />
+          <Trophy className="h-12 w-12 mx-auto mb-3 opacity-40" />
           <h3 className="text-base font-semibold">No Rankings Found</h3>
           <p className="text-sm text-muted-foreground mt-1">
             There are no completed results for {MONTH_NAMES[month] || month} {academicYear}.
           </p>
         </Card>
+      ) : viewMode === 'standard' ? (
+        /* ══════════════════════════════════════════════════════════════════════════
+           MODE 1: STANDARD INTERACTIVE DASHBOARD VIEW (Full-width Cards with Ranks in Last Column)
+           ══════════════════════════════════════════════════════════════════════════ */
+        <div className="space-y-8">
+          {displayedRankings.map((group) => {
+            const bucketSubs = getBucketSubjects(group);
+            const q = searchTerm.trim().toLowerCase();
+            const filteredStudents = group.students.filter(
+              (s) =>
+                !q ||
+                s.name.toLowerCase().includes(q) ||
+                s.studentId.toLowerCase().includes(q) ||
+                (s.school && s.school.toLowerCase().includes(q))
+            );
+
+            if (filteredStudents.length === 0 && searchTerm) return null;
+
+            // Sort students for this card by Rank
+            const sortedGroupStudents = [...filteredStudents].sort((a, b) => {
+              const rankA = (group.type === 'group' ? a.groupRank : a.classRank) ?? a.displayRank ?? 9999;
+              const rankB = (group.type === 'group' ? b.groupRank : b.classRank) ?? b.displayRank ?? 9999;
+              const diff = rankA - rankB;
+              if (diff !== 0) {
+                return sortDirection === 'asc' ? diff : -diff;
+              }
+              return sortDirection === 'asc' ? b.percentage - a.percentage : a.percentage - b.percentage;
+            });
+
+            return (
+              <Card key={group.key} className="overflow-hidden border shadow-sm rounded-xl">
+                <CardHeader className="bg-muted/40 py-3.5 px-4 sm:px-6 border-b">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
+                      {rankingType === 'class' ? (
+                        <GraduationCap className="h-5 w-5 text-primary" />
+                      ) : (
+                        <Users className="h-5 w-5 text-primary" />
+                      )}
+                      <span>{group.label}</span>
+                      <span className="text-xs font-normal text-muted-foreground">
+                        • {MONTH_NAMES[month] || month} {academicYear}
+                      </span>
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-1">
+                        {sortedGroupStudents.length} Students Ranked
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => {
+                          setSelectedFilterKey(group.key);
+                          handleViewModeChange('sheet');
+                        }}
+                        className="text-xs gap-1 h-7 text-primary hover:text-primary hover:bg-primary/10 cursor-pointer font-medium"
+                        title="View exact A4 sheet for this group"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">A4 Sheet</span>
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                    <thead className="bg-muted/20 border-b">
+                      <tr>
+                        {/* 1. ID */}
+                        <th className="p-3 sm:py-3.5 font-bold text-muted-foreground w-20 min-w-[70px] text-center border-r">
+                          ID
+                        </th>
+                        {/* 2. Name */}
+                        <th className="p-3 sm:py-3.5 font-bold text-muted-foreground min-w-[170px] border-r">
+                          Student Name
+                        </th>
+                        {/* 3. Class or Group */}
+                        {rankingType === 'class' ? (
+                          <th className="p-3 sm:py-3.5 font-bold text-muted-foreground w-28 border-r text-center">
+                            Batch
+                          </th>
+                        ) : (
+                          <th className="p-3 sm:py-3.5 font-bold text-muted-foreground w-20 border-r text-center">
+                            Class
+                          </th>
+                        )}
+                        {/* 4. School */}
+                        <th className="p-3 sm:py-3.5 font-bold text-muted-foreground min-w-[120px] border-r">
+                          School
+                        </th>
+
+                        {/* 5. Subject Columns */}
+                        {bucketSubs.map((sub) => (
+                          <th
+                            key={sub.id}
+                            className="p-3 sm:py-3.5 font-bold text-muted-foreground text-center border-r w-24 min-w-[75px]"
+                          >
+                            <div className="truncate">{sub.name}</div>
+                          </th>
+                        ))}
+
+                        {/* 6. Total */}
+                        <th className="p-3 sm:py-3.5 font-bold text-muted-foreground w-24 text-center border-r">
+                          Total
+                        </th>
+
+                        {/* 7. Percentage */}
+                        <th className="p-3 sm:py-3.5 font-bold text-muted-foreground w-24 text-center border-r">
+                          Percentage
+                        </th>
+
+                        {/* 8. Rank (IN THE LAST COLUMN) */}
+                        <th
+                          onClick={toggleRankSort}
+                          className="p-3 sm:py-3.5 font-bold text-muted-foreground w-32 min-w-[110px] text-center cursor-pointer select-none hover:bg-muted/40 transition-colors"
+                          title="Click to toggle Rank sort order"
+                        >
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span>Rank</span>
+                            {sortDirection === 'asc' ? (
+                              <ArrowUp className="h-3.5 w-3.5 text-primary shrink-0" />
+                            ) : sortDirection === 'desc' ? (
+                              <ArrowDown className="h-3.5 w-3.5 text-primary shrink-0" />
+                            ) : (
+                              <ArrowUpDown className="h-3.5 w-3.5 opacity-40 shrink-0" />
+                            )}
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {sortedGroupStudents.map((student) => {
+                        const rankVal =
+                          rankingType === 'class' ? student.classRank : student.groupRank;
+                        const isTopThree = rankVal && rankVal <= 3;
+
+                        return (
+                          <tr
+                            key={student.studentId}
+                            className={`hover:bg-accent/40 transition-colors ${
+                              isTopThree ? 'bg-amber-500/[0.03]' : ''
+                            }`}
+                          >
+                            {/* ID */}
+                            <td className="p-3 font-mono font-bold text-center text-muted-foreground border-r">
+                              {student.studentId}
+                            </td>
+
+                            {/* Name */}
+                            <td className="p-3 font-bold text-foreground border-r">
+                              {student.name}
+                            </td>
+
+                            {/* Class or Batch */}
+                            {rankingType === 'class' ? (
+                              <td className="p-3 text-center border-r">
+                                <Badge variant="outline" className="font-semibold text-xs">
+                                  Group {student.groupId || '—'}
+                                </Badge>
+                              </td>
+                            ) : (
+                              <td className="p-3 text-center text-muted-foreground border-r font-medium">
+                                {student.class || '—'}
+                              </td>
+                            )}
+
+                            {/* School */}
+                            <td className="p-3 text-muted-foreground border-r">
+                              {student.school || '—'}
+                            </td>
+
+                            {/* Subject Marks */}
+                            {bucketSubs.map((sub) => {
+                              const markItem = student.marks?.find(
+                                (m) =>
+                                  m.subjectId === sub.id ||
+                                  m.subjectName.toLowerCase() === sub.name.toLowerCase()
+                              );
+
+                              return (
+                                <td key={sub.id} className="p-3 text-center font-mono border-r">
+                                  {markItem ? (
+                                    markItem.isAbsent ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] text-amber-600 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30"
+                                      >
+                                        Ab
+                                      </Badge>
+                                    ) : markItem.obtainedMarks !== null ? (
+                                      <span className="font-semibold">{markItem.obtainedMarks}</span>
+                                    ) : (
+                                      <span className="text-muted-foreground">—</span>
+                                    )
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+
+                            {/* Total Marks */}
+                            <td className="p-3 text-center font-mono border-r">
+                              <span className="font-bold">{student.totalObtained}</span>
+                              <span className="text-muted-foreground text-xs"> / {student.totalMax}</span>
+                            </td>
+
+                            {/* Percentage */}
+                            <td className="p-3 text-center font-mono font-bold border-r">
+                              <span
+                                className={
+                                  student.percentage >= 80
+                                    ? 'text-emerald-600 dark:text-emerald-400 font-black'
+                                    : ''
+                                }
+                              >
+                                {student.percentage.toFixed(2)}%
+                              </span>
+                            </td>
+
+                            {/* Rank (IN THE LAST COLUMN) */}
+                            <td className="p-3 text-center font-medium min-w-[120px]">
+                              {getStandardRankBadge(rankVal)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
       ) : (
+        /* ══════════════════════════════════════════════════════════════════════════
+           MODE 2: A4 LANDSCAPE OFFLINE SHEET PREVIEW (Exact 1:1 Vector Print Preview)
+           ══════════════════════════════════════════════════════════════════════════ */
         <div className="w-full flex flex-col items-center">
           <div
             ref={a4ContainerRef}
@@ -773,7 +1094,7 @@ export default function RankingsPage() {
                       </div>
                       <div>
                         <span className="text-gray-700 font-bold">STUDENTS:</span>{' '}
-                        <strong className="text-black">{sortedStudents.length} Ranked</strong>
+                        <strong className="text-black">{sortedStudentsForSheet.length} Ranked</strong>
                       </div>
                       <div>
                         <span className="text-gray-700 font-bold">PAGE:</span>{' '}
@@ -798,7 +1119,7 @@ export default function RankingsPage() {
                       </div>
                       <div>
                         <span className="text-gray-700 font-bold">STUDENTS:</span>{' '}
-                        <strong className="text-black">{sortedStudents.length} Ranked</strong>
+                        <strong className="text-black">{sortedStudentsForSheet.length} Ranked</strong>
                       </div>
                       <div>
                         <span className="text-gray-700 font-bold">PAGE:</span>{' '}
@@ -875,7 +1196,9 @@ export default function RankingsPage() {
                       {Array.from({ length: 25 }).map((_, r) => {
                         const student = currentStudentsPage[r] || null;
                         const rankVal = student
-                          ? (activeBucket.type === 'group' ? student.groupRank : student.classRank) ?? student.displayRank ?? (previewPageIndex * 25 + r + 1)
+                          ? (activeBucket.type === 'group' ? student.groupRank : student.classRank) ??
+                            student.displayRank ??
+                            previewPageIndex * 25 + r + 1
                           : null;
 
                         return (
@@ -920,7 +1243,9 @@ export default function RankingsPage() {
                               }
 
                               const markItem = student.marks?.find(
-                                (m) => m.subjectId === sub.id || m.subjectName.toLowerCase() === sub.name.toLowerCase()
+                                (m) =>
+                                  m.subjectId === sub.id ||
+                                  m.subjectName.toLowerCase() === sub.name.toLowerCase()
                               );
 
                               return (
@@ -932,7 +1257,9 @@ export default function RankingsPage() {
                                     markItem.isAbsent ? (
                                       <span className="text-amber-600 font-bold text-[10px]">Ab</span>
                                     ) : markItem.obtainedMarks !== null ? (
-                                      <span className="font-semibold text-gray-900">{markItem.obtainedMarks}</span>
+                                      <span className="font-semibold text-gray-900">
+                                        {markItem.obtainedMarks}
+                                      </span>
                                     ) : (
                                       <span className="text-gray-400">—</span>
                                     )
@@ -951,7 +1278,13 @@ export default function RankingsPage() {
                             {/* Percentage */}
                             <td className="p-1 text-center border-r border-gray-300 w-[65px] font-mono font-bold">
                               {student ? (
-                                <span className={student.percentage >= 80 ? 'text-emerald-700 font-black' : 'text-gray-900'}>
+                                <span
+                                  className={
+                                    student.percentage >= 80
+                                      ? 'text-emerald-700 font-black'
+                                      : 'text-gray-900'
+                                  }
+                                >
                                   {student.percentage.toFixed(2)}%
                                 </span>
                               ) : (
@@ -961,7 +1294,7 @@ export default function RankingsPage() {
 
                             {/* Rank (IN THE LAST COLUMN) */}
                             <td className="p-1 text-center w-24">
-                              {student ? renderRankCell(rankVal) : <span className="opacity-0 select-none">-</span>}
+                              {student ? getSheetRankBadge(rankVal) : <span className="opacity-0 select-none">-</span>}
                             </td>
                           </tr>
                         );
