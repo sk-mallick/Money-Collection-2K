@@ -70,6 +70,7 @@ import {
   ArrowUp,
   ArrowDown,
   Keyboard,
+  PenLine,
 } from 'lucide-react';
 
 // ─── UNIFIED MARKS DROPDOWN + MANUAL INPUT COMPONENT ─────────────────────────────
@@ -82,7 +83,13 @@ interface MarksDropdownInputProps {
   isTable?: boolean;
   rowIndex?: number;
   colIndex?: number;
-  onNavigate?: (rowIndex: number, colIndex: number, direction: 'next' | 'prev' | 'up' | 'down') => void;
+  onNavigate?: (
+    rowIndex: number,
+    colIndex: number,
+    field: 'obtained' | 'max',
+    direction: 'next' | 'prev' | 'up' | 'down'
+  ) => void;
+  inputMode?: 'dropdown' | 'normal';
 }
 
 function MarksDropdownInput({
@@ -95,6 +102,7 @@ function MarksDropdownInput({
   rowIndex,
   colIndex,
   onNavigate,
+  inputMode = 'dropdown',
 }: MarksDropdownInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpwards, setOpenUpwards] = useState(false);
@@ -105,13 +113,13 @@ function MarksDropdownInput({
   // Sync internal display value with current props
   useEffect(() => {
     if (isAbsent) {
-      setInputValue('Absent');
+      setInputValue(isTable ? 'A' : 'Absent');
     } else if (obtainedMarks !== null && obtainedMarks !== undefined) {
       setInputValue(String(obtainedMarks));
     } else {
       setInputValue('');
     }
-  }, [obtainedMarks, isAbsent]);
+  }, [obtainedMarks, isAbsent, isTable]);
 
   // Click outside listener to close dropdown menu & smart placement check
   useEffect(() => {
@@ -138,14 +146,25 @@ function MarksDropdownInput({
   }, [isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    if (val.includes('/')) return;
-    setInputValue(val);
+    if (inputMode === 'dropdown') return;
+    const raw = e.target.value;
 
-    const trimmed = val.trim().toLowerCase();
+    const trimmed = raw.trim().toLowerCase();
     if (trimmed === 'a' || trimmed === 'absent') {
       onChange(null, true);
-    } else if (trimmed === '') {
+      return;
+    }
+
+    // Strictly numbers only: digits and at most one decimal point
+    let val = raw.replace(/[^0-9.]/g, '');
+    const parts = val.split('.');
+    if (parts.length > 2) {
+      val = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    setInputValue(val);
+
+    if (val === '') {
       onChange(null, false);
     } else {
       const num = parseFloat(val);
@@ -165,11 +184,39 @@ function MarksDropdownInput({
       return;
     }
 
-    // 1. Enter key: advances to next subject, or automatically triggers Done & Next Student on last subject
+    // Space key: in dropdown mode, toggle dropdown menu
+    if (e.key === ' ' && inputMode === 'dropdown') {
+      e.preventDefault();
+      setIsOpen(!isOpen);
+      return;
+    }
+
+    // In dropdown mode, prevent direct typing and Enter key - dropdown means dropdown only
+    if (inputMode === 'dropdown') {
+      if (
+        e.key !== 'Tab' &&
+        !e.key.startsWith('Arrow') &&
+        e.key !== 'Escape'
+      ) {
+        e.preventDefault();
+        return;
+      }
+    }
+
+    // 1. Enter key: in normal mode, advances from Secured Mark to Max Mark of this subject
     if (e.key === 'Enter') {
       e.preventDefault();
+      if (inputMode === 'normal' && onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+        onNavigate(rowIndex, colIndex, 'obtained', e.shiftKey ? 'prev' : 'next');
+      }
+      return;
+    }
+
+    // 2. Tab key: advances to Max Mark or retreats to previous Max Mark
+    if (e.key === 'Tab') {
+      e.preventDefault();
       if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-        onNavigate(rowIndex, colIndex, 'next');
+        onNavigate(rowIndex, colIndex, 'obtained', e.shiftKey ? 'prev' : 'next');
       }
       return;
     }
@@ -178,7 +225,7 @@ function MarksDropdownInput({
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-        onNavigate(rowIndex, colIndex, 'down');
+        onNavigate(rowIndex, colIndex, 'obtained', 'down');
       }
       return;
     }
@@ -187,17 +234,17 @@ function MarksDropdownInput({
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-        onNavigate(rowIndex, colIndex, 'up');
+        onNavigate(rowIndex, colIndex, 'obtained', 'up');
       }
       return;
     }
 
-    // 5. Arrow Right: when at the end of input, advance to next cell
+    // 5. Arrow Right: when at the end of input, advance to Max Mark of this subject
     if (e.key === 'ArrowRight') {
       if (inputRef.current && (inputRef.current.selectionStart === inputRef.current.value.length || inputRef.current.value === '')) {
         e.preventDefault();
         if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-          onNavigate(rowIndex, colIndex, 'next');
+          onNavigate(rowIndex, colIndex, 'obtained', 'next');
         }
       }
       return;
@@ -208,7 +255,7 @@ function MarksDropdownInput({
       if (inputRef.current && inputRef.current.selectionStart === 0 && inputRef.current.selectionEnd === 0) {
         e.preventDefault();
         if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-          onNavigate(rowIndex, colIndex, 'prev');
+          onNavigate(rowIndex, colIndex, 'obtained', 'prev');
         }
       }
       return;
@@ -216,8 +263,28 @@ function MarksDropdownInput({
 
     // 7. Instant Absent with 'a' or 'A' key
     if (e.key.toLowerCase() === 'a' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (inputMode === 'dropdown') return;
       e.preventDefault();
       onChange(null, true);
+      return;
+    }
+
+    // 8. Strictly block any non-numeric characters (letters, symbols, punctuation, spaces)
+    if (
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      e.key.length === 1 &&
+      !(e.key >= '0' && e.key <= '9') &&
+      e.key !== '.'
+    ) {
+      e.preventDefault();
+      return;
+    }
+
+    // Prevent duplicate decimal points
+    if (e.key === '.' && inputValue.includes('.')) {
+      e.preventDefault();
       return;
     }
   };
@@ -283,7 +350,16 @@ function MarksDropdownInput({
             data-marks-container="true"
             data-row={rowIndex}
             data-col={colIndex}
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={() => {
+              if (inputMode === 'normal') {
+                onChange(null, false);
+                setTimeout(() => {
+                  if (inputRef.current) inputRef.current.focus();
+                }, 10);
+              } else {
+                setIsOpen(!isOpen);
+              }
+            }}
             onKeyDown={(e) => {
               if (e.key === '/' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
                 e.preventDefault();
@@ -291,36 +367,43 @@ function MarksDropdownInput({
               }
               if (e.key === 'Enter') {
                 e.preventDefault();
+                if (inputMode === 'normal' && onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+                  onNavigate(rowIndex, colIndex, 'obtained', e.shiftKey ? 'prev' : 'next');
+                }
+                return;
+              }
+              if (e.key === 'Tab') {
+                e.preventDefault();
                 if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-                  onNavigate(rowIndex, colIndex, 'next');
+                  onNavigate(rowIndex, colIndex, 'obtained', e.shiftKey ? 'prev' : 'next');
                 }
                 return;
               }
               if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-                  onNavigate(rowIndex, colIndex, 'down');
+                  onNavigate(rowIndex, colIndex, 'obtained', 'down');
                 }
                 return;
               }
               if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-                  onNavigate(rowIndex, colIndex, 'up');
+                  onNavigate(rowIndex, colIndex, 'obtained', 'up');
                 }
                 return;
               }
               if (e.key === 'ArrowRight') {
                 e.preventDefault();
                 if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-                  onNavigate(rowIndex, colIndex, 'next');
+                  onNavigate(rowIndex, colIndex, 'obtained', 'next');
                 }
                 return;
               }
               if (e.key === 'ArrowLeft') {
                 e.preventDefault();
                 if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-                  onNavigate(rowIndex, colIndex, 'prev');
+                  onNavigate(rowIndex, colIndex, 'obtained', 'prev');
                 }
                 return;
               }
@@ -335,53 +418,104 @@ function MarksDropdownInput({
                 return;
               }
             }}
-            className={`flex-1 flex items-center justify-between px-1.5 cursor-pointer select-none outline-none focus:ring-1 focus:ring-primary ${
+            className={`flex-1 flex items-center w-full cursor-pointer select-none outline-none focus:ring-1 focus:ring-primary ${
               isTable ? 'h-8 text-xs' : 'h-8 text-xs sm:text-sm'
             }`}
           >
-            <div className="flex items-center gap-1.5 font-bold font-mono">
-              <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />
-              {/* Desktop shows 'Absent', Responsive shows 'A' */}
-              <span className="hidden sm:inline text-destructive">Absent</span>
-              <span className="sm:hidden font-black text-destructive">A</span>
-            </div>
-            <ChevronDown className="h-3.5 w-3.5 text-destructive/70 ml-1" />
+            {isTable ? (
+              <span
+                className={`w-full font-mono font-bold text-center text-destructive ${
+                  inputMode === 'normal' ? 'px-1' : 'pl-5 pr-1'
+                }`}
+              >
+                A
+              </span>
+            ) : (
+              <div className="flex items-center gap-1.5 font-bold font-mono pl-2">
+                <span className="h-2 w-2 rounded-full bg-destructive shrink-0" />
+                <span className="hidden sm:inline text-destructive">Absent</span>
+                <span className="sm:hidden font-black text-destructive">A</span>
+              </div>
+            )}
+            {inputMode !== 'normal' && (
+              <div
+                className={`${
+                  isTable ? 'w-5 pr-1.5' : 'w-6 pr-1.5'
+                } flex items-center justify-center text-destructive/70 hover:text-destructive cursor-pointer focus:outline-none shrink-0 ${
+                  !isTable ? 'ml-auto' : ''
+                }`}
+              >
+                <ChevronDown
+                  className={`${
+                    isTable ? 'h-3 w-3' : 'h-3.5 w-3.5'
+                  } shrink-0 transition-transform duration-150 ${
+                    isOpen ? 'rotate-180 text-destructive' : ''
+                  }`}
+                />
+              </div>
+            )}
           </div>
         ) : (
-          /* Number Input with Chevron Dropdown Trigger */
+          /* Number Input: with chevron in dropdown mode, clean without chevron in normal mode */
           <div className="flex items-center w-full">
             <input
               ref={inputRef}
               type="text"
-              inputMode="decimal"
+              inputMode={inputMode === 'dropdown' ? 'none' : 'decimal'}
+              readOnly={inputMode === 'dropdown'}
               placeholder="0"
               value={inputValue}
-              onChange={handleInputChange}
+              onChange={inputMode === 'dropdown' ? undefined : handleInputChange}
               onKeyDown={handleKeyDown}
+              onClick={() => {
+                if (inputMode === 'dropdown') {
+                  setIsOpen(!isOpen);
+                }
+              }}
               data-marks-input="true"
               data-row={rowIndex}
               data-col={colIndex}
               className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/60 placeholder:font-semibold ${
-                isTable ? 'h-8 text-xs pl-4.5 pr-0.5' : 'h-8 text-xs sm:text-sm pl-5.5 sm:pl-6 pr-1'
+                inputMode === 'dropdown' ? 'cursor-pointer select-none' : ''
+              } ${
+                inputMode === 'normal'
+                  ? isTable
+                    ? 'h-8 text-xs px-1'
+                    : 'h-8 text-xs sm:text-sm px-1.5'
+                  : isTable
+                  ? 'h-8 text-xs pl-5 pr-1'
+                  : 'h-8 text-xs sm:text-sm pl-6 pr-1.5'
               }`}
+              title={inputMode === 'dropdown' ? 'Select marks from dropdown' : 'Enter marks'}
             />
-            <button
-              type="button"
-              onClick={() => setIsOpen(!isOpen)}
-              className={`${
-                isTable ? 'w-4.5' : 'w-5.5 sm:w-6'
-              } flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none shrink-0`}
-              title="Select marks or Absent"
-              tabIndex={-1}
-            >
-              <ChevronDown className="h-3.5 w-3.5" />
-            </button>
+            {inputMode !== 'normal' && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(!isOpen);
+                }}
+                className={`${
+                  isTable ? 'w-5 pr-1.5' : 'w-6 pr-1.5'
+                } flex items-center justify-center text-muted-foreground/70 hover:text-foreground cursor-pointer focus:outline-none shrink-0`}
+                title="Select marks or Absent"
+                tabIndex={-1}
+              >
+                <ChevronDown
+                  className={`${
+                    isTable ? 'h-3 w-3' : 'h-3.5 w-3.5'
+                  } shrink-0 transition-transform duration-150 ${
+                    isOpen ? 'rotate-180 text-primary' : ''
+                  }`}
+                />
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* Floating Compact Dropdown Menu for Marks & Absent (Smart auto-flip up/down) */}
-      {isOpen && (
+      {/* Floating Compact Dropdown Menu for Marks & Absent (Only when not in normal input mode) */}
+      {inputMode !== 'normal' && isOpen && (
         <div
           className={`absolute left-0 z-50 w-full min-w-[70px] bg-popover text-popover-foreground border rounded-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ${
             openUpwards ? 'bottom-full mb-1' : 'top-full mt-1'
@@ -444,6 +578,15 @@ interface MaxMarksDropdownInputProps {
   onChange: (val: string) => void;
   className?: string;
   isTable?: boolean;
+  inputMode?: 'dropdown' | 'normal';
+  rowIndex?: number;
+  colIndex?: number;
+  onNavigate?: (
+    rowIndex: number,
+    colIndex: number,
+    field: 'obtained' | 'max',
+    direction: 'next' | 'prev' | 'up' | 'down'
+  ) => void;
 }
 
 function MaxMarksDropdownInput({
@@ -451,6 +594,10 @@ function MaxMarksDropdownInput({
   onChange,
   className = '',
   isTable = false,
+  inputMode = 'dropdown',
+  rowIndex,
+  colIndex,
+  onNavigate,
 }: MaxMarksDropdownInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpwards, setOpenUpwards] = useState(false);
@@ -494,14 +641,114 @@ function MaxMarksDropdownInput({
   }, [isOpen, value]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    if (val.includes('/')) return;
+    if (inputMode === 'dropdown') return;
+    const raw = e.target.value;
+    // Strictly numbers only: strip out any non-digit characters
+    const val = raw.replace(/\D/g, '');
     setInputValue(val);
     const num = parseInt(val, 10);
     if (val === '') {
       onChange('');
     } else if (!isNaN(num) && num >= 0 && num <= 500) {
       onChange(String(num));
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // 0. Jump shortcut '/': prevent '/' from typing into max marks
+    if (e.key === '/' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      return;
+    }
+
+    // Space key: in dropdown mode, toggle dropdown menu
+    if (e.key === ' ' && inputMode === 'dropdown') {
+      e.preventDefault();
+      setIsOpen(!isOpen);
+      return;
+    }
+
+    // In dropdown mode, prevent direct typing and Enter key - dropdown means dropdown only
+    if (inputMode === 'dropdown') {
+      if (
+        e.key !== 'Tab' &&
+        !e.key.startsWith('Arrow') &&
+        e.key !== 'Escape'
+      ) {
+        e.preventDefault();
+        return;
+      }
+    }
+
+    // 1. Enter key: in normal mode, advances from Max Mark to next subject's Obtained Marks,
+    //    or on the last subject of this student, automatically triggers Done & Next Student
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (inputMode === 'normal' && onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+        onNavigate(rowIndex, colIndex, 'max', e.shiftKey ? 'prev' : 'next');
+      }
+      return;
+    }
+
+    // 2. Tab key: advances to next subject's Obtained Marks or retreats to current Obtained Marks
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+        onNavigate(rowIndex, colIndex, 'max', e.shiftKey ? 'prev' : 'next');
+      }
+      return;
+    }
+
+    // 3. Arrow Down: move down to same max marks for next student
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+        onNavigate(rowIndex, colIndex, 'max', 'down');
+      }
+      return;
+    }
+
+    // 4. Arrow Up: move up to same max marks for previous student
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+        onNavigate(rowIndex, colIndex, 'max', 'up');
+      }
+      return;
+    }
+
+    // 5. Arrow Right: when at end of input, advance to next subject's obtained marks
+    if (e.key === 'ArrowRight') {
+      if (inputRef.current && (inputRef.current.selectionStart === inputRef.current.value.length || inputRef.current.value === '')) {
+        e.preventDefault();
+        if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+          onNavigate(rowIndex, colIndex, 'max', 'next');
+        }
+      }
+      return;
+    }
+
+    // 6. Arrow Left: when at beginning of input, retreat to current subject's obtained marks
+    if (e.key === 'ArrowLeft') {
+      if (inputRef.current && inputRef.current.selectionStart === 0 && inputRef.current.selectionEnd === 0) {
+        e.preventDefault();
+        if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+          onNavigate(rowIndex, colIndex, 'max', 'prev');
+        }
+      }
+      return;
+    }
+
+    // 7. Strictly block any non-digit characters (letters, dots, symbols, spaces)
+    if (
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      e.key.length === 1 &&
+      !(e.key >= '0' && e.key <= '9')
+    ) {
+      e.preventDefault();
+      return;
     }
   };
 
@@ -535,33 +782,59 @@ function MaxMarksDropdownInput({
           <input
             ref={inputRef}
             type="text"
-            inputMode="decimal"
+            inputMode={inputMode === 'dropdown' ? 'none' : 'decimal'}
+            readOnly={inputMode === 'dropdown'}
             placeholder="MAX"
             value={inputValue}
-            onChange={handleInputChange}
+            onChange={inputMode === 'dropdown' ? undefined : handleInputChange}
+            onKeyDown={handleKeyDown}
+            onClick={() => {
+              if (inputMode === 'dropdown') {
+                setIsOpen(!isOpen);
+              }
+            }}
             data-max-marks-input="true"
+            data-row={rowIndex}
+            data-col={colIndex}
             className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/75 placeholder:font-semibold placeholder:tracking-wide ${
-              isTable
-                ? 'h-8 text-xs pl-4.5 pr-0.5 placeholder:text-[10px]'
-                : 'h-8 text-xs sm:text-sm pl-5.5 sm:pl-6 pr-1 placeholder:text-[11px] sm:placeholder:text-xs'
+              inputMode === 'dropdown' ? 'cursor-pointer select-none' : ''
+            } ${
+              inputMode === 'normal'
+                ? isTable
+                  ? 'h-8 text-xs px-1 placeholder:text-[10px]'
+                  : 'h-8 text-xs sm:text-sm px-1.5 placeholder:text-[11px] sm:placeholder:text-xs'
+                : isTable
+                ? 'h-8 text-xs pl-5 pr-1 placeholder:text-[10px]'
+                : 'h-8 text-xs sm:text-sm pl-6 pr-1.5 placeholder:text-[11px] sm:placeholder:text-xs'
             }`}
-            title="Maximum marks (10 to 150 range)"
+            title={inputMode === 'dropdown' ? 'Select maximum marks from dropdown' : 'Maximum marks (10 to 150 range)'}
           />
-          <button
-            type="button"
-            onClick={() => setIsOpen(!isOpen)}
-            className={`${
-              isTable ? 'w-4.5' : 'w-5.5 sm:w-6'
-            } flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none shrink-0`}
-            title="Select maximum marks (10 to 150 range)"
-            tabIndex={-1}
-          >
-            <ChevronDown className="h-3.5 w-3.5" />
-          </button>
+          {inputMode !== 'normal' && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(!isOpen);
+              }}
+              className={`${
+                isTable ? 'w-5 pr-1.5' : 'w-6 pr-1.5'
+              } flex items-center justify-center text-muted-foreground/70 hover:text-foreground cursor-pointer focus:outline-none shrink-0`}
+              title="Select maximum marks (10 to 150 range)"
+              tabIndex={-1}
+            >
+              <ChevronDown
+                className={`${
+                  isTable ? 'h-3 w-3' : 'h-3.5 w-3.5'
+                } shrink-0 transition-transform duration-150 ${
+                  isOpen ? 'rotate-180 text-primary' : ''
+                }`}
+              />
+            </button>
+          )}
         </div>
       </div>
 
-      {isOpen && (
+      {inputMode !== 'normal' && isOpen && (
         <div
           className={`absolute left-0 z-50 w-full min-w-[75px] bg-popover text-popover-foreground border rounded-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ${
             openUpwards ? 'bottom-full mb-1' : 'top-full mt-1'
@@ -641,6 +914,37 @@ export default function MarksEntryPage() {
       } catch {
         // Ignore localStorage errors
       }
+      return next;
+    });
+  };
+
+  const [inputMode, setInputModeState] = useState<'dropdown' | 'normal'>(() => {
+    try {
+      const saved = localStorage.getItem('marks_input_mode');
+      if (saved === 'normal' || saved === 'dropdown') {
+        return saved;
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+    return 'dropdown';
+  });
+
+  const setInputMode = (
+    modeOrUpdater: 'dropdown' | 'normal' | ((prev: 'dropdown' | 'normal') => 'dropdown' | 'normal')
+  ) => {
+    setInputModeState((prev) => {
+      const next = typeof modeOrUpdater === 'function' ? modeOrUpdater(prev) : modeOrUpdater;
+      try {
+        localStorage.setItem('marks_input_mode', next);
+      } catch {
+        // Ignore localStorage errors
+      }
+      toast.info(
+        next === 'normal'
+          ? 'Switched to Normal Input Mode (direct typing)'
+          : 'Switched to Dropdown Input Mode'
+      );
       return next;
     });
   };
@@ -770,14 +1074,19 @@ export default function MarksEntryPage() {
     }));
   }, [students]);
 
-  // Responsive grid columns class based on subject count to fill entire width without gaps
+  // Responsive grid columns class based on subject count:
+  // - Mobile phone screens (< sm / < 640px): 1 subject card per row (grid-cols-1)
+  // - Tablet & intermediate screens (sm: >= 640px, such as 725px): 2 subject cards per row (sm:grid-cols-2)
+  // - Desktop screens (lg: >= 1024px): All subjects laid out in a single horizontal row
   const subjectGridColsClass = useMemo(() => {
     const count = subjects.length;
-    if (count <= 3) return 'grid-cols-1 sm:grid-cols-3 lg:grid-cols-3';
-    if (count === 4) return 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-4';
-    if (count === 5) return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5';
-    if (count === 6) return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6';
-    return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6';
+    if (count <= 1) return 'grid-cols-1';
+    if (count === 2) return 'grid-cols-1 sm:grid-cols-2';
+    if (count === 3) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+    if (count === 4) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4';
+    if (count === 5) return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-5';
+    if (count === 6) return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6';
+    return 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6';
   }, [subjects.length]);
 
   // Toggle single student dropdown
@@ -1240,11 +1549,13 @@ export default function MarksEntryPage() {
     [students]
   );
 
-  // Spreadsheet Keyboard Navigation (Enter, Arrows)
+  // Spreadsheet Keyboard Navigation (Enter, Tab, Arrows)
+  // Flow: Subject N Secured Marks -> Subject N Max Marks -> Subject N+1 Secured Marks ... -> on last subject's Max Marks: Done & Next Student
   const handleCellNavigate = useCallback(
     (
       rowIndex: number,
       colIndex: number,
+      currentField: 'obtained' | 'max',
       direction: 'next' | 'prev' | 'up' | 'down'
     ) => {
       const currentList = viewMode === 'table' ? sortedAndFilteredStudents : filteredStudents;
@@ -1254,46 +1565,76 @@ export default function MarksEntryPage() {
 
       let targetRow = rowIndex;
       let targetCol = colIndex;
+      let targetField: 'obtained' | 'max' = currentField;
 
       if (direction === 'next') {
-        if (colIndex < totalCols - 1) {
-          targetCol = colIndex + 1;
+        if (currentField === 'obtained') {
+          // Secured Mark -> Max Mark of the SAME subject
+          targetRow = rowIndex;
+          targetCol = colIndex;
+          targetField = 'max';
         } else {
-          // On last subject of this student: automatically Done & Next Student
-          if (rowIndex < totalRows - 1) {
-            targetRow = rowIndex + 1;
-            targetCol = 0;
+          // currentField === 'max'
+          if (colIndex < totalCols - 1) {
+            // Max Mark -> NEXT subject's Secured Mark
+            targetRow = rowIndex;
+            targetCol = colIndex + 1;
+            targetField = 'obtained';
           } else {
-            // Last student finished
-            if (viewMode === 'accordion') {
-              const currentStudent = currentList[rowIndex];
-              if (currentStudent) {
-                setExpandedStudents((prev) => ({
-                  ...prev,
-                  [currentStudent.studentResultId]: false,
-                }));
+            // Last subject's Max Mark completed! Automatically Done & Next Student
+            if (rowIndex < totalRows - 1) {
+              targetRow = rowIndex + 1;
+              targetCol = 0;
+              targetField = 'obtained';
+            } else {
+              // Last student finished
+              if (viewMode === 'accordion') {
+                const currentStudent = currentList[rowIndex];
+                if (currentStudent) {
+                  setExpandedStudents((prev) => ({
+                    ...prev,
+                    [currentStudent.studentResultId]: false,
+                  }));
+                }
               }
+              toast.success('All student marks completed!');
+              return;
             }
-            toast.success('All student marks completed!');
-            return;
           }
         }
       } else if (direction === 'prev') {
-        if (colIndex > 0) {
-          targetCol = colIndex - 1;
+        if (currentField === 'max') {
+          // Max Mark -> Secured Mark of the SAME subject
+          targetRow = rowIndex;
+          targetCol = colIndex;
+          targetField = 'obtained';
         } else {
-          if (rowIndex > 0) {
-            targetRow = rowIndex - 1;
-            targetCol = totalCols - 1;
+          // currentField === 'obtained'
+          if (colIndex > 0) {
+            // Secured Mark -> PREVIOUS subject's Max Mark
+            targetRow = rowIndex;
+            targetCol = colIndex - 1;
+            targetField = 'max';
+          } else {
+            // First subject's Secured Mark -> Previous student's last subject Max Mark
+            if (rowIndex > 0) {
+              targetRow = rowIndex - 1;
+              targetCol = totalCols - 1;
+              targetField = 'max';
+            }
           }
         }
       } else if (direction === 'down') {
         if (rowIndex < totalRows - 1) {
           targetRow = rowIndex + 1;
+          targetCol = colIndex;
+          targetField = currentField;
         }
       } else if (direction === 'up') {
         if (rowIndex > 0) {
           targetRow = rowIndex - 1;
+          targetCol = colIndex;
+          targetField = currentField;
         }
       }
 
@@ -1309,7 +1650,7 @@ export default function MarksEntryPage() {
             [targetStudent.studentResultId]: true,
           }));
           toast.success(`Marks recorded for ${currentStudent.name}`);
-        } else if (targetStudent) {
+        } else if (targetRow < rowIndex && targetStudent) {
           setExpandedStudents((prev) => ({
             ...prev,
             [targetStudent.studentResultId]: true,
@@ -1317,32 +1658,46 @@ export default function MarksEntryPage() {
         }
       }
 
-      // Allow DOM to adjust if card expanded, then focus and select text in input
+      // Allow DOM to adjust if card expanded, then focus and select text in target input
       const focusTarget = () => {
-        const targetInput = document.querySelector<HTMLInputElement>(
-          `input[data-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
-        );
-
-        if (targetInput) {
-          targetInput.focus();
-          targetInput.select();
-          return true;
-        }
-        const targetCell = document.querySelector<HTMLElement>(
-          `[data-marks-container="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
-        );
-        if (targetCell) {
-          targetCell.focus();
-          return true;
+        if (targetField === 'max') {
+          const maxInput = document.querySelector<HTMLInputElement>(
+            `input[data-max-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
+          );
+          if (maxInput) {
+            maxInput.focus();
+            maxInput.select();
+            return true;
+          }
+        } else {
+          const targetInput = document.querySelector<HTMLInputElement>(
+            `input[data-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
+          );
+          if (targetInput) {
+            targetInput.focus();
+            targetInput.select();
+            return true;
+          }
+          const targetCell = document.querySelector<HTMLElement>(
+            `[data-marks-container="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
+          );
+          if (targetCell) {
+            targetCell.focus();
+            return true;
+          }
         }
         return false;
       };
 
       setTimeout(() => {
         if (!focusTarget()) {
-          setTimeout(focusTarget, 60);
+          setTimeout(() => {
+            if (!focusTarget()) {
+              setTimeout(focusTarget, 100);
+            }
+          }, 60);
         }
-      }, 40);
+      }, 35);
     },
     [viewMode, sortedAndFilteredStudents, filteredStudents, subjects.length]
   );
@@ -1781,6 +2136,30 @@ export default function MarksEntryPage() {
                 Table
               </Button>
             </div>
+
+            {/* Input Mode Switcher (Dropdown / Normal Input) */}
+            <div className="flex items-center border rounded-lg p-0.5 bg-muted/40 h-9">
+              <Button
+                variant={inputMode === 'dropdown' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setInputMode('dropdown')}
+                className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+                title="Dropdown Mode: Select marks and maximums from interactive dropdown menus"
+              >
+                <ChevronDown className="h-3.5 w-3.5 mr-1" />
+                Dropdown
+              </Button>
+              <Button
+                variant={inputMode === 'normal' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setInputMode('normal')}
+                className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+                title="Normal Mode: Direct typing into clean numeric input fields without dropdown menus"
+              >
+                <PenLine className="h-3.5 w-3.5 mr-1" />
+                Normal
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -2118,6 +2497,7 @@ export default function MarksEntryPage() {
                                     rowIndex={filteredIdx}
                                     colIndex={markIdx}
                                     onNavigate={handleCellNavigate}
+                                    inputMode={inputMode}
                                     onChange={(obt, abs) =>
                                       updateSubjectValue(originalIndex, markIdx, obt, abs)
                                     }
@@ -2129,6 +2509,10 @@ export default function MarksEntryPage() {
                                 <div className="flex-1 min-w-0">
                                   <MaxMarksDropdownInput
                                     value={mark.maxMarks}
+                                    inputMode={inputMode}
+                                    rowIndex={filteredIdx}
+                                    colIndex={markIdx}
+                                    onNavigate={handleCellNavigate}
                                     onChange={(val) =>
                                       updateStudentMaxMark(originalIndex, markIdx, val)
                                     }
@@ -2428,31 +2812,41 @@ export default function MarksEntryPage() {
                         {/* Subject Mark Inputs with direct unified dropdown component */}
                         {student.marks.map((mark, markIdx) => {
                           return (
-                            <td key={mark.markId} className="p-2.5 border-r text-center">
-                              <div className="flex items-center justify-center gap-1.5 max-w-[180px] mx-auto">
-                                <MarksDropdownInput
-                                  obtainedMarks={mark.obtainedMarks}
-                                  isAbsent={mark.isAbsent}
-                                  maxMarks={mark.maxMarks}
-                                  isTable={true}
-                                  rowIndex={tableRowIdx}
-                                  colIndex={markIdx}
-                                  onNavigate={handleCellNavigate}
-                                  onChange={(obt, abs) =>
-                                    updateSubjectValue(originalIndex, markIdx, obt, abs)
-                                  }
-                                  className="w-20 sm:w-22"
-                                />
+                            <td key={mark.markId} className="p-2 sm:p-2.5 border-r text-center">
+                              <div className="flex items-center justify-center gap-1.5 w-[156px] sm:w-[166px] mx-auto">
+                                <div className="flex-1 min-w-0">
+                                  <MarksDropdownInput
+                                    obtainedMarks={mark.obtainedMarks}
+                                    isAbsent={mark.isAbsent}
+                                    maxMarks={mark.maxMarks}
+                                    isTable={true}
+                                    rowIndex={tableRowIdx}
+                                    colIndex={markIdx}
+                                    onNavigate={handleCellNavigate}
+                                    inputMode={inputMode}
+                                    onChange={(obt, abs) =>
+                                      updateSubjectValue(originalIndex, markIdx, obt, abs)
+                                    }
+                                    className="w-full"
+                                  />
+                                </div>
 
                                 <span className="text-muted-foreground text-xs font-bold shrink-0">/</span>
-                                <MaxMarksDropdownInput
-                                  value={mark.maxMarks}
-                                  isTable={true}
-                                  className="w-20 sm:w-22 shrink-0"
-                                  onChange={(val) =>
-                                    updateStudentMaxMark(originalIndex, markIdx, val)
-                                  }
-                                />
+
+                                <div className="flex-1 min-w-0">
+                                  <MaxMarksDropdownInput
+                                    value={mark.maxMarks}
+                                    isTable={true}
+                                    inputMode={inputMode}
+                                    rowIndex={tableRowIdx}
+                                    colIndex={markIdx}
+                                    onNavigate={handleCellNavigate}
+                                    className="w-full"
+                                    onChange={(val) =>
+                                      updateStudentMaxMark(originalIndex, markIdx, val)
+                                    }
+                                  />
+                                </div>
                               </div>
                             </td>
                           );
@@ -2646,6 +3040,26 @@ export default function MarksEntryPage() {
 
       <ContextMenuSeparator />
 
+      {/* Marks Input Mode Setting: Single 1-Click Toggle between Dropdown and Normal Input */}
+      <ContextMenuItem
+        onClick={() => setInputMode((prev) => (prev === 'dropdown' ? 'normal' : 'dropdown'))}
+        className="cursor-pointer text-xs"
+      >
+        {inputMode === 'dropdown' ? (
+          <>
+            <PenLine className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span>Switch to Normal Input</span>
+          </>
+        ) : (
+          <>
+            <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span>Switch to Dropdown Input</span>
+          </>
+        )}
+      </ContextMenuItem>
+
+      <ContextMenuSeparator />
+
       {/* Quick Jump to Last Filled / First Input */}
       <ContextMenuItem onClick={handleJumpToFirstOrLastFilled} className="cursor-pointer text-xs font-medium">
         <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -2697,8 +3111,8 @@ export default function MarksEntryPage() {
             </div>
             <div className="flex items-center justify-between py-1 border-b border-border/50">
               <div>
-                <span className="text-foreground font-medium block">Next Subject / Done & Next Student</span>
-                <span className="text-[10px] text-muted-foreground">Advances to next subject; on last subject, automatically finishes student and opens the next</span>
+                <span className="text-foreground font-medium block">Next Field (Marks → Max Marks → Next Subject)</span>
+                <span className="text-[10px] text-muted-foreground">In Normal Mode: Advances from secured mark to max mark to next subject; on last subject, automatically completes student and opens the next</span>
               </div>
               <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Enter</kbd>
             </div>
