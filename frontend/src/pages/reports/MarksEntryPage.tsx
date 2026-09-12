@@ -893,6 +893,10 @@ export default function MarksEntryPage() {
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewModeState] = useState<'accordion' | 'table'>(() => {
+    // On phone / mobile screen size (< 640px), always open with Cards ('accordion')
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      return 'accordion';
+    }
     try {
       const saved = localStorage.getItem('marks_entry_view_mode');
       if (saved === 'table' || saved === 'accordion') {
@@ -907,6 +911,11 @@ export default function MarksEntryPage() {
   const setViewMode = (
     modeOrUpdater: 'accordion' | 'table' | ((prev: 'accordion' | 'table') => 'accordion' | 'table')
   ) => {
+    // On phone / mobile screen size (< 640px), always enforce Cards ('accordion')
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      setViewModeState('accordion');
+      return;
+    }
     setViewModeState((prev) => {
       const next = typeof modeOrUpdater === 'function' ? modeOrUpdater(prev) : modeOrUpdater;
       try {
@@ -917,6 +926,18 @@ export default function MarksEntryPage() {
       return next;
     });
   };
+
+  // Automatically enforce Cards on phone screens (< 640px)
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 640) {
+        setViewModeState('accordion');
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const [inputMode, setInputModeState] = useState<'dropdown' | 'normal'>(() => {
     try {
@@ -2115,8 +2136,8 @@ export default function MarksEntryPage() {
               </DropdownMenu>
             )}
 
-            {/* View Mode Switcher */}
-            <div className="flex items-center border rounded-lg p-0.5 bg-muted/40 h-9">
+            {/* View Mode Switcher (Desktop only: on phone screens Cards is always active and switcher is hidden) */}
+            <div className="hidden sm:flex items-center border rounded-lg p-0.5 bg-muted/40 h-9">
               <Button
                 variant={viewMode === 'accordion' ? 'default' : 'ghost'}
                 size="sm"
@@ -2277,42 +2298,131 @@ export default function MarksEntryPage() {
                   {/* Student Header Card (Click to Expand / Collapse Dropdown) */}
                   <div
                     onClick={() => toggleStudentExpanded(student.studentResultId)}
-                    className={`p-3.5 sm:p-4 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 select-none bg-card hover:bg-accent/30 transition-colors ${
+                    className={`p-3.5 sm:p-4 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 select-none bg-card hover:bg-accent/30 transition-colors ${
                       isExpanded ? 'rounded-t-xl' : 'rounded-xl'
                     }`}
                   >
-                    {/* Left: Student Identity */}
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`h-10 w-10 rounded-xl flex items-center justify-center font-black text-xs shrink-0 transition-colors ${
-                          isAllAbsent
-                            ? 'bg-destructive/15 text-destructive border border-destructive/25'
-                            : isPartialAbsent
-                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
-                            : complete
-                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
-                            : 'bg-muted text-muted-foreground border'
-                        }`}
+                    {/* Top on Mobile / Left on Desktop: Student Identity + Mobile-Only Top-Right Chevron */}
+                    <div className="flex items-center justify-between gap-2 w-full sm:w-auto min-w-0">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Avatar / Status Icon */}
+                        <div
+                          className={`h-10 w-10 rounded-xl flex items-center justify-center font-black text-xs shrink-0 transition-colors ${
+                            isAllAbsent
+                              ? 'bg-destructive/15 text-destructive border border-destructive/25'
+                              : isPartialAbsent
+                              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
+                              : complete
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                              : 'bg-muted text-muted-foreground border'
+                          }`}
+                        >
+                          {isAllAbsent ? (
+                            <span className="text-xs font-black">A</span>
+                          ) : complete && !isPartialAbsent ? (
+                            <Check className="h-4 w-4 stroke-[2.5]" />
+                          ) : (
+                            <span className="text-xs font-bold">{student.name.charAt(0).toUpperCase()}</span>
+                          )}
+                        </div>
+
+                        {/* Name, Roll & Details */}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <span className="font-bold text-sm sm:text-base text-foreground truncate">
+                              {student.name}
+                            </span>
+                            <span className="font-mono text-[11px] sm:text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-semibold">
+                              {student.studentId}
+                            </span>
+
+                            {/* Dynamic Auto-Computed Status Badge (Desktop Only) */}
+                            {isAllAbsent ? (
+                              <Badge variant="destructive" className="hidden sm:inline-flex text-[10px] font-bold h-5 px-1.5 uppercase">
+                                All Absent
+                              </Badge>
+                            ) : isPartialAbsent ? (
+                              <Badge
+                                variant="secondary"
+                                className="hidden sm:inline-flex text-[10px] font-bold h-5 px-1.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                              >
+                                {absentCount} {absentCount === 1 ? 'Sub' : 'Subs'} Absent
+                              </Badge>
+                            ) : complete ? (
+                              <span className="hidden sm:inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 items-center gap-0.5 border border-emerald-500/20">
+                                ✓ Completed
+                              </span>
+                            ) : (
+                              <span className="hidden sm:inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground border">
+                                Pending
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+                            <span>Class: <strong className="text-foreground font-semibold">{student.class || '—'}</strong></span>
+                            <span>•</span>
+                            <span className="truncate max-w-[150px] sm:max-w-[180px]">{student.school || '—'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mobile-Only Top-Right Expand/Collapse Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleStudentExpanded(student.studentResultId);
+                        }}
+                        className="sm:hidden p-1.5 rounded-lg text-muted-foreground hover:bg-muted cursor-pointer transition-colors shrink-0"
+                        title={isExpanded ? 'Collapse student' : 'Expand student'}
                       >
-                        {isAllAbsent ? (
-                          <span className="text-xs font-black">A</span>
-                        ) : complete && !isPartialAbsent ? (
-                          <Check className="h-4 w-4 stroke-[2.5]" />
+                        {isExpanded ? (
+                          <ChevronUp className="h-5 w-5 text-primary" />
                         ) : (
-                          <span className="text-xs font-bold">{student.name.charAt(0).toUpperCase()}</span>
+                          <ChevronDown className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Bottom Row on Mobile / Right Section on Desktop */}
+                    <div
+                      className="flex items-center gap-2 sm:gap-2.5 justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 w-full sm:w-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Left-Aligned Scores & Status (Mobile: always visible on left; Desktop: visible when closed) */}
+                      <div className={`flex items-center gap-2 ${isExpanded ? 'flex sm:hidden' : 'flex'}`}>
+                        {isAllAbsent ? (
+                          <div className="text-left sm:text-right">
+                            <span className="font-mono font-bold text-xs sm:text-sm text-destructive uppercase">
+                              Absent
+                            </span>
+                            <div className="text-[10px] text-muted-foreground">All subjects</div>
+                          </div>
+                        ) : student.totalObtained !== null ? (
+                          <div className="text-left sm:text-right">
+                            <div className="font-mono font-bold text-xs sm:text-sm text-foreground">
+                              {student.totalObtained} / {student.totalMax}
+                            </div>
+                            <div
+                              className={`text-[11px] font-mono font-bold ${
+                                (student.percentage || 0) >= 75
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : (student.percentage || 0) < 40
+                                  ? 'text-destructive'
+                                  : 'text-muted-foreground'
+                              }`}
+                            >
+                              {student.percentage?.toFixed(2)}%
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic text-left sm:text-right">Marks not entered</span>
                         )}
                       </div>
 
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-sm sm:text-base text-foreground truncate">
-                            {student.name}
-                          </span>
-                          <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-semibold">
-                            {student.studentId}
-                          </span>
-
-                          {/* Dynamic Auto-Computed Status Badge */}
+                      {/* Mobile-Only Status Badge on Right Side of Second Row (when collapsed) */}
+                      {!isExpanded && (
+                        <div className="sm:hidden flex items-center shrink-0">
                           {isAllAbsent ? (
                             <Badge variant="destructive" className="text-[10px] font-bold h-5 px-1.5 uppercase">
                               All Absent
@@ -2322,7 +2432,7 @@ export default function MarksEntryPage() {
                               variant="secondary"
                               className="text-[10px] font-bold h-5 px-1.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"
                             >
-                              {absentCount} {absentCount === 1 ? 'Subject' : 'Subjects'} Absent
+                              {absentCount} {absentCount === 1 ? 'Sub' : 'Subs'} Absent
                             </Badge>
                           ) : complete ? (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 border border-emerald-500/20">
@@ -2334,53 +2444,11 @@ export default function MarksEntryPage() {
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
-                          <span>Class: <strong className="text-foreground font-semibold">{student.class || '—'}</strong></span>
-                          <span>•</span>
-                          <span className="truncate max-w-[180px]">{student.school || '—'}</span>
-                        </div>
-                      </div>
-                    </div>
+                      )}
 
-                    {/* Right: Scores (when collapsed) OR 3 Compact Action Buttons (when expanded) & Chevron */}
-                    <div
-                      className="flex items-center gap-2 sm:gap-2.5 justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {!isExpanded ? (
-                        /* CLOSED / COLLAPSED MODE: Show Marks / Percentage / Status */
-                        <div className="flex items-center gap-2">
-                          {isAllAbsent ? (
-                            <div className="text-right">
-                              <span className="font-mono font-bold text-xs sm:text-sm text-destructive uppercase">
-                                Absent
-                              </span>
-                              <div className="text-[10px] text-muted-foreground">All subjects</div>
-                            </div>
-                          ) : student.totalObtained !== null ? (
-                            <div className="text-right">
-                              <div className="font-mono font-bold text-xs sm:text-sm text-foreground">
-                                {student.totalObtained} / {student.totalMax}
-                              </div>
-                              <div
-                                className={`text-[11px] font-mono font-bold ${
-                                  (student.percentage || 0) >= 75
-                                    ? 'text-emerald-600 dark:text-emerald-400'
-                                    : (student.percentage || 0) < 40
-                                    ? 'text-destructive'
-                                    : 'text-muted-foreground'
-                                }`}
-                              >
-                                {student.percentage?.toFixed(2)}%
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">Marks not entered</span>
-                          )}
-                        </div>
-                      ) : (
-                        /* EXPANDED MODE: 3 Compact Icon Action Buttons (Absent All, Copy Max, Clear) */
-                        <div className="flex items-center gap-1 sm:gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      {/* When Expanded: 3 Compact Icon Action Buttons (Right-aligned on mobile where chevron was, and on right before chevron on desktop) */}
+                      {isExpanded && (
+                        <div className="flex items-center gap-1 sm:gap-1.5 ml-auto sm:ml-0" onClick={(e) => e.stopPropagation()}>
                           {/* 1. Absent All Icon Button */}
                           <Button
                             type="button"
@@ -2419,7 +2487,7 @@ export default function MarksEntryPage() {
                             <Copy className="h-4 w-4" />
                           </Button>
 
-                          {/* 3. Clear Marks Icon Button (Single tap: clear secured marks; Double tap: clear secured & max marks) */}
+                          {/* 3. Clear Marks Icon Button */}
                           <Button
                             type="button"
                             variant="outline"
@@ -2436,14 +2504,14 @@ export default function MarksEntryPage() {
                         </div>
                       )}
 
-                      {/* Dropdown Chevron Button */}
+                      {/* Desktop-Only Chevron Button (on mobile, chevron is placed at top-right of Row 1) */}
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleStudentExpanded(student.studentResultId);
                         }}
-                        className="p-1 rounded-md text-muted-foreground hover:bg-muted cursor-pointer transition-colors"
+                        className="hidden sm:block p-1 rounded-md text-muted-foreground hover:bg-muted cursor-pointer transition-colors"
                         title={isExpanded ? 'Collapse student' : 'Expand student'}
                       >
                         {isExpanded ? (
@@ -3005,22 +3073,25 @@ export default function MarksEntryPage() {
       <ContextMenuSeparator />
 
       {/* Quick View & Card Actions */}
-      <ContextMenuItem
-        onClick={() => setViewMode(viewMode === 'table' ? 'accordion' : 'table')}
-        className="cursor-pointer text-xs"
-      >
-        {viewMode === 'table' ? (
-          <>
-            <LayoutList className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span>Switch to Cards</span>
-          </>
-        ) : (
-          <>
-            <TableIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span>Switch to Table</span>
-          </>
-        )}
-      </ContextMenuItem>
+      {/* View Mode Toggle in Context Menu (Desktop only: phone screen size always stays in Cards) */}
+      {typeof window !== 'undefined' && window.innerWidth >= 640 && (
+        <ContextMenuItem
+          onClick={() => setViewMode(viewMode === 'table' ? 'accordion' : 'table')}
+          className="cursor-pointer text-xs"
+        >
+          {viewMode === 'table' ? (
+            <>
+              <LayoutList className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>Switch to Cards</span>
+            </>
+          ) : (
+            <>
+              <TableIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>Switch to Table</span>
+            </>
+          )}
+        </ContextMenuItem>
+      )}
 
       {viewMode === 'accordion' && (
         <ContextMenuItem onClick={handleToggleExpandAll} className="cursor-pointer text-xs">
