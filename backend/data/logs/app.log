@@ -466,3 +466,6 @@
 {"timestamp":"2026-09-04 18:25:58","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
 {"timestamp":"2026-09-04 18:38:31","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
 {"timestamp":"2026-09-12 03:12:27","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-12 12:06:03","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-12 12:28:34","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"454ad"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-12 12:28:40","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}

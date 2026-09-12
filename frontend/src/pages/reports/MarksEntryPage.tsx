@@ -82,7 +82,7 @@ interface MarksDropdownInputProps {
   isTable?: boolean;
   rowIndex?: number;
   colIndex?: number;
-  onNavigate?: (rowIndex: number, colIndex: number, direction: 'next' | 'prev' | 'up' | 'down' | 'next-student') => void;
+  onNavigate?: (rowIndex: number, colIndex: number, direction: 'next' | 'prev' | 'up' | 'down') => void;
 }
 
 function MarksDropdownInput({
@@ -150,7 +150,7 @@ function MarksDropdownInput({
     } else {
       const num = parseFloat(val);
       if (!isNaN(num)) {
-        if (num > maxMarks) {
+        if (maxMarks > 0 && num > maxMarks) {
           toast.error(`Marks cannot exceed maximum (${maxMarks})`);
         }
         onChange(num, false);
@@ -165,20 +165,11 @@ function MarksDropdownInput({
       return;
     }
 
-    // 1. Enter key: Enter advances to next input; Shift+Enter jumps directly to next student
+    // 1. Enter key: advances to next subject, or automatically triggers Done & Next Student on last subject
     if (e.key === 'Enter') {
       e.preventDefault();
       if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-        onNavigate(rowIndex, colIndex, e.shiftKey ? 'next-student' : 'next');
-      }
-      return;
-    }
-
-    // 2. Tab key: horizontal cell navigation (Tab = next, Shift+Tab = previous)
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-        onNavigate(rowIndex, colIndex, e.shiftKey ? 'prev' : 'next');
+        onNavigate(rowIndex, colIndex, 'next');
       }
       return;
     }
@@ -247,9 +238,11 @@ function MarksDropdownInput({
     if (inputRef.current) inputRef.current.focus();
   };
 
-  // Generate integer dropdown options (from maxMarks down to 0)
+  const marksListRef = useRef<HTMLDivElement>(null);
+
+  // Generate integer dropdown options (from maxMarks down to 0, up to 500)
   const numberOptions = useMemo(() => {
-    const max = Math.min(Math.max(1, maxMarks), 100);
+    const max = maxMarks && maxMarks > 0 ? Math.min(maxMarks, 500) : 150;
     const list: number[] = [];
     for (let i = max; i >= 0; i--) {
       list.push(i);
@@ -257,7 +250,18 @@ function MarksDropdownInput({
     return list;
   }, [maxMarks]);
 
-  const isExceeded = !isAbsent && obtainedMarks !== null && obtainedMarks > maxMarks;
+  useEffect(() => {
+    if (isOpen && marksListRef.current && obtainedMarks !== null && !isAbsent) {
+      setTimeout(() => {
+        const target = marksListRef.current?.querySelector<HTMLElement>(`[data-num="${obtainedMarks}"]`);
+        if (target) {
+          target.scrollIntoView({ block: 'nearest' });
+        }
+      }, 10);
+    }
+  }, [isOpen, obtainedMarks, isAbsent]);
+
+  const isExceeded = !isAbsent && maxMarks > 0 && obtainedMarks !== null && obtainedMarks > maxMarks;
 
   return (
     <div ref={containerRef} className={`relative inline-block w-full ${className}`}>
@@ -288,14 +292,7 @@ function MarksDropdownInput({
               if (e.key === 'Enter') {
                 e.preventDefault();
                 if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-                  onNavigate(rowIndex, colIndex, e.shiftKey ? 'next-student' : 'next');
-                }
-                return;
-              }
-              if (e.key === 'Tab') {
-                e.preventDefault();
-                if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-                  onNavigate(rowIndex, colIndex, e.shiftKey ? 'prev' : 'next');
+                  onNavigate(rowIndex, colIndex, 'next');
                 }
                 return;
               }
@@ -338,8 +335,8 @@ function MarksDropdownInput({
                 return;
               }
             }}
-            className={`flex-1 flex items-center justify-between px-2 cursor-pointer select-none outline-none focus:ring-1 focus:ring-primary ${
-              isTable ? 'h-8 text-xs' : 'h-9 text-sm'
+            className={`flex-1 flex items-center justify-between px-1.5 cursor-pointer select-none outline-none focus:ring-1 focus:ring-primary ${
+              isTable ? 'h-8 text-xs' : 'h-8 text-xs sm:text-sm'
             }`}
           >
             <div className="flex items-center gap-1.5 font-bold font-mono">
@@ -364,14 +361,16 @@ function MarksDropdownInput({
               data-marks-input="true"
               data-row={rowIndex}
               data-col={colIndex}
-              className={`w-full font-mono font-bold text-center bg-transparent outline-none ${
-                isTable ? 'h-8 text-xs px-1' : 'h-9 text-sm px-2'
+              className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/60 placeholder:font-semibold ${
+                isTable ? 'h-8 text-xs pl-4.5 pr-0.5' : 'h-8 text-xs sm:text-sm pl-5.5 sm:pl-6 pr-1'
               }`}
             />
             <button
               type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className="px-1.5 py-1 text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none shrink-0"
+              className={`${
+                isTable ? 'w-4.5' : 'w-5.5 sm:w-6'
+              } flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none shrink-0`}
               title="Select marks or Absent"
               tabIndex={-1}
             >
@@ -402,16 +401,186 @@ function MarksDropdownInput({
           </div>
 
           {/* Clean Number List */}
-          <div className="overflow-y-auto max-h-[120px] p-0.5 divide-y divide-border/20">
+          <div
+            ref={marksListRef}
+            className="overflow-y-auto max-h-[120px] p-0.5 divide-y divide-border/20"
+          >
             {numberOptions.map((num) => (
               <button
                 key={num}
                 type="button"
+                data-num={num}
                 onClick={() => handleSelectNumber(num)}
                 className={`w-full text-center py-1 text-xs font-mono rounded hover:bg-accent transition-colors cursor-pointer ${
                   !isAbsent && obtainedMarks === num
                     ? 'bg-primary/15 text-primary font-bold'
                     : ''
+                }`}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
+
+          {/* Bottom Option: Clear */}
+          <div className="p-0.5 border-t bg-muted/20">
+            <button
+              type="button"
+              onClick={handleClear}
+              className="w-full text-center py-0.5 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors cursor-pointer"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── MAXIMUM MARKS DROPDOWN + MANUAL INPUT COMPONENT ────────────────────────
+interface MaxMarksDropdownInputProps {
+  value: number;
+  onChange: (val: string) => void;
+  className?: string;
+  isTable?: boolean;
+}
+
+function MaxMarksDropdownInput({
+  value,
+  onChange,
+  className = '',
+  isTable = false,
+}: MaxMarksDropdownInputProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [openUpwards, setOpenUpwards] = useState(false);
+  const [inputValue, setInputValue] = useState<string>('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setInputValue(value === 0 ? '' : String(value));
+  }, [value]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        if (spaceBelow < 200 && spaceAbove > 150) {
+          setOpenUpwards(true);
+        } else {
+          setOpenUpwards(false);
+        }
+      }
+      if (listRef.current && value >= 10) {
+        setTimeout(() => {
+          const target = listRef.current?.querySelector<HTMLElement>(`[data-num="${value}"]`);
+          if (target) {
+            target.scrollIntoView({ block: 'nearest' });
+          }
+        }, 10);
+      }
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, value]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val.includes('/')) return;
+    setInputValue(val);
+    const num = parseInt(val, 10);
+    if (val === '') {
+      onChange('');
+    } else if (!isNaN(num) && num >= 0 && num <= 500) {
+      onChange(String(num));
+    }
+  };
+
+  const handleSelectOption = (num: number) => {
+    onChange(String(num));
+    setIsOpen(false);
+  };
+
+  const handleClear = () => {
+    onChange('');
+    setIsOpen(false);
+    if (inputRef.current) inputRef.current.focus();
+  };
+
+  // Full 10 to 150 range options with no limitation
+  const maxOptions = useMemo(() => {
+    const list: number[] = [];
+    for (let i = 150; i >= 10; i--) {
+      list.push(i);
+    }
+    if (value > 150 && !list.includes(value)) {
+      list.unshift(value);
+    }
+    return list;
+  }, [value]);
+
+  return (
+    <div ref={containerRef} className={`relative inline-block w-full ${className}`}>
+      <div className="flex items-center rounded-md border transition-all border-input bg-muted/30 hover:bg-muted/45 focus-within:ring-1 focus-within:ring-primary focus-within:border-primary focus-within:bg-card">
+        <div className="flex items-center w-full">
+          <input
+            ref={inputRef}
+            type="text"
+            inputMode="decimal"
+            placeholder="MAX"
+            value={inputValue}
+            onChange={handleInputChange}
+            data-max-marks-input="true"
+            className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/75 placeholder:font-semibold placeholder:tracking-wide ${
+              isTable
+                ? 'h-8 text-xs pl-4.5 pr-0.5 placeholder:text-[10px]'
+                : 'h-8 text-xs sm:text-sm pl-5.5 sm:pl-6 pr-1 placeholder:text-[11px] sm:placeholder:text-xs'
+            }`}
+            title="Maximum marks (10 to 150 range)"
+          />
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className={`${
+              isTable ? 'w-4.5' : 'w-5.5 sm:w-6'
+            } flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none shrink-0`}
+            title="Select maximum marks (10 to 150 range)"
+            tabIndex={-1}
+          >
+            <ChevronDown className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {isOpen && (
+        <div
+          className={`absolute left-0 z-50 w-full min-w-[75px] bg-popover text-popover-foreground border rounded-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ${
+            openUpwards ? 'bottom-full mb-1' : 'top-full mt-1'
+          }`}
+          style={{ maxHeight: '180px' }}
+        >
+          {/* Full Range List (150 down to 10) with NO limitation */}
+          <div
+            ref={listRef}
+            className="overflow-y-auto max-h-[140px] p-0.5 divide-y divide-border/20"
+          >
+            {maxOptions.map((num) => (
+              <button
+                key={num}
+                type="button"
+                data-num={num}
+                onClick={() => handleSelectOption(num)}
+                className={`w-full text-center py-1 text-xs font-mono rounded hover:bg-accent transition-colors cursor-pointer ${
+                  value === num ? 'bg-primary/15 text-primary font-bold' : ''
                 }`}
               >
                 {num}
@@ -601,6 +770,16 @@ export default function MarksEntryPage() {
     }));
   }, [students]);
 
+  // Responsive grid columns class based on subject count to fill entire width without gaps
+  const subjectGridColsClass = useMemo(() => {
+    const count = subjects.length;
+    if (count <= 3) return 'grid-cols-1 sm:grid-cols-3 lg:grid-cols-3';
+    if (count === 4) return 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-4';
+    if (count === 5) return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5';
+    if (count === 6) return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6';
+    return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6';
+  }, [subjects.length]);
+
   // Toggle single student dropdown
   const toggleStudentExpanded = (studentResultId: number) => {
     setExpandedStudents((prev) => ({
@@ -716,22 +895,98 @@ export default function MarksEntryPage() {
     );
   };
 
-  // Clear all marks for a student
-  const clearAllMarksForStudent = (studentIndex: number) => {
+  // Ref for double-click detection on clear button (resets max marks if tapped twice within 2s)
+  const lastClearClickRef = useRef<{ studentResultId: number; time: number } | null>(null);
+
+  // Clear marks for a student: single tap clears secured marks, double tap also resets max marks to default
+  const handleClearStudentMarks = (studentIndex: number, studentResultId: number) => {
+    const now = Date.now();
+    const isDoubleTap =
+      lastClearClickRef.current &&
+      lastClearClickRef.current.studentResultId === studentResultId &&
+      now - lastClearClickRef.current.time < 2000;
+
+    if (isDoubleTap) {
+      lastClearClickRef.current = null;
+      setStudents((prev) => {
+        const next = JSON.parse(JSON.stringify(prev)) as StudentResult[];
+        const student = next[studentIndex];
+        if (!student) return prev;
+
+        student.marks.forEach((m) => {
+          m.isAbsent = false;
+          m.obtainedMarks = null;
+          m.maxMarks = 0;
+          m.isDefaultMax = false;
+        });
+
+        recalculateStudentStats(student);
+        return next;
+      });
+
+      toast.success('Cleared secured and maximum marks for this student');
+    } else {
+      lastClearClickRef.current = { studentResultId, time: now };
+      setStudents((prev) => {
+        const next = JSON.parse(JSON.stringify(prev)) as StudentResult[];
+        const student = next[studentIndex];
+        if (!student) return prev;
+
+        student.marks.forEach((m) => {
+          m.isAbsent = false;
+          m.obtainedMarks = null;
+        });
+
+        recalculateStudentStats(student);
+        return next;
+      });
+
+      toast.info('Secured marks cleared (tap again within 2s to clear max marks too)');
+    }
+  };
+
+  // Toggle all subjects for a student as Absent or Present
+  const toggleAllAbsentForStudent = (studentIndex: number) => {
+    const current = students[studentIndex];
+    if (!current) return;
+    const isCurrentlyAllAbsent =
+      current.marks.length > 0 && current.marks.every((m) => m.isAbsent);
+    const newAbsent = !isCurrentlyAllAbsent;
+
     setStudents((prev) => {
       const next = JSON.parse(JSON.stringify(prev)) as StudentResult[];
       const student = next[studentIndex];
+      if (!student) return prev;
 
       student.marks.forEach((m) => {
-        m.isAbsent = false;
-        m.obtainedMarks = null;
+        m.isAbsent = newAbsent;
+        if (newAbsent) {
+          m.obtainedMarks = null;
+        }
       });
 
+      student.status = newAbsent ? 'Absent' : 'Present';
       recalculateStudentStats(student);
       return next;
     });
 
-    toast.info('Cleared marks for this student');
+    const isNowAbsent = !(
+      students[studentIndex]?.marks.length > 0 &&
+      students[studentIndex]?.marks.every((m) => m.isAbsent)
+    );
+    toast.info(
+      isNowAbsent
+        ? 'All subjects marked as Absent for this student'
+        : 'All subjects marked as Present for this student'
+    );
+  };
+
+  // Backward compatibility alias for clear
+  const clearAllMarksForStudent = (studentIndex: number) => {
+    const student = students[studentIndex];
+    if (student) {
+      handleClearStudentMarks(studentIndex, student.studentResultId);
+    }
   };
 
   // Live update for manual maximum marks of a subject for a student
@@ -739,16 +994,18 @@ export default function MarksEntryPage() {
     setStudents((prev) => {
       const next = JSON.parse(JSON.stringify(prev)) as StudentResult[];
       const student = next[studentIndex];
+      if (!student) return prev;
       const mark = student.marks[markIndex];
+      if (!mark) return prev;
 
-      const num = parseInt(maxStr, 10);
-      if (isNaN(num) || num <= 0) return prev;
+      const num = maxStr === '' ? 0 : parseInt(maxStr, 10);
+      if (isNaN(num) || num < 0) return prev;
 
       mark.maxMarks = num;
       mark.isDefaultMax = false;
 
       // Adjust obtained if it now exceeds max
-      if (mark.obtainedMarks !== null && mark.obtainedMarks > num) {
+      if (mark.obtainedMarks !== null && num > 0 && mark.obtainedMarks > num) {
         mark.obtainedMarks = num;
       }
 
@@ -772,33 +1029,53 @@ export default function MarksEntryPage() {
     });
 
     toast.success('Marks recorded for this student');
+
+    const nextRow = currentFilteredIndex + 1;
+    if (nextRow < filteredStudents.length) {
+      setTimeout(() => {
+        const targetInput = document.querySelector<HTMLInputElement>(
+          `input[data-marks-input="true"][data-row="${nextRow}"][data-col="0"]`
+        );
+        if (targetInput) {
+          targetInput.focus();
+          targetInput.select();
+        }
+      }, 50);
+    }
   };
 
-  // Copy max marks from one student to all other students
-  const handleCopyMaxMarksToAll = (sourceStudent: StudentResult) => {
+  // Copy max marks from current student to ONLY the next student card
+  const handleCopyMaxMarksToNext = (sourceStudent: StudentResult, currentFilteredIndex: number) => {
+    const nextStudent = filteredStudents[currentFilteredIndex + 1];
+    if (!nextStudent) {
+      toast.info('This is the last student card in the list; no next student to copy to.');
+      return;
+    }
+
+    const sourceMaxMap = new Map<number, number>();
+    sourceStudent.marks.forEach((m) => sourceMaxMap.set(m.subjectId, m.maxMarks));
+
     setStudents((prev) => {
       const next = JSON.parse(JSON.stringify(prev)) as StudentResult[];
-      const sourceMaxMap = new Map<number, number>();
-      sourceStudent.marks.forEach((m) => sourceMaxMap.set(m.subjectId, m.maxMarks));
+      const target = next.find((s) => s.studentResultId === nextStudent.studentResultId);
+      if (!target) return prev;
 
-      for (const st of next) {
-        for (const m of st.marks) {
-          const srcMax = sourceMaxMap.get(m.subjectId);
-          if (srcMax) {
-            m.maxMarks = srcMax;
-            if (m.obtainedMarks !== null && m.obtainedMarks > srcMax) {
-              m.obtainedMarks = srcMax;
-            }
+      for (const m of target.marks) {
+        const srcMax = sourceMaxMap.get(m.subjectId);
+        if (srcMax !== undefined) {
+          m.maxMarks = srcMax;
+          m.isDefaultMax = false;
+          if (m.obtainedMarks !== null && srcMax > 0 && m.obtainedMarks > srcMax) {
+            m.obtainedMarks = srcMax;
           }
         }
-
-        recalculateStudentStats(st);
       }
 
+      recalculateStudentStats(target);
       return next;
     });
 
-    toast.success(`Copied maximum marks from ${sourceStudent.name} to all students in this group`);
+    toast.success(`Copied maximum marks from ${sourceStudent.name} to ${nextStudent.name}`);
   };
 
   const handleSave = async () => {
@@ -963,12 +1240,12 @@ export default function MarksEntryPage() {
     [students]
   );
 
-  // Spreadsheet Keyboard Navigation (Enter, Shift+Enter, Tab, Shift+Tab, Arrows)
+  // Spreadsheet Keyboard Navigation (Enter, Arrows)
   const handleCellNavigate = useCallback(
     (
       rowIndex: number,
       colIndex: number,
-      direction: 'next' | 'prev' | 'up' | 'down' | 'next-student'
+      direction: 'next' | 'prev' | 'up' | 'down'
     ) => {
       const currentList = viewMode === 'table' ? sortedAndFilteredStudents : filteredStudents;
       const totalRows = currentList.length;
@@ -978,22 +1255,27 @@ export default function MarksEntryPage() {
       let targetRow = rowIndex;
       let targetCol = colIndex;
 
-      if (direction === 'next-student') {
-        // Shift + Enter: advance cursor directly to the next student's first input box
-        if (rowIndex < totalRows - 1) {
-          targetRow = rowIndex + 1;
-          targetCol = 0;
-        } else {
-          toast.info('Already at the last student', { duration: 1200 });
-        }
-      } else if (direction === 'next') {
+      if (direction === 'next') {
         if (colIndex < totalCols - 1) {
           targetCol = colIndex + 1;
         } else {
-          // "make enter as next input box and if all data filled then it will goes to next students first input box"
+          // On last subject of this student: automatically Done & Next Student
           if (rowIndex < totalRows - 1) {
             targetRow = rowIndex + 1;
             targetCol = 0;
+          } else {
+            // Last student finished
+            if (viewMode === 'accordion') {
+              const currentStudent = currentList[rowIndex];
+              if (currentStudent) {
+                setExpandedStudents((prev) => ({
+                  ...prev,
+                  [currentStudent.studentResultId]: false,
+                }));
+              }
+            }
+            toast.success('All student marks completed!');
+            return;
           }
         }
       } else if (direction === 'prev') {
@@ -1015,10 +1297,19 @@ export default function MarksEntryPage() {
         }
       }
 
-      // If in accordion mode, expand target student card if collapsed
+      // If in accordion mode: collapse current student and expand next student when advancing
       if (viewMode === 'accordion') {
+        const currentStudent = currentList[rowIndex];
         const targetStudent = currentList[targetRow];
-        if (targetStudent) {
+
+        if (targetRow > rowIndex && currentStudent && targetStudent) {
+          setExpandedStudents((prev) => ({
+            ...prev,
+            [currentStudent.studentResultId]: false,
+            [targetStudent.studentResultId]: true,
+          }));
+          toast.success(`Marks recorded for ${currentStudent.name}`);
+        } else if (targetStudent) {
           setExpandedStudents((prev) => ({
             ...prev,
             [targetStudent.studentResultId]: true,
@@ -1027,7 +1318,7 @@ export default function MarksEntryPage() {
       }
 
       // Allow DOM to adjust if card expanded, then focus and select text in input
-      setTimeout(() => {
+      const focusTarget = () => {
         const targetInput = document.querySelector<HTMLInputElement>(
           `input[data-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
         );
@@ -1035,15 +1326,23 @@ export default function MarksEntryPage() {
         if (targetInput) {
           targetInput.focus();
           targetInput.select();
-        } else {
-          const targetCell = document.querySelector<HTMLElement>(
-            `[data-marks-container="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
-          );
-          if (targetCell) {
-            targetCell.focus();
-          }
+          return true;
         }
-      }, 30);
+        const targetCell = document.querySelector<HTMLElement>(
+          `[data-marks-container="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
+        );
+        if (targetCell) {
+          targetCell.focus();
+          return true;
+        }
+        return false;
+      };
+
+      setTimeout(() => {
+        if (!focusTarget()) {
+          setTimeout(focusTarget, 60);
+        }
+      }, 40);
     },
     [viewMode, sortedAndFilteredStudents, filteredStudents, subjects.length]
   );
@@ -1664,109 +1963,124 @@ export default function MarksEntryPage() {
                       </div>
                     </div>
 
-                    {/* Right: Scores & Expand Dropdown Trigger */}
-                    <div className="flex items-center gap-3 justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0">
-                      {/* Score Preview Pill */}
-                      <div className="flex items-center gap-2">
-                        {isAllAbsent ? (
-                          <div className="text-right">
-                            <span className="font-mono font-bold text-xs sm:text-sm text-destructive uppercase">
-                              Absent
-                            </span>
-                            <div className="text-[10px] text-muted-foreground">All subjects</div>
-                          </div>
-                        ) : student.totalObtained !== null ? (
-                          <div className="text-right">
-                            <div className="font-mono font-bold text-xs sm:text-sm text-foreground">
-                              {student.totalObtained} / {student.totalMax}
+                    {/* Right: Scores (when collapsed) OR 3 Compact Action Buttons (when expanded) & Chevron */}
+                    <div
+                      className="flex items-center gap-2 sm:gap-2.5 justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {!isExpanded ? (
+                        /* CLOSED / COLLAPSED MODE: Show Marks / Percentage / Status */
+                        <div className="flex items-center gap-2">
+                          {isAllAbsent ? (
+                            <div className="text-right">
+                              <span className="font-mono font-bold text-xs sm:text-sm text-destructive uppercase">
+                                Absent
+                              </span>
+                              <div className="text-[10px] text-muted-foreground">All subjects</div>
                             </div>
-                            <div
-                              className={`text-[11px] font-mono font-bold ${
-                                (student.percentage || 0) >= 75
-                                  ? 'text-emerald-600 dark:text-emerald-400'
-                                  : (student.percentage || 0) < 40
-                                  ? 'text-destructive'
-                                  : 'text-muted-foreground'
-                              }`}
-                            >
-                              {student.percentage?.toFixed(2)}%
+                          ) : student.totalObtained !== null ? (
+                            <div className="text-right">
+                              <div className="font-mono font-bold text-xs sm:text-sm text-foreground">
+                                {student.totalObtained} / {student.totalMax}
+                              </div>
+                              <div
+                                className={`text-[11px] font-mono font-bold ${
+                                  (student.percentage || 0) >= 75
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : (student.percentage || 0) < 40
+                                    ? 'text-destructive'
+                                    : 'text-muted-foreground'
+                                }`}
+                              >
+                                {student.percentage?.toFixed(2)}%
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">Marks not entered</span>
-                        )}
-                      </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">Marks not entered</span>
+                          )}
+                        </div>
+                      ) : (
+                        /* EXPANDED MODE: 3 Compact Icon Action Buttons (Absent All, Copy Max, Clear) */
+                        <div className="flex items-center gap-1 sm:gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          {/* 1. Absent All Icon Button */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleAllAbsentForStudent(originalIndex);
+                            }}
+                            className={`h-8 w-8 rounded-lg transition-colors cursor-pointer ${
+                              isAllAbsent
+                                ? 'bg-destructive/15 text-destructive border-destructive/40 hover:bg-destructive/25'
+                                : 'text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30'
+                            }`}
+                            title={isAllAbsent ? 'Student is Absent (Click to mark Present)' : 'Mark all subjects as Absent'}
+                          >
+                            {isAllAbsent ? (
+                              <UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                            ) : (
+                              <UserX className="h-4 w-4" />
+                            )}
+                          </Button>
+
+                          {/* 2. Copy Max Marks to Next Student Icon Button */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyMaxMarksToNext(student, filteredIdx);
+                            }}
+                            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer transition-colors"
+                            title="Copy maximum marks to the next student card"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+
+                          {/* 3. Clear Marks Icon Button (Single tap: clear secured marks; Double tap: clear secured & max marks) */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleClearStudentMarks(originalIndex, student.studentResultId);
+                            }}
+                            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 cursor-pointer transition-colors"
+                            title="Clear secured marks (Double-tap within 2s to clear max marks too)"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
 
                       {/* Dropdown Chevron Button */}
-                      <div className="p-1 rounded-md text-muted-foreground hover:bg-muted">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleStudentExpanded(student.studentResultId);
+                        }}
+                        className="p-1 rounded-md text-muted-foreground hover:bg-muted cursor-pointer transition-colors"
+                        title={isExpanded ? 'Collapse student' : 'Expand student'}
+                      >
                         {isExpanded ? (
                           <ChevronUp className="h-5 w-5 text-primary" />
                         ) : (
                           <ChevronDown className="h-5 w-5" />
                         )}
-                      </div>
+                      </button>
                     </div>
                   </div>
 
                   {/* ─── EXPANDED DOWN SIDE: SUBJECT MARKS ENTRY FORM ─── */}
                   {isExpanded && (
                     <div className="p-4 sm:p-5 border-t bg-muted/15 space-y-4 rounded-b-xl animate-in fade-in duration-150">
-                      {/* Sub-header inside student card: Quick Actions */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {/* Quick Batch Buttons for this student */}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="xs"
-                            onClick={() => markAllSubjectsForStudent(originalIndex, false)}
-                            className="h-7 text-[11px] px-2 bg-background hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/30 font-medium cursor-pointer"
-                            title="Mark all subjects as Present for this student"
-                          >
-                            <UserCheck className="h-3 w-3 mr-1 text-emerald-600" />
-                            Mark All Present
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="xs"
-                            onClick={() => markAllSubjectsForStudent(originalIndex, true)}
-                            className="h-7 text-[11px] px-2 bg-background hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 font-medium cursor-pointer"
-                            title="Mark all subjects as Absent for this student"
-                          >
-                            <UserX className="h-3 w-3 mr-1 text-destructive" />
-                            Mark All Absent
-                          </Button>
-
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => clearAllMarksForStudent(originalIndex)}
-                            className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground cursor-pointer font-medium"
-                            title="Clear all entered marks for this student"
-                          >
-                            <RotateCcw className="h-3 w-3 mr-1" />
-                            Clear
-                          </Button>
-                        </div>
-
-                        {/* Helper to copy max marks to other students */}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCopyMaxMarksToAll(student)}
-                          className="text-xs text-muted-foreground hover:text-foreground h-7 px-2 cursor-pointer font-medium"
-                          title="Apply this student's maximum marks pattern to all students in this group"
-                        >
-                          <Copy className="h-3.5 w-3.5 mr-1" />
-                          Apply Max Marks to all
-                        </Button>
-                      </div>
-
-                      {/* Subject Marks Entry Grid (5 columns on desktop, 6 on 2xl/wide screens so all 5 subjects fit in 1 line) */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-6 gap-2.5 sm:gap-3">
+                      {/* Subject Marks Entry Grid (Full width across screen, no right gap) */}
+                      <div className={`grid ${subjectGridColsClass} gap-2.5 sm:gap-3 w-full`}>
                         {student.marks.map((mark, markIdx) => {
                           const isExceeded =
                             !mark.isAbsent &&
@@ -1777,7 +2091,7 @@ export default function MarksEntryPage() {
                           return (
                             <div
                               key={mark.markId}
-                              className={`relative focus-within:z-40 p-2.5 sm:p-3 rounded-lg border transition-all ${
+                              className={`relative focus-within:z-40 p-2.5 sm:p-3 rounded-xl border transition-all ${
                                 mark.isAbsent
                                   ? 'border-destructive/30 bg-destructive/[0.03]'
                                   : isExceeded
@@ -1788,14 +2102,14 @@ export default function MarksEntryPage() {
                               }`}
                             >
                               {/* Subject Name */}
-                              <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center justify-between mb-2">
                                 <span className="font-bold text-xs sm:text-sm text-foreground truncate block">
                                   {mark.subjectName}
                                 </span>
                               </div>
 
-                              {/* Inputs Row: [ MarksDropdownInput ] / [ Max Marks ] */}
-                              <div className="flex items-center gap-1.5">
+                              {/* Inputs Row: [ MarksDropdownInput (Equal 50%) ] / [ MaxMarksDropdownInput (Equal 50%) ] */}
+                              <div className="flex items-center gap-1.5 w-full">
                                 <div className="flex-1 min-w-0">
                                   <MarksDropdownInput
                                     obtainedMarks={mark.obtainedMarks}
@@ -1810,20 +2124,14 @@ export default function MarksEntryPage() {
                                   />
                                 </div>
 
-                                <span className="text-muted-foreground font-bold text-xs">/</span>
+                                <span className="text-muted-foreground font-bold text-xs shrink-0">/</span>
 
-                                {/* Manual Maximum Marks Input */}
-                                <div className="w-14 shrink-0">
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    max={500}
+                                <div className="flex-1 min-w-0">
+                                  <MaxMarksDropdownInput
                                     value={mark.maxMarks}
-                                    onChange={(e) =>
-                                      updateStudentMaxMark(originalIndex, markIdx, e.target.value)
+                                    onChange={(val) =>
+                                      updateStudentMaxMark(originalIndex, markIdx, val)
                                     }
-                                    className="h-8 sm:h-9 font-mono text-xs text-center bg-muted/30 font-semibold px-0.5"
-                                    title="Maximum marks"
                                   />
                                 </div>
                               </div>
@@ -1986,9 +2294,11 @@ export default function MarksEntryPage() {
                             <ArrowUpDown className="h-3 w-3 opacity-0 group-hover/sub:opacity-60 transition-opacity shrink-0" />
                           )}
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-normal">
-                          Max: {sub.defaultMax}
-                        </div>
+                        {sub.defaultMax > 0 && (
+                          <div className="text-[10px] text-muted-foreground font-normal">
+                            Max: {sub.defaultMax}
+                          </div>
+                        )}
                       </button>
                     </th>
                   ))}
@@ -2131,20 +2441,17 @@ export default function MarksEntryPage() {
                                   onChange={(obt, abs) =>
                                     updateSubjectValue(originalIndex, markIdx, obt, abs)
                                   }
-                                  className="w-24 sm:w-28"
+                                  className="w-20 sm:w-22"
                                 />
 
-                                <span className="text-muted-foreground text-xs font-bold">/</span>
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  max={500}
+                                <span className="text-muted-foreground text-xs font-bold shrink-0">/</span>
+                                <MaxMarksDropdownInput
                                   value={mark.maxMarks}
-                                  onChange={(e) =>
-                                    updateStudentMaxMark(originalIndex, markIdx, e.target.value)
+                                  isTable={true}
+                                  className="w-20 sm:w-22 shrink-0"
+                                  onChange={(val) =>
+                                    updateStudentMaxMark(originalIndex, markIdx, val)
                                   }
-                                  className="h-8 w-14 text-center font-mono text-xs px-1 bg-muted/40 font-semibold"
-                                  title="Maximum marks for this student"
                                 />
                               </div>
                             </td>
@@ -2389,26 +2696,11 @@ export default function MarksEntryPage() {
               <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">/</kbd>
             </div>
             <div className="flex items-center justify-between py-1 border-b border-border/50">
-              <span className="text-foreground font-medium">Next Student Directly</span>
-              <div className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Shift</kbd>
-                <span>+</span>
-                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Enter</kbd>
+              <div>
+                <span className="text-foreground font-medium block">Next Subject / Done & Next Student</span>
+                <span className="text-[10px] text-muted-foreground">Advances to next subject; on last subject, automatically finishes student and opens the next</span>
               </div>
-            </div>
-            <div className="flex items-center justify-between py-1 border-b border-border/50">
-              <span className="text-foreground font-medium">Next Subject (Row Completion)</span>
               <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Enter</kbd>
-            </div>
-            <div className="flex items-center justify-between py-1 border-b border-border/50">
-              <span className="text-foreground font-medium">Next / Previous Subject</span>
-              <div className="flex items-center gap-1">
-                <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Tab</kbd>
-                <span className="text-muted-foreground text-[10px]">/</span>
-                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Shift</kbd>
-                <span>+</span>
-                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Tab</kbd>
-              </div>
             </div>
             <div className="flex items-center justify-between py-1 border-b border-border/50">
               <span className="text-foreground font-medium">Same Subject, Next Student (Down)</span>

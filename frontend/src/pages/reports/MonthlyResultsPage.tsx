@@ -161,12 +161,8 @@ export default function MonthlyResultsPage() {
     if (formGroupId && formCategory) {
       fetchSubjects(formCategory).then(subs => {
         setSubjects(subs);
-        // Set default max marks
-        const defaults: Record<number, number> = {};
-        subs.forEach(s => {
-          defaults[s.id] = s.name === 'Literature' || s.name === 'Olympiad' ? 30 : 20;
-        });
-        setFormMaxMarks(defaults);
+        // Do not set default max marks of any subject
+        setFormMaxMarks({});
       });
     }
   }, [formGroupId, formCategory]);

@@ -205,7 +205,7 @@ function createResultPeriod(PDO $pdo): void {
             $studentResultId = (int)$pdo->lastInsertId();
             
             foreach ($subjects as $subject) {
-                $maxMarks = $defaultMaxMarks[$subject['id']] ?? 20;
+                $maxMarks = $defaultMaxMarks[$subject['id']] ?? 0;
                 $smStmt->execute([$studentResultId, $subject['id'], $maxMarks]);
             }
         }

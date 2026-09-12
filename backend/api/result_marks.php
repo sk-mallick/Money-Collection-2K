@@ -43,12 +43,71 @@ function ensureIsAbsentColumn(PDO $pdo): void {
     $checked = true;
 }
 
+function ensurePeriodMarks(PDO $pdo, int $periodId): void {
+    try {
+        // 1. Get period
+        $periodStmt = $pdo->prepare('SELECT id, category, group_id FROM rc_result_periods WHERE id = ?');
+        $periodStmt->execute([$periodId]);
+        $period = $periodStmt->fetch();
+        if (!$period) return;
+        
+        $category = $period['category'] ?? 'Senior';
+        
+        // 2. Get active subjects for this category
+        $subStmt = $pdo->prepare("SELECT id, name FROM rc_subjects WHERE (category = ? OR category = 'Both') AND is_active = 1 ORDER BY display_order ASC");
+        $subStmt->execute([$category]);
+        $subjects = $subStmt->fetchAll();
+        if (empty($subjects)) return;
+        
+        // 3. Get default max marks for this period (if any were explicitly provided)
+        $dmmStmt = $pdo->prepare('SELECT subject_id, max_marks FROM rc_default_max_marks WHERE result_period_id = ?');
+        $dmmStmt->execute([$periodId]);
+        $defaultMaxMarks = [];
+        while ($row = $dmmStmt->fetch()) {
+            $defaultMaxMarks[(int)$row['subject_id']] = (int)$row['max_marks'];
+        }
+        
+        // 4. Get student results for this period
+        $srStmt = $pdo->prepare('SELECT id FROM rc_student_results WHERE result_period_id = ?');
+        $srStmt->execute([$periodId]);
+        $studentResultIds = $srStmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        if (empty($studentResultIds) && !empty($period['group_id'])) {
+            $stStmt = $pdo->prepare('SELECT id, name, category, class, group_id, school FROM students WHERE group_id = ? AND deleted_at IS NULL ORDER BY name ASC');
+            $stStmt->execute([$period['group_id']]);
+            $stList = $stStmt->fetchAll();
+            $insSrStmt = $pdo->prepare('INSERT INTO rc_student_results (result_period_id, student_id, snapshot_name, snapshot_class, snapshot_group_id, snapshot_school, snapshot_category) VALUES (?, ?, ?, ?, ?, ?, ?)');
+            foreach ($stList as $st) {
+                $insSrStmt->execute([$periodId, $st['id'], $st['name'], $st['class'] ?? '', $st['group_id'], $st['school'] ?? '', $st['category'] ?? $category]);
+                $studentResultIds[] = (int)$pdo->lastInsertId();
+            }
+        }
+        
+        if (empty($studentResultIds)) return;
+        
+        // 5. Insert ignore student marks (do not set arbitrary default max marks; use existing or 0)
+        $insMarkStmt = $pdo->prepare('INSERT IGNORE INTO rc_student_marks (student_result_id, subject_id, max_marks, is_default_max) VALUES (?, ?, ?, 0)');
+        foreach ($studentResultIds as $srId) {
+            foreach ($subjects as $s) {
+                $maxM = $defaultMaxMarks[(int)$s['id']] ?? 0;
+                $insMarkStmt->execute([(int)$srId, (int)$s['id'], $maxM]);
+            }
+        }
+    } catch (Exception $e) {
+        if (function_exists('write_log')) {
+            write_log('error', 'Error in ensurePeriodMarks', ['error' => $e->getMessage(), 'period_id' => $periodId]);
+        }
+    }
+}
+
 function getMarks(PDO $pdo): void {
     ensureIsAbsentColumn($pdo);
     $periodId = query_param('period_id');
     if (empty($periodId)) {
         json_response(['success' => false, 'error' => 'period_id required'], 400);
     }
+    
+    ensurePeriodMarks($pdo, (int)$periodId);
     
     $stmt = $pdo->prepare("
         SELECT sr.id as student_result_id, sr.student_id, sr.snapshot_name, sr.snapshot_class,
@@ -157,8 +216,8 @@ function saveMarks(PDO $pdo): void {
                     $isDefaultMax = isset($markData['isDefaultMax']) ? ($markData['isDefaultMax'] ? 1 : 0) : 1;
                     
                     // Validate
-                    if ($maxMarks <= 0) {
-                        $errors[] = "Maximum marks must be greater than 0 for mark ID $markId";
+                    if ($obtainedMarks !== null && $maxMarks <= 0) {
+                        $errors[] = "Maximum marks must be set greater than 0 for subjects with entered marks (mark ID $markId)";
                         continue;
                     }
                     if (!$isAbsent && $obtainedMarks !== null && $obtainedMarks < 0) {
