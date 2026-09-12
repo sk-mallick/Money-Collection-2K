@@ -24,6 +24,13 @@ import {
   ContextMenuSeparator,
   ContextMenuShortcut,
 } from '@/components/ui/context-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import {
@@ -62,6 +69,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Keyboard,
 } from 'lucide-react';
 
 // ─── UNIFIED MARKS DROPDOWN + MANUAL INPUT COMPONENT ─────────────────────────────
@@ -72,6 +80,9 @@ interface MarksDropdownInputProps {
   onChange: (obtainedMarks: number | null, isAbsent: boolean) => void;
   className?: string;
   isTable?: boolean;
+  rowIndex?: number;
+  colIndex?: number;
+  onNavigate?: (rowIndex: number, colIndex: number, direction: 'next' | 'prev' | 'up' | 'down') => void;
 }
 
 function MarksDropdownInput({
@@ -81,6 +92,9 @@ function MarksDropdownInput({
   onChange,
   className = '',
   isTable = false,
+  rowIndex,
+  colIndex,
+  onNavigate,
 }: MarksDropdownInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpwards, setOpenUpwards] = useState(false);
@@ -143,6 +157,80 @@ function MarksDropdownInput({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // 1. Enter key: moves to next input; if at last subject of student, goes to next student's first input box
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+        onNavigate(rowIndex, colIndex, e.shiftKey ? 'prev' : 'next');
+      }
+      return;
+    }
+
+    // 2. Tab key: horizontal cell navigation
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+        onNavigate(rowIndex, colIndex, e.shiftKey ? 'prev' : 'next');
+      }
+      return;
+    }
+
+    // 3. Arrow Down: move down to same subject for next student
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+        onNavigate(rowIndex, colIndex, 'down');
+      }
+      return;
+    }
+
+    // 4. Arrow Up: move up to same subject for previous student
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+        onNavigate(rowIndex, colIndex, 'up');
+      }
+      return;
+    }
+
+    // 5. Arrow Right: when at the end of input, advance to next cell
+    if (e.key === 'ArrowRight') {
+      if (inputRef.current && (inputRef.current.selectionStart === inputRef.current.value.length || inputRef.current.value === '')) {
+        e.preventDefault();
+        if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+          onNavigate(rowIndex, colIndex, 'next');
+        }
+      }
+      return;
+    }
+
+    // 6. Arrow Left: when at beginning of input, retreat to previous cell
+    if (e.key === 'ArrowLeft') {
+      if (inputRef.current && inputRef.current.selectionStart === 0 && inputRef.current.selectionEnd === 0) {
+        e.preventDefault();
+        if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+          onNavigate(rowIndex, colIndex, 'prev');
+        }
+      }
+      return;
+    }
+
+    // 7. Instant Absent with 'a' or 'A' key
+    if (e.key.toLowerCase() === 'a' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      onChange(null, true);
+      return;
+    }
+
+    // 8. Escape key: cancel and blur
+    if (e.key === 'Escape') {
+      setIsOpen(false);
+      inputRef.current?.blur();
+      return;
+    }
+  };
+
   const handleSelectAbsent = () => {
     onChange(null, true);
     setIsOpen(false);
@@ -185,10 +273,61 @@ function MarksDropdownInput({
         }`}
       >
         {isAbsent ? (
-          /* When Absent: Click to open dropdown or edit */
+          /* When Absent: Click or keyboard focus to open dropdown, edit, or navigate */
           <div
+            tabIndex={0}
+            data-marks-container="true"
+            data-row={rowIndex}
+            data-col={colIndex}
             onClick={() => setIsOpen(!isOpen)}
-            className={`flex-1 flex items-center justify-between px-2 cursor-pointer select-none ${
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+                  onNavigate(rowIndex, colIndex, e.shiftKey ? 'prev' : 'next');
+                }
+                return;
+              }
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+                  onNavigate(rowIndex, colIndex, 'down');
+                }
+                return;
+              }
+              if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+                  onNavigate(rowIndex, colIndex, 'up');
+                }
+                return;
+              }
+              if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+                  onNavigate(rowIndex, colIndex, 'next');
+                }
+                return;
+              }
+              if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+                  onNavigate(rowIndex, colIndex, 'prev');
+                }
+                return;
+              }
+              if (e.key >= '0' && e.key <= '9') {
+                e.preventDefault();
+                onChange(Number(e.key), false);
+                return;
+              }
+              if (e.key === 'Backspace' || e.key === 'Delete') {
+                e.preventDefault();
+                onChange(null, false);
+                return;
+              }
+            }}
+            className={`flex-1 flex items-center justify-between px-2 cursor-pointer select-none outline-none focus:ring-1 focus:ring-primary ${
               isTable ? 'h-8 text-xs' : 'h-9 text-sm'
             }`}
           >
@@ -210,6 +349,10 @@ function MarksDropdownInput({
               placeholder="0"
               value={inputValue}
               onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              data-marks-input="true"
+              data-row={rowIndex}
+              data-col={colIndex}
               className={`w-full font-mono font-bold text-center bg-transparent outline-none ${
                 isTable ? 'h-8 text-xs px-1' : 'h-9 text-sm px-2'
               }`}
@@ -294,6 +437,8 @@ export default function MarksEntryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewModeState] = useState<'accordion' | 'table'>(() => {
     try {
       const saved = localStorage.getItem('marks_entry_view_mode');
@@ -306,13 +451,18 @@ export default function MarksEntryPage() {
     return 'accordion';
   });
 
-  const setViewMode = (mode: 'accordion' | 'table') => {
-    setViewModeState(mode);
-    try {
-      localStorage.setItem('marks_entry_view_mode', mode);
-    } catch {
-      // Ignore localStorage errors
-    }
+  const setViewMode = (
+    modeOrUpdater: 'accordion' | 'table' | ((prev: 'accordion' | 'table') => 'accordion' | 'table')
+  ) => {
+    setViewModeState((prev) => {
+      const next = typeof modeOrUpdater === 'function' ? modeOrUpdater(prev) : modeOrUpdater;
+      try {
+        localStorage.setItem('marks_entry_view_mode', next);
+      } catch {
+        // Ignore localStorage errors
+      }
+      return next;
+    });
   };
 
   // Column Visibility State for Data Table (School, Total, %, Rank can be toggled; input columns stay permanently on)
@@ -667,14 +817,40 @@ export default function MarksEntryPage() {
     }
   };
 
-  // Global keyboard shortcut Ctrl+S / Cmd+S to save marks
+  // Global keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+Shift+T, ?, Esc)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Ctrl+S / Cmd+S: Save Marks
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         if (!saving) {
           handleSave();
         }
+        return;
+      }
+
+      // 2. Ctrl+F / Cmd+F: Focus Search Bar
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      // 3. Ctrl+Shift+T: Toggle View Mode (Table / Cards)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setViewMode((prev) => (prev === 'table' ? 'accordion' : 'table'));
+        return;
+      }
+
+      // 4. '?' or Ctrl+/ to open Keyboard Shortcuts modal
+      const activeTag = (document.activeElement as HTMLElement)?.tagName;
+      const isTyping = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
+      if ((e.key === '?' && !isTyping) || ((e.ctrlKey || e.metaKey) && e.key === '/')) {
+        e.preventDefault();
+        setShortcutsModalOpen((prev) => !prev);
+        return;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -816,6 +992,78 @@ export default function MarksEntryPage() {
     [students]
   );
 
+  // Spreadsheet Keyboard Navigation (Enter, Shift+Enter, Tab, Shift+Tab, Arrows)
+  const handleCellNavigate = useCallback(
+    (rowIndex: number, colIndex: number, direction: 'next' | 'prev' | 'up' | 'down') => {
+      const totalRows = sortedAndFilteredStudents.length;
+      const totalCols = subjects.length;
+      if (totalRows === 0 || totalCols === 0) return;
+
+      let targetRow = rowIndex;
+      let targetCol = colIndex;
+
+      if (direction === 'next') {
+        if (colIndex < totalCols - 1) {
+          targetCol = colIndex + 1;
+        } else {
+          // "make enter as next input box and if all data filled then it will goes to next students first input box"
+          if (rowIndex < totalRows - 1) {
+            targetRow = rowIndex + 1;
+            targetCol = 0;
+          }
+        }
+      } else if (direction === 'prev') {
+        if (colIndex > 0) {
+          targetCol = colIndex - 1;
+        } else {
+          if (rowIndex > 0) {
+            targetRow = rowIndex - 1;
+            targetCol = totalCols - 1;
+          }
+        }
+      } else if (direction === 'down') {
+        if (rowIndex < totalRows - 1) {
+          targetRow = rowIndex + 1;
+        }
+      } else if (direction === 'up') {
+        if (rowIndex > 0) {
+          targetRow = rowIndex - 1;
+        }
+      }
+
+      // If in accordion mode, expand target student card if collapsed
+      if (viewMode === 'accordion') {
+        const targetStudent = sortedAndFilteredStudents[targetRow];
+        if (targetStudent) {
+          setExpandedStudents((prev) => ({
+            ...prev,
+            [targetStudent.studentResultId]: true,
+          }));
+        }
+      }
+
+      // Allow DOM to adjust if card expanded, then focus and select text in input
+      setTimeout(() => {
+        const targetInput = document.querySelector<HTMLInputElement>(
+          `input[data-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
+        );
+
+        if (targetInput) {
+          targetInput.focus();
+          targetInput.select();
+        } else {
+          const targetCell = document.querySelector<HTMLElement>(
+            `[data-marks-container="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
+          );
+          if (targetCell) {
+            targetCell.focus();
+          }
+        }
+      }, 30);
+    },
+    [sortedAndFilteredStudents, subjects.length, viewMode]
+  );
+
   if (loading) {
     return (
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
@@ -841,8 +1089,9 @@ export default function MarksEntryPage() {
   const isPublished = period.status === 'Published';
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
         <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 w-full max-w-[99vw] 2xl:max-w-[1850px] mx-auto min-h-[85vh]">
           {/* Top Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card p-4 rounded-xl border shadow-xs w-full">
@@ -961,7 +1210,8 @@ export default function MarksEntryPage() {
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search student name, roll number, school..."
+              ref={searchInputRef}
+              placeholder="Search student name, roll number, school... (Ctrl+F)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 text-xs sm:text-sm h-9 bg-card"
@@ -1405,6 +1655,9 @@ export default function MarksEntryPage() {
                                     obtainedMarks={mark.obtainedMarks}
                                     isAbsent={mark.isAbsent}
                                     maxMarks={mark.maxMarks}
+                                    rowIndex={filteredIdx}
+                                    colIndex={markIdx}
+                                    onNavigate={handleCellNavigate}
                                     onChange={(obt, abs) =>
                                       updateSubjectValue(originalIndex, markIdx, obt, abs)
                                     }
@@ -1682,7 +1935,7 @@ export default function MarksEntryPage() {
                     </td>
                   </tr>
                 ) : (
-                  sortedAndFilteredStudents.map((student) => {
+                  sortedAndFilteredStudents.map((student, tableRowIdx) => {
                     const originalIndex = students.findIndex(
                       (s) => s.studentResultId === student.studentResultId
                     );
@@ -1726,6 +1979,9 @@ export default function MarksEntryPage() {
                                   isAbsent={mark.isAbsent}
                                   maxMarks={mark.maxMarks}
                                   isTable={true}
+                                  rowIndex={tableRowIdx}
+                                  colIndex={markIdx}
+                                  onNavigate={handleCellNavigate}
                                   onChange={(obt, abs) =>
                                     updateSubjectValue(originalIndex, markIdx, obt, abs)
                                   }
@@ -1934,7 +2190,144 @@ export default function MarksEntryPage() {
           )}
         </ContextMenuItem>
       )}
+
+      <ContextMenuSeparator />
+
+      {/* Keyboard Shortcuts Dialog Trigger */}
+      <ContextMenuItem onClick={() => setShortcutsModalOpen(true)} className="cursor-pointer text-xs font-medium">
+        <Keyboard className="h-4 w-4 mr-2 text-primary" />
+        <span>Keyboard Shortcuts</span>
+        <ContextMenuShortcut>?</ContextMenuShortcut>
+      </ContextMenuItem>
     </ContextMenuContent>
   </ContextMenu>
+
+  {/* Keyboard Shortcuts Help Dialog Modal */}
+  <Dialog open={shortcutsModalOpen} onOpenChange={setShortcutsModalOpen}>
+    <DialogContent className="max-w-md sm:max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogHeader>
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+            <Keyboard className="h-5 w-5" />
+          </div>
+          <div>
+            <DialogTitle className="text-base sm:text-lg font-bold">
+              Keyboard Shortcuts
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Excel-style navigation and quick grading shortcuts for mouse-free marks entry.
+            </DialogDescription>
+          </div>
+        </div>
+      </DialogHeader>
+
+      <div className="space-y-4 pt-2 text-xs">
+        {/* Section 1: Excel Grid Navigation */}
+        <div className="space-y-2">
+          <h3 className="font-bold text-foreground text-xs uppercase tracking-wider flex items-center gap-1.5 text-muted-foreground">
+            <span>Grid Navigation (Excel)</span>
+          </h3>
+          <div className="grid grid-cols-1 gap-1.5 rounded-lg border p-2.5 bg-muted/20">
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Next Subject / Next Student</span>
+              <div className="flex items-center gap-1">
+                <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Enter</kbd>
+                <span className="text-muted-foreground text-[10px]">or</span>
+                <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Tab</kbd>
+              </div>
+            </div>
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Previous Subject / Student</span>
+              <div className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Shift</kbd>
+                <span>+</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Enter</kbd>
+              </div>
+            </div>
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Same Subject, Next Student (Down)</span>
+              <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">↓</kbd>
+            </div>
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Same Subject, Previous Student (Up)</span>
+              <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">↑</kbd>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-foreground font-medium">Move Left / Right</span>
+              <div className="flex items-center gap-1">
+                <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">←</kbd>
+                <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">→</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Fast Grading & Attendance */}
+        <div className="space-y-2">
+          <h3 className="font-bold text-foreground text-xs uppercase tracking-wider flex items-center gap-1.5 text-muted-foreground">
+            <span>Fast Grading & Attendance</span>
+          </h3>
+          <div className="grid grid-cols-1 gap-1.5 rounded-lg border p-2.5 bg-muted/20">
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Mark Student Absent</span>
+              <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">A</kbd>
+            </div>
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Enter Marks Directly</span>
+              <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">0 – 9</kbd>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-foreground font-medium">Clear Cell / Cancel Dropdown</span>
+              <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Esc</kbd>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: System Shortcuts */}
+        <div className="space-y-2">
+          <h3 className="font-bold text-foreground text-xs uppercase tracking-wider flex items-center gap-1.5 text-muted-foreground">
+            <span>Page & Action Shortcuts</span>
+          </h3>
+          <div className="grid grid-cols-1 gap-1.5 rounded-lg border p-2.5 bg-muted/20">
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Save All Marks</span>
+              <div className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Ctrl</kbd>
+                <span>+</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">S</kbd>
+              </div>
+            </div>
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Focus Search Bar</span>
+              <div className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Ctrl</kbd>
+                <span>+</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">F</kbd>
+              </div>
+            </div>
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Switch View (Table / Cards)</span>
+              <div className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Ctrl</kbd>
+                <span>+</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Shift</kbd>
+                <span>+</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">T</kbd>
+              </div>
+            </div>
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Show This Shortcuts Guide</span>
+              <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">?</kbd>
+            </div>
+            <div className="flex items-center justify-between py-1">
+              <span className="text-foreground font-medium">Open Page Context Menu</span>
+              <span className="text-muted-foreground font-mono text-[11px]">Right Click</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </DialogContent>
+  </Dialog>
+  </>
   );
 }
