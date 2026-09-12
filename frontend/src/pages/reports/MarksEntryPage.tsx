@@ -2,10 +2,28 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup, ButtonGroupSeparator } from '@/components/ui/button-group';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuCheckboxItem,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+} from '@/components/ui/context-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import {
@@ -40,6 +58,10 @@ import {
   Filter,
   UserX,
   UserCheck,
+  SlidersHorizontal,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 
 // ─── UNIFIED MARKS DROPDOWN + MANUAL INPUT COMPONENT ─────────────────────────────
@@ -293,6 +315,66 @@ export default function MarksEntryPage() {
     }
   };
 
+  // Column Visibility State for Data Table (School, Total, %, Rank can be toggled; input columns stay permanently on)
+  const [columnVisibility, setColumnVisibility] = useState<{
+    school: boolean;
+    total: boolean;
+    percentage: boolean;
+    rank: boolean;
+  }>(() => {
+    try {
+      const saved = localStorage.getItem('marks_entry_column_visibility');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          school: parsed.school !== undefined ? parsed.school : true,
+          total: parsed.total !== undefined ? parsed.total : true,
+          percentage: parsed.percentage !== undefined ? parsed.percentage : true,
+          rank: parsed.rank !== undefined ? parsed.rank : true,
+        };
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+    return {
+      school: true,
+      total: true,
+      percentage: true,
+      rank: true,
+    };
+  });
+
+  const updateColumnVisibility = (updater: (prev: typeof columnVisibility) => typeof columnVisibility) => {
+    setColumnVisibility((prev) => {
+      const updated = updater(prev);
+      try {
+        localStorage.setItem('marks_entry_column_visibility', JSON.stringify(updated));
+      } catch {
+        // Ignore localStorage errors
+      }
+      return updated;
+    });
+  };
+
+  // Table Column Sorting State
+  const [tableSorting, setTableSorting] = useState<{
+    column: string;
+    direction: 'asc' | 'desc' | null;
+  }>({
+    column: 'studentId',
+    direction: 'asc',
+  });
+
+  const toggleSort = (columnKey: string) => {
+    setTableSorting((prev) => {
+      if (prev.column === columnKey) {
+        if (prev.direction === 'asc') return { column: columnKey, direction: 'desc' };
+        if (prev.direction === 'desc') return { column: 'studentId', direction: 'asc' };
+      }
+      return { column: columnKey, direction: 'asc' };
+    });
+  };
+
   // Track expanded student dropdown states (studentResultId -> boolean)
   const [expandedStudents, setExpandedStudents] = useState<Record<number, boolean>>({});
 
@@ -314,9 +396,11 @@ export default function MarksEntryPage() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isSilent = false) => {
     if (!periodId) return;
-    setLoading(true);
+    if (!isSilent) {
+      setLoading(true);
+    }
     try {
       const pId = Number(periodId);
       const [periodData, marksData] = await Promise.all([
@@ -327,15 +411,17 @@ export default function MarksEntryPage() {
       setStudents(marksData);
       setInitialStudentsJson(JSON.stringify(marksData));
 
-      // Expand the first student by default for quick entry
-      if (marksData.length > 0) {
+      // Expand the first student by default only on initial full page load
+      if (!isSilent && marksData.length > 0) {
         setExpandedStudents({ [marksData[0].studentResultId]: true });
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to load marks';
       toast.error(msg);
     } finally {
-      setLoading(false);
+      if (!isSilent) {
+        setLoading(false);
+      }
     }
   }, [periodId]);
 
@@ -572,7 +658,7 @@ export default function MarksEntryPage() {
 
       await saveMarks(Number(periodId), payload);
       toast.success('All student marks saved and rankings recalculated successfully!');
-      await loadData();
+      await loadData(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to save marks';
       toast.error(msg);
@@ -581,13 +667,27 @@ export default function MarksEntryPage() {
     }
   };
 
+  // Global keyboard shortcut Ctrl+S / Cmd+S to save marks
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (!saving) {
+          handleSave();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [saving, handleSave]);
+
   const handlePublish = async () => {
     if (!periodId) return;
     try {
       await updateResultPeriod(Number(periodId), { status: 'Published' });
       toast.success('Result published and finalized');
       setPublishDialogOpen(false);
-      loadData();
+      await loadData(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to publish';
       toast.error(msg);
@@ -599,7 +699,7 @@ export default function MarksEntryPage() {
     try {
       await updateResultPeriod(Number(periodId), { status: 'Draft' });
       toast.success('Result reverted to Draft');
-      loadData();
+      await loadData(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to revert';
       toast.error(msg);
@@ -633,6 +733,69 @@ export default function MarksEntryPage() {
       return matchesSearch && matchesStatus;
     });
   }, [students, searchTerm, filterStatus]);
+
+  // Check if any student is currently expanded (in Accordion View)
+  const hasAnyExpanded = useMemo(() => {
+    return filteredStudents.some((s) => !!expandedStudents[s.studentResultId]);
+  }, [filteredStudents, expandedStudents]);
+
+  // Smart single toggle: if any (or all) are expanded -> collapse all; if none -> expand all
+  const handleToggleExpandAll = () => {
+    if (hasAnyExpanded) {
+      setExpandedStudents({});
+    } else {
+      const all: Record<number, boolean> = {};
+      filteredStudents.forEach((s) => {
+        all[s.studentResultId] = true;
+      });
+      setExpandedStudents(all);
+    }
+  };
+
+  // Sorted and filtered students for Data Table view
+  const sortedAndFilteredStudents = useMemo(() => {
+    const list = [...filteredStudents];
+    if (!tableSorting.direction) return list;
+
+    const { column, direction } = tableSorting;
+    const factor = direction === 'asc' ? 1 : -1;
+
+    return list.sort((a, b) => {
+      if (column === 'studentId') {
+        return a.studentId.localeCompare(b.studentId, undefined, { numeric: true }) * factor;
+      }
+      if (column === 'name') {
+        return a.name.localeCompare(b.name) * factor;
+      }
+      if (column === 'school') {
+        return (a.school || '').localeCompare(b.school || '') * factor;
+      }
+      if (column === 'total') {
+        const aVal = a.totalObtained ?? -1;
+        const bVal = b.totalObtained ?? -1;
+        return (aVal - bVal) * factor;
+      }
+      if (column === 'percentage') {
+        const aVal = a.percentage ?? -1;
+        const bVal = b.percentage ?? -1;
+        return (aVal - bVal) * factor;
+      }
+      if (column === 'rank') {
+        const aVal = a.groupRank ?? 999999;
+        const bVal = b.groupRank ?? 999999;
+        return (aVal - bVal) * factor;
+      }
+      if (column.startsWith('subject_')) {
+        const subId = Number(column.replace('subject_', ''));
+        const aMark = a.marks.find((m) => m.subjectId === subId);
+        const bMark = b.marks.find((m) => m.subjectId === subId);
+        const aVal = aMark?.isAbsent ? -1 : aMark?.obtainedMarks ?? -1;
+        const bVal = bMark?.isAbsent ? -1 : bMark?.obtainedMarks ?? -1;
+        return (aVal - bVal) * factor;
+      }
+      return 0;
+    });
+  }, [filteredStudents, tableSorting]);
 
   const completedCount = useMemo(() => students.filter(isStudentComplete).length, [students]);
 
@@ -678,8 +841,10 @@ export default function MarksEntryPage() {
   const isPublished = period.status === 'Published';
 
   return (
-    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 w-full max-w-[99vw] 2xl:max-w-[1850px] mx-auto">
-      {/* Top Header Bar */}
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 w-full max-w-[99vw] 2xl:max-w-[1850px] mx-auto min-h-[85vh]">
+          {/* Top Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card p-4 rounded-xl border shadow-xs w-full">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -731,55 +896,61 @@ export default function MarksEntryPage() {
             </Badge>
           )}
 
-          <Button variant="outline" size="sm" onClick={loadData} disabled={saving} className="text-xs">
-            <RotateCcw className="h-3.5 w-3.5 mr-1" />
-            Reset
-          </Button>
+          <ButtonGroup aria-label="Marks entry actions">
+            <Button variant="outline" size="sm" onClick={() => loadData()} disabled={saving} className="text-xs">
+              <RotateCcw className="h-3.5 w-3.5 mr-1" />
+              Reset
+            </Button>
 
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={saving}
-            className="text-xs min-w-[95px] font-bold shadow-xs bg-primary hover:bg-primary/90 cursor-pointer"
-          >
-            <Save className="h-3.5 w-3.5 mr-1" />
-            {saving ? 'Saving...' : 'Save Marks'}
-          </Button>
-
-          {!isPublished ? (
             <Button
               size="sm"
-              variant="secondary"
-              onClick={() => setPublishDialogOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer"
+              onClick={handleSave}
+              disabled={saving}
+              className="text-xs min-w-[95px] font-bold shadow-xs bg-primary hover:bg-primary/90 cursor-pointer"
             >
-              <ShieldCheck className="h-3.5 w-3.5 mr-1" />
-              Finalize
+              <Save className="h-3.5 w-3.5 mr-1" />
+              {saving ? 'Saving...' : 'Save Marks'}
             </Button>
-          ) : (
-            <Button size="sm" variant="outline" onClick={handleRevertToDraft} className="text-xs">
-              <Lock className="h-3.5 w-3.5 mr-1" />
-              Revert to Draft
-            </Button>
-          )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (hasUnsavedChanges) {
-                if (window.confirm('You have unsaved changes. Do you really want to leave?')) {
+            <ButtonGroupSeparator />
+
+            {!isPublished ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setPublishDialogOpen(true)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+                Finalize
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={handleRevertToDraft} className="text-xs">
+                <Lock className="h-3.5 w-3.5 mr-1" />
+                Revert to Draft
+              </Button>
+            )}
+
+            <ButtonGroupSeparator />
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (hasUnsavedChanges) {
+                  if (window.confirm('You have unsaved changes. Do you really want to leave?')) {
+                    navigate('/reports/monthly');
+                  }
+                } else {
                   navigate('/reports/monthly');
                 }
-              } else {
-                navigate('/reports/monthly');
-              }
-            }}
-            className="text-xs"
-          >
-            <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-            Back
-          </Button>
+              }}
+              className="text-xs"
+            >
+              <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+              Back
+            </Button>
+          </ButtonGroup>
         </div>
       </div>
 
@@ -813,27 +984,85 @@ export default function MarksEntryPage() {
               </SelectContent>
             </Select>
 
-            {/* Expand / Collapse All (in Accordion View) */}
+            {/* Toggle Expand All / Collapse All (in Accordion View) */}
             {viewMode === 'accordion' && (
-              <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-muted/40 h-9">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleExpandAll}
-                  className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer font-medium"
-                >
-                  Expand All
-                </Button>
-                <span className="text-muted-foreground/40 text-xs">|</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleCollapseAll}
-                  className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer font-medium"
-                >
-                  Collapse All
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToggleExpandAll}
+                className="h-9 w-[116px] gap-1.5 px-2.5 text-xs font-semibold cursor-pointer bg-card shadow-xs hover:bg-accent justify-center"
+                title={hasAnyExpanded ? 'Collapse all student cards' : 'Expand all student cards'}
+              >
+                {hasAnyExpanded ? (
+                  <>
+                    <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>Collapse All</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>Expand All</span>
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* Columns Visibility Dropdown (Visible on Table view) */}
+            {viewMode === 'table' && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 w-[116px] gap-1.5 px-2.5 text-xs font-semibold cursor-pointer bg-card shadow-xs hover:bg-accent justify-center"
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>Columns</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Toggle Columns
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={columnVisibility.school}
+                    onCheckedChange={(val) =>
+                      updateColumnVisibility((prev) => ({ ...prev, school: !!val }))
+                    }
+                    className="text-xs cursor-pointer"
+                  >
+                    School
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={columnVisibility.total}
+                    onCheckedChange={(val) =>
+                      updateColumnVisibility((prev) => ({ ...prev, total: !!val }))
+                    }
+                    className="text-xs cursor-pointer"
+                  >
+                    Total Marks
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={columnVisibility.percentage}
+                    onCheckedChange={(val) =>
+                      updateColumnVisibility((prev) => ({ ...prev, percentage: !!val }))
+                    }
+                    className="text-xs cursor-pointer"
+                  >
+                    Percentage (%)
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={columnVisibility.rank}
+                    onCheckedChange={(val) =>
+                      updateColumnVisibility((prev) => ({ ...prev, rank: !!val }))
+                    }
+                    className="text-xs cursor-pointer"
+                  >
+                    Group Rank
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
 
             {/* View Mode Switcher */}
@@ -1265,7 +1494,7 @@ export default function MarksEntryPage() {
         </div>
       )}
 
-      {/* ─── VIEW MODE 2: SPREADSHEET TABLE VIEW (OPTIONAL COMPACT ALTERNATIVE) ─── */}
+      {/* ─── VIEW MODE 2: SPREADSHEET TABLE VIEW (DATA TABLE) ─── */}
       {viewMode === 'table' && (
         <Card className="overflow-hidden border shadow-sm">
           <div className="overflow-x-auto max-h-[70vh]">
@@ -1273,48 +1502,187 @@ export default function MarksEntryPage() {
               <thead className="bg-muted/80 sticky top-0 z-20 backdrop-blur-md border-b">
                 <tr>
                   <th className="p-3 font-semibold text-muted-foreground sticky left-0 z-30 bg-muted/95 min-w-[55px] sm:min-w-[60px] text-center border-r">
-                    ID
+                    <button
+                      type="button"
+                      onClick={() => toggleSort('studentId')}
+                      className="inline-flex items-center justify-center gap-1 cursor-pointer select-none hover:text-foreground transition-colors font-semibold"
+                      title="Sort by Student ID"
+                    >
+                      <span>ID</span>
+                      {tableSorting.column === 'studentId' ? (
+                        tableSorting.direction === 'asc' ? (
+                          <ArrowUp className="h-3 w-3 text-primary" />
+                        ) : (
+                          <ArrowDown className="h-3 w-3 text-primary" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100 transition-opacity" />
+                      )}
+                    </button>
                   </th>
                   <th className="p-3 font-semibold text-muted-foreground sticky left-[55px] sm:left-[60px] z-30 bg-muted/95 min-w-[150px] sm:min-w-[200px] border-r">
-                    Student Name
+                    <button
+                      type="button"
+                      onClick={() => toggleSort('name')}
+                      className="inline-flex items-center gap-1 cursor-pointer select-none hover:text-foreground transition-colors font-semibold"
+                      title="Sort by Student Name"
+                    >
+                      <span>Student Name</span>
+                      {tableSorting.column === 'name' ? (
+                        tableSorting.direction === 'asc' ? (
+                          <ArrowUp className="h-3 w-3 text-primary" />
+                        ) : (
+                          <ArrowDown className="h-3 w-3 text-primary" />
+                        )
+                      ) : (
+                        <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100 transition-opacity" />
+                      )}
+                    </button>
                   </th>
 
-                  {/* Subject Columns (Generous width for Grammar, Creative, Passage, Vocabulary, Literature, etc.) */}
+                  {/* School Column (Toggleable in Columns dropdown) */}
+                  {columnVisibility.school && (
+                    <th className="p-3 font-semibold text-muted-foreground min-w-[140px] sm:min-w-[170px] text-left border-r">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('school')}
+                        className="inline-flex items-center gap-1 cursor-pointer select-none hover:text-foreground transition-colors font-semibold"
+                        title="Sort by School"
+                      >
+                        <span>School</span>
+                        {tableSorting.column === 'school' ? (
+                          tableSorting.direction === 'asc' ? (
+                            <ArrowUp className="h-3 w-3 text-primary" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3 text-primary" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100 transition-opacity" />
+                        )}
+                      </button>
+                    </th>
+                  )}
+
+                  {/* Subject Columns (Always ON by default, generous width for marks inputs) */}
                   {subjects.map((sub) => (
                     <th
                       key={sub.subjectId}
                       className="p-3 font-semibold text-muted-foreground min-w-[180px] sm:min-w-[200px] text-center border-r"
                     >
-                      <div className="font-bold text-foreground text-sm tracking-tight">{sub.subjectName}</div>
-                      <div className="text-[10px] text-muted-foreground font-normal">
-                        Max: {sub.defaultMax}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(`subject_${sub.subjectId}`)}
+                        className="inline-flex flex-col items-center justify-center cursor-pointer select-none hover:text-foreground transition-colors group/sub"
+                        title={`Sort by ${sub.subjectName} marks`}
+                      >
+                        <div className="flex items-center gap-1 font-bold text-foreground text-sm tracking-tight">
+                          <span>{sub.subjectName}</span>
+                          {tableSorting.column === `subject_${sub.subjectId}` ? (
+                            tableSorting.direction === 'asc' ? (
+                              <ArrowUp className="h-3 w-3 text-primary shrink-0" />
+                            ) : (
+                              <ArrowDown className="h-3 w-3 text-primary shrink-0" />
+                            )
+                          ) : (
+                            <ArrowUpDown className="h-3 w-3 opacity-0 group-hover/sub:opacity-60 transition-opacity shrink-0" />
+                          )}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground font-normal">
+                          Max: {sub.defaultMax}
+                        </div>
+                      </button>
                     </th>
                   ))}
 
-                  <th className="p-3 font-semibold text-muted-foreground min-w-[95px] text-center border-r bg-muted/60">
-                    Total
-                  </th>
-                  <th className="p-3 font-semibold text-muted-foreground min-w-[95px] text-center border-r bg-muted/60">
-                    %
-                  </th>
-                  <th className="p-3 font-semibold text-muted-foreground min-w-[75px] text-center bg-muted/60">
-                    Rank
-                  </th>
+                  {/* Total Column (Toggleable in Columns dropdown) */}
+                  {columnVisibility.total && (
+                    <th className="p-3 font-semibold text-muted-foreground min-w-[95px] text-center border-r bg-muted/60">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('total')}
+                        className="inline-flex items-center justify-center gap-1 cursor-pointer select-none hover:text-foreground transition-colors font-semibold"
+                        title="Sort by Total Marks"
+                      >
+                        <span>Total</span>
+                        {tableSorting.column === 'total' ? (
+                          tableSorting.direction === 'asc' ? (
+                            <ArrowUp className="h-3 w-3 text-primary" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3 text-primary" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100 transition-opacity" />
+                        )}
+                      </button>
+                    </th>
+                  )}
+
+                  {/* Percentage Column (Toggleable in Columns dropdown) */}
+                  {columnVisibility.percentage && (
+                    <th className="p-3 font-semibold text-muted-foreground min-w-[95px] text-center border-r bg-muted/60">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('percentage')}
+                        className="inline-flex items-center justify-center gap-1 cursor-pointer select-none hover:text-foreground transition-colors font-semibold"
+                        title="Sort by Percentage"
+                      >
+                        <span>%</span>
+                        {tableSorting.column === 'percentage' ? (
+                          tableSorting.direction === 'asc' ? (
+                            <ArrowUp className="h-3 w-3 text-primary" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3 text-primary" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100 transition-opacity" />
+                        )}
+                      </button>
+                    </th>
+                  )}
+
+                  {/* Rank Column (Toggleable in Columns dropdown) */}
+                  {columnVisibility.rank && (
+                    <th className="p-3 font-semibold text-muted-foreground min-w-[75px] text-center bg-muted/60">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort('rank')}
+                        className="inline-flex items-center justify-center gap-1 cursor-pointer select-none hover:text-foreground transition-colors font-semibold"
+                        title="Sort by Rank"
+                      >
+                        <span>Rank</span>
+                        {tableSorting.column === 'rank' ? (
+                          tableSorting.direction === 'asc' ? (
+                            <ArrowUp className="h-3 w-3 text-primary" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3 text-primary" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="h-3 w-3 opacity-40 hover:opacity-100 transition-opacity" />
+                        )}
+                      </button>
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredStudents.length === 0 ? (
+                {sortedAndFilteredStudents.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={4 + subjects.length}
+                      colSpan={
+                        2 +
+                        (columnVisibility.school ? 1 : 0) +
+                        subjects.length +
+                        (columnVisibility.total ? 1 : 0) +
+                        (columnVisibility.percentage ? 1 : 0) +
+                        (columnVisibility.rank ? 1 : 0)
+                      }
                       className="text-center p-8 text-muted-foreground"
                     >
                       No students match your filter criteria.
                     </td>
                   </tr>
                 ) : (
-                  filteredStudents.map((student) => {
+                  sortedAndFilteredStudents.map((student) => {
                     const originalIndex = students.findIndex(
                       (s) => s.studentResultId === student.studentResultId
                     );
@@ -1340,6 +1708,13 @@ export default function MarksEntryPage() {
                             Class: {student.class || '—'}
                           </div>
                         </td>
+
+                        {/* School Column */}
+                        {columnVisibility.school && (
+                          <td className="p-2.5 border-r text-xs text-muted-foreground truncate max-w-[170px]" title={student.school || '—'}>
+                            <span className="font-medium text-foreground/80">{student.school || '—'}</span>
+                          </td>
+                        )}
 
                         {/* Subject Mark Inputs with direct unified dropdown component */}
                         {student.marks.map((mark, markIdx) => {
@@ -1375,54 +1750,60 @@ export default function MarksEntryPage() {
                         })}
 
                         {/* Total Obtained */}
-                        <td className="p-2.5 text-center font-mono font-bold border-r bg-muted/20">
-                          {isAllAbsent ? (
-                            '—'
-                          ) : student.totalObtained !== null ? (
-                            <span>
-                              {student.totalObtained}{' '}
-                              <span className="text-[10px] text-muted-foreground font-normal">
-                                / {student.totalMax}
+                        {columnVisibility.total && (
+                          <td className="p-2.5 text-center font-mono font-bold border-r bg-muted/20">
+                            {isAllAbsent ? (
+                              '—'
+                            ) : student.totalObtained !== null ? (
+                              <span>
+                                {student.totalObtained}{' '}
+                                <span className="text-[10px] text-muted-foreground font-normal">
+                                  / {student.totalMax}
+                                </span>
                               </span>
-                            </span>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        )}
 
                         {/* Percentage */}
-                        <td className="p-2.5 text-center font-mono font-bold border-r bg-muted/20">
-                          {isAllAbsent ? (
-                            '—'
-                          ) : student.percentage !== null ? (
-                            <span
-                              className={
-                                student.percentage >= 75
-                                  ? 'text-emerald-600 dark:text-emerald-400'
-                                  : student.percentage < 40
-                                  ? 'text-destructive'
-                                  : ''
-                              }
-                            >
-                              {student.percentage.toFixed(2)}%
-                            </span>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
+                        {columnVisibility.percentage && (
+                          <td className="p-2.5 text-center font-mono font-bold border-r bg-muted/20">
+                            {isAllAbsent ? (
+                              '—'
+                            ) : student.percentage !== null ? (
+                              <span
+                                className={
+                                  student.percentage >= 75
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : student.percentage < 40
+                                    ? 'text-destructive'
+                                    : ''
+                                }
+                              >
+                                {student.percentage.toFixed(2)}%
+                              </span>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        )}
 
                         {/* Rank */}
-                        <td className="p-2.5 text-center font-mono font-semibold bg-muted/20">
-                          {isAllAbsent ? (
-                            '—'
-                          ) : student.groupRank ? (
-                            <Badge variant="secondary" className="font-mono text-xs">
-                              #{student.groupRank}
-                            </Badge>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
+                        {columnVisibility.rank && (
+                          <td className="p-2.5 text-center font-mono font-semibold bg-muted/20">
+                            {isAllAbsent ? (
+                              '—'
+                            ) : student.groupRank ? (
+                              <Badge variant="secondary" className="font-mono text-xs">
+                                #{student.groupRank}
+                              </Badge>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        )}
                       </tr>
                     );
                   })
@@ -1444,5 +1825,116 @@ export default function MarksEntryPage() {
         variant="default"
       />
     </div>
+    </ContextMenuTrigger>
+
+    {/* Whole-Page Context Menu */}
+    <ContextMenuContent className="w-56 shadow-xl">
+      {/* Top Actions (All above buttons except Back) */}
+      <ContextMenuItem onClick={handleSave} disabled={saving} className="cursor-pointer font-medium">
+        <Save className="h-4 w-4 mr-2 text-primary" />
+        <span>Save Marks</span>
+        <ContextMenuShortcut>Ctrl+S</ContextMenuShortcut>
+      </ContextMenuItem>
+
+      <ContextMenuItem onClick={() => loadData()} disabled={saving} className="cursor-pointer">
+        <RotateCcw className="h-4 w-4 mr-2" />
+        <span>Reset</span>
+      </ContextMenuItem>
+
+      {!isPublished ? (
+        <ContextMenuItem
+          onClick={() => setPublishDialogOpen(true)}
+          className="cursor-pointer text-emerald-600 focus:text-emerald-600"
+        >
+          <ShieldCheck className="h-4 w-4 mr-2 text-emerald-600" />
+          <span>Finalize</span>
+        </ContextMenuItem>
+      ) : (
+        <ContextMenuItem onClick={handleRevertToDraft} className="cursor-pointer">
+          <Lock className="h-4 w-4 mr-2" />
+          <span>Revert to Draft</span>
+        </ContextMenuItem>
+      )}
+
+      <ContextMenuSeparator />
+
+      {/* Columns Visibility Checkboxes (Matching reference image style) */}
+      <ContextMenuCheckboxItem
+        checked={columnVisibility.school}
+        onCheckedChange={(val) =>
+          updateColumnVisibility((prev) => ({ ...prev, school: !!val }))
+        }
+        className="cursor-pointer text-xs"
+      >
+        School
+      </ContextMenuCheckboxItem>
+
+      <ContextMenuCheckboxItem
+        checked={columnVisibility.total}
+        onCheckedChange={(val) =>
+          updateColumnVisibility((prev) => ({ ...prev, total: !!val }))
+        }
+        className="cursor-pointer text-xs"
+      >
+        Total Marks
+      </ContextMenuCheckboxItem>
+
+      <ContextMenuCheckboxItem
+        checked={columnVisibility.percentage}
+        onCheckedChange={(val) =>
+          updateColumnVisibility((prev) => ({ ...prev, percentage: !!val }))
+        }
+        className="cursor-pointer text-xs"
+      >
+        Percentage (%)
+      </ContextMenuCheckboxItem>
+
+      <ContextMenuCheckboxItem
+        checked={columnVisibility.rank}
+        onCheckedChange={(val) =>
+          updateColumnVisibility((prev) => ({ ...prev, rank: !!val }))
+        }
+        className="cursor-pointer text-xs"
+      >
+        Group Rank
+      </ContextMenuCheckboxItem>
+
+      <ContextMenuSeparator />
+
+      {/* Quick View & Card Actions */}
+      <ContextMenuItem
+        onClick={() => setViewMode(viewMode === 'table' ? 'accordion' : 'table')}
+        className="cursor-pointer text-xs"
+      >
+        {viewMode === 'table' ? (
+          <>
+            <LayoutList className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span>Switch to Cards</span>
+          </>
+        ) : (
+          <>
+            <TableIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span>Switch to Table</span>
+          </>
+        )}
+      </ContextMenuItem>
+
+      {viewMode === 'accordion' && (
+        <ContextMenuItem onClick={handleToggleExpandAll} className="cursor-pointer text-xs">
+          {hasAnyExpanded ? (
+            <>
+              <ChevronUp className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>Collapse All</span>
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-4 w-4 mr-2 text-muted-foreground" />
+              <span>Expand All</span>
+            </>
+          )}
+        </ContextMenuItem>
+      )}
+    </ContextMenuContent>
+  </ContextMenu>
   );
 }
