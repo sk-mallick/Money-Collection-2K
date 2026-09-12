@@ -1,9 +1,21 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup, ButtonGroupSeparator } from '@/components/ui/button-group';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { fetchRankings, fetchResultPeriods, type RankingGroup, type ResultPeriod } from '@/lib/reports-api';
@@ -30,6 +42,8 @@ import {
   ArrowDown,
   FileText,
   LayoutList,
+  ArrowLeft,
+  Settings,
 } from 'lucide-react';
 import {
   generateRankingsPDF,
@@ -88,7 +102,7 @@ function CustomDropdown({
             : 'bg-card hover:bg-muted/40 cursor-pointer border-input text-foreground focus:ring-1 focus:ring-primary shadow-2xs'
         }`}
       >
-        <span className={`truncate font-medium ${selectedOption ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
+        <span className={`truncate text-xs font-medium ${selectedOption ? 'text-foreground font-semibold' : 'text-muted-foreground'}`}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown
@@ -100,7 +114,7 @@ function CustomDropdown({
 
       {isOpen && !disabled && (
         <div
-          className="absolute left-0 top-full mt-1 z-50 w-full min-w-[140px] bg-popover text-popover-foreground border rounded-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+          className="absolute left-0 top-full mt-1.5 z-50 w-full min-w-[150px] bg-popover text-popover-foreground border rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100"
           style={{ maxHeight: '240px' }}
         >
           <div className="overflow-y-auto max-h-[230px] p-1 space-y-0.5 divide-y divide-border/10">
@@ -118,7 +132,7 @@ function CustomDropdown({
                     onChange(opt.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full text-left px-2.5 py-1.5 text-xs rounded transition-colors cursor-pointer flex items-center justify-between ${
+                  className={`w-full text-left px-2.5 py-1.5 text-xs rounded-md transition-colors cursor-pointer flex items-center justify-between ${
                     opt.disabled
                       ? 'opacity-40 cursor-not-allowed text-muted-foreground'
                       : opt.value === value
@@ -139,6 +153,8 @@ function CustomDropdown({
 }
 
 export default function RankingsPage() {
+  const navigate = useNavigate();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [academicYear, setAcademicYear] = useState('2026-27');
   const [month, setMonth] = useState('AUG');
   const [rankingType, setRankingType] = useState<'class' | 'group'>('class');
@@ -259,11 +275,35 @@ export default function RankingsPage() {
     return rankings.filter((r) => r.key === selectedFilterKey);
   }, [rankings, selectedFilterKey]);
 
+  // Total students & filtered students counts for statistics summary
+  const totalStudents = useMemo(() => {
+    return rankings.reduce((sum, b) => sum + b.students.length, 0);
+  }, [rankings]);
+
+  const totalFilteredStudents = useMemo(() => {
+    return displayedRankings.reduce((sum, b) => sum + b.students.length, 0);
+  }, [displayedRankings]);
+
+  const hasActiveFilters = searchTerm.trim() !== '' || selectedFilterKey !== 'all';
+
   // Reset preview indices if filter changes
   useEffect(() => {
     setPreviewBucketIndex(0);
     setPreviewPageIndex(0);
   }, [selectedFilterKey, rankingType]);
+
+  // Global Ctrl+F / Cmd+F shortcut to focus search input
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Handle auto-scaling for A4 Landscape preview (width: 1123px, height: 794px)
   useEffect(() => {
@@ -551,54 +591,53 @@ export default function RankingsPage() {
 
   return (
     <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
-      {/* ─── TOP STREAMLINED TOOLBAR ─── */}
+      {/* ─── TOP HEADER & ACTIONS ─── */}
       <div className="no-print space-y-3.5 border-b pb-3.5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-amber-500 shrink-0" />
               <span>Academic Rankings</span>
+              <Badge variant="outline" className="text-xs font-semibold px-2 py-0.5 bg-muted/40 font-normal">
+                {MONTH_NAMES[month] || month} {academicYear}
+              </Badge>
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
               Official merit list with all individual subject scores, total, percentage, and rank
             </p>
           </div>
 
-          {/* Action Buttons: View Mode Switcher, Print & Download */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            {/* ─── VIEW MODE TOGGLE SWITCH (Standard View vs A4 Sheet Preview) ─── */}
+            {/* View Mode Switcher: Standard vs A4 Sheet */}
             <div className="flex items-center border rounded-md p-0.5 bg-muted/60 shadow-2xs h-8">
               <button
                 type="button"
                 onClick={() => handleViewModeChange('standard')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-xs transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-xs transition-all cursor-pointer ${
                   viewMode === 'standard'
-                    ? 'bg-background text-foreground shadow-xs font-bold'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-background text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground font-medium'
                 }`}
-                title="Standard Interactive Dashboard View"
+                title="Standard Dashboard View"
               >
                 <LayoutList className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Standard View</span>
-                <span className="sm:hidden">Standard</span>
+                <span>Standard</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleViewModeChange('sheet')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-xs transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-xs transition-all cursor-pointer ${
                   viewMode === 'sheet'
-                    ? 'bg-background text-foreground shadow-xs font-bold'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-background text-foreground shadow-xs font-semibold'
+                    : 'text-muted-foreground hover:text-foreground font-medium'
                 }`}
-                title="A4 Landscape Offline PDF Print Preview"
+                title="A4 Sheet Preview"
               >
                 <FileText className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">A4 Sheet Preview</span>
-                <span className="sm:hidden">A4 Sheet</span>
+                <span>A4 Sheet</span>
               </button>
             </div>
 
-            {/* Direct Print Button (Hidden on phone screens, visible on sm and up) */}
+            {/* Print Button */}
             <Button
               variant="outline"
               size="sm"
@@ -612,15 +651,15 @@ export default function RankingsPage() {
               ) : (
                 <Printer className="h-3.5 w-3.5 text-primary" />
               )}
-              <span>{isPrinting ? 'Printing...' : 'Print'}</span>
+              <span>Print</span>
             </Button>
 
-            {/* Download Button */}
+            {/* Download PDF Button */}
             <Button
               size="sm"
               onClick={handleDownloadPDF}
               disabled={displayedRankings.length === 0 || loading || isDownloading}
-              className="h-8 gap-1.5 px-2.5 sm:px-3.5 text-xs bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer rounded-md"
+              className="inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all h-8 gap-1.5 px-2.5 sm:px-3.5 text-xs bg-primary text-primary-foreground font-semibold shadow-xs hover:bg-primary/90 cursor-pointer rounded-md"
               title="Download official A4 Landscape PDF"
             >
               {isDownloading ? (
@@ -636,28 +675,42 @@ export default function RankingsPage() {
                   : 'Download PDF'}
               </span>
             </Button>
+
+            {/* Back Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/reports/monthly')}
+              className="hidden sm:inline-flex h-8 gap-1.5 px-2.5 text-xs font-semibold shadow-2xs cursor-pointer hover:bg-muted rounded-md"
+              title="Back to Monthly Reports"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back</span>
+            </Button>
           </div>
         </div>
 
-        {/* Filter Controls Row */}
+        {/* ─── TOOLBAR ─── */}
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-          {/* Search Input */}
-          <div className="relative w-full sm:w-[200px] md:w-[240px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          {/* Search Input with flexible expanding width across full row */}
+          <div className="relative flex-1 min-w-[180px] sm:min-w-[200px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <Input
-              placeholder="Search student or ID..."
+              ref={searchInputRef}
+              placeholder="Search student or ID... (Ctrl+F)"
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
                 setPreviewPageIndex(0);
               }}
-              className="pl-8 text-xs h-8 bg-card shadow-2xs"
+              className="pl-8 pr-7 text-xs h-8 w-full bg-card rounded-md shadow-2xs border"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer transition-colors"
+                title="Clear search"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -670,7 +723,7 @@ export default function RankingsPage() {
             placeholder="Academic Year"
             options={yearOptions.map((y) => ({ label: y, value: y }))}
             onChange={handleAcademicYearChange}
-            width="w-[125px]"
+            width="w-[125px] shrink-0"
           />
 
           {/* Month Dropdown */}
@@ -679,7 +732,7 @@ export default function RankingsPage() {
             placeholder="Month"
             options={monthDropdownOptions}
             onChange={setMonth}
-            width="w-[155px]"
+            width="w-[155px] shrink-0"
           />
 
           {/* Class / Group Filter Dropdown */}
@@ -688,7 +741,7 @@ export default function RankingsPage() {
             placeholder={rankingType === 'class' ? 'All Classes' : 'All Groups'}
             options={filterDropdownOptions}
             onChange={setSelectedFilterKey}
-            width="w-[170px]"
+            width="w-[170px] shrink-0"
           />
 
           {/* View Mode Toggle: Class-Wise vs Group-Wise */}
@@ -698,14 +751,14 @@ export default function RankingsPage() {
               setRankingType(val as 'class' | 'group');
               setSelectedFilterKey('all');
             }}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto shrink-0"
           >
-            <TabsList className="grid grid-cols-2 w-full sm:w-[240px] h-8 bg-muted/60 p-0.5">
-              <TabsTrigger value="class" className="text-xs h-7 gap-1.5 font-medium">
+            <TabsList className="grid grid-cols-2 w-full sm:w-[240px] h-8 bg-muted/60 p-0.5 rounded-md border">
+              <TabsTrigger value="class" className="text-xs h-7 gap-1.5 font-medium rounded-xs cursor-pointer">
                 <GraduationCap className="h-3.5 w-3.5" />
                 <span>Class-Wise</span>
               </TabsTrigger>
-              <TabsTrigger value="group" className="text-xs h-7 gap-1.5 font-medium">
+              <TabsTrigger value="group" className="text-xs h-7 gap-1.5 font-medium rounded-xs cursor-pointer">
                 <Users className="h-3.5 w-3.5" />
                 <span>Group-Wise</span>
               </TabsTrigger>
@@ -714,13 +767,13 @@ export default function RankingsPage() {
 
           {/* Preview Navigation Switcher (Active in Sheet Mode when Multiple Buckets or Pages) */}
           {viewMode === 'sheet' && (
-            <div className="ml-auto flex items-center gap-2">
+            <div className="flex items-center gap-1.5 ml-auto">
               {displayedRankings.length > 1 && (
-                <div className="flex items-center border rounded-md overflow-hidden bg-background shadow-2xs h-8">
+                <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-8">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                    className="h-8 px-2 rounded-none cursor-pointer text-xs hover:bg-accent"
                     onClick={() => {
                       setPreviewBucketIndex((p) => Math.max(0, p - 1));
                       setPreviewPageIndex(0);
@@ -729,15 +782,15 @@ export default function RankingsPage() {
                     title="Previous Group / Class"
                   >
                     <ChevronLeft className="h-3.5 w-3.5" />
-                    <span className="hidden md:inline ml-0.5">Prev</span>
+                    <span className="hidden md:inline ml-1 text-xs">Prev</span>
                   </Button>
-                  <span className="text-[11px] font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap">
-                    {rankingType === 'group' ? 'Group' : 'Class'} {previewBucketIndex + 1} / {displayedRankings.length}
+                  <span className="text-xs font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap bg-muted/20">
+                    {rankingType === 'group' ? 'Group' : 'Class'} {previewBucketIndex + 1} of {displayedRankings.length}
                   </span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                    className="h-8 px-2 rounded-none cursor-pointer text-xs hover:bg-accent"
                     onClick={() => {
                       setPreviewBucketIndex((p) => Math.min(displayedRankings.length - 1, p + 1));
                       setPreviewPageIndex(0);
@@ -745,31 +798,31 @@ export default function RankingsPage() {
                     disabled={previewBucketIndex >= displayedRankings.length - 1}
                     title="Next Group / Class"
                   >
-                    <span className="hidden md:inline mr-0.5">Next</span>
+                    <span className="hidden md:inline mr-1 text-xs">Next</span>
                     <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               )}
 
               {totalPagesForActiveBucket > 1 && (
-                <div className="flex items-center border rounded-md overflow-hidden bg-background shadow-2xs h-8">
+                <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-8">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                    className="h-8 px-1.5 rounded-none cursor-pointer text-xs hover:bg-accent"
                     onClick={() => setPreviewPageIndex((p) => Math.max(0, p - 1))}
                     disabled={previewPageIndex <= 0}
                     title="Previous Page"
                   >
                     <ChevronLeft className="h-3.5 w-3.5" />
                   </Button>
-                  <span className="text-[11px] font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap">
+                  <span className="text-xs font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap bg-muted/20">
                     Page {previewPageIndex + 1} / {totalPagesForActiveBucket}
                   </span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                    className="h-8 px-1.5 rounded-none cursor-pointer text-xs hover:bg-accent"
                     onClick={() => setPreviewPageIndex((p) => Math.min(totalPagesForActiveBucket - 1, p + 1))}
                     disabled={previewPageIndex >= totalPagesForActiveBucket - 1}
                     title="Next Page"
@@ -783,17 +836,18 @@ export default function RankingsPage() {
         </div>
 
         {/* Active Filters Summary Bar */}
-        {(searchTerm.trim() !== '' || selectedFilterKey !== 'all') && (
-          <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-muted/20 border text-xs animate-in fade-in duration-200">
+        {hasActiveFilters && (
+          <div className="flex flex-wrap items-center gap-1.5 p-1.5 sm:p-2 rounded-md bg-muted/30 border text-xs animate-in fade-in duration-200">
             <span className="text-[11px] font-bold text-muted-foreground mr-1 flex items-center gap-1">
               <Filter className="h-3.5 w-3.5" />
-              <span>Active:</span>
+              <span>Active Filters:</span>
             </span>
 
+            {/* Search chip */}
             {searchTerm.trim() !== '' && (
               <Badge
                 variant="secondary"
-                className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
+                className="h-5.5 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
               >
                 <span>Search: "{searchTerm}"</span>
                 <button
@@ -807,10 +861,11 @@ export default function RankingsPage() {
               </Badge>
             )}
 
+            {/* Filter chip */}
             {selectedFilterKey !== 'all' && (
               <Badge
                 variant="secondary"
-                className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
+                className="h-5.5 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
               >
                 <span>{rankingType === 'class' ? 'Class' : 'Group'}: {selectedFilterKey}</span>
                 <button
@@ -824,6 +879,7 @@ export default function RankingsPage() {
               </Badge>
             )}
 
+            {/* Reset button */}
             <Button
               variant="ghost"
               size="xs"
@@ -831,11 +887,16 @@ export default function RankingsPage() {
                 setSearchTerm('');
                 setSelectedFilterKey('all');
               }}
-              className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer font-medium"
+              className="h-5.5 text-[11px] px-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer font-semibold"
             >
               <RotateCcw className="h-3 w-3 mr-1" />
-              <span>Reset</span>
+              <span>Reset All</span>
             </Button>
+
+            <span className="text-[11px] text-muted-foreground ml-auto hidden sm:inline">
+              Showing <strong className="text-foreground font-bold">{totalFilteredStudents}</strong> of{' '}
+              {totalStudents} students
+            </span>
           </div>
         )}
       </div>
@@ -934,19 +995,6 @@ export default function RankingsPage() {
                       <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-1">
                         {sortedGroupStudents.length} Students Ranked
                       </Badge>
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => {
-                          setSelectedFilterKey(group.key);
-                          handleViewModeChange('sheet');
-                        }}
-                        className="text-xs gap-1 h-7 text-primary hover:text-primary hover:bg-primary/10 cursor-pointer font-medium"
-                        title="View exact A4 sheet for this group"
-                      >
-                        <FileText className="h-3.5 w-3.5" />
-                        <span className="hidden sm:inline">A4 Sheet</span>
-                      </Button>
                     </div>
                   </div>
                 </CardHeader>
