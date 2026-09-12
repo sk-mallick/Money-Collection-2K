@@ -2343,15 +2343,16 @@ export default function MarksEntryPage() {
                               </Badge>
                             ) : isPartialAbsent ? (
                               <Badge
-                                variant="secondary"
-                                className="hidden sm:inline-flex text-[10px] font-bold h-5 px-1.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                                className="hidden sm:inline-flex text-[10px] font-bold h-5 px-1.5 bg-amber-500 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-500 text-white border-transparent shadow-xs"
                               >
                                 {absentCount} {absentCount === 1 ? 'Sub' : 'Subs'} Absent
                               </Badge>
                             ) : complete ? (
-                              <span className="hidden sm:inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 items-center gap-0.5 border border-emerald-500/20">
+                              <Badge
+                                className="hidden sm:inline-flex text-[10px] font-bold h-5 px-1.5 bg-emerald-600 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-600 text-white border-transparent shadow-xs"
+                              >
                                 ✓ Completed
-                              </span>
+                              </Badge>
                             ) : (
                               <span className="hidden sm:inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground border">
                                 Pending
@@ -2429,15 +2430,16 @@ export default function MarksEntryPage() {
                             </Badge>
                           ) : isPartialAbsent ? (
                             <Badge
-                              variant="secondary"
-                              className="text-[10px] font-bold h-5 px-1.5 bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                              className="text-[10px] font-bold h-5 px-1.5 bg-amber-500 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-500 text-white border-transparent shadow-xs"
                             >
                               {absentCount} {absentCount === 1 ? 'Sub' : 'Subs'} Absent
                             </Badge>
                           ) : complete ? (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 border border-emerald-500/20">
+                            <Badge
+                              className="text-[10px] font-bold h-5 px-1.5 bg-emerald-600 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-600 text-white border-transparent shadow-xs"
+                            >
                               ✓ Completed
-                            </span>
+                            </Badge>
                           ) : (
                             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground border">
                               Pending
