@@ -82,7 +82,7 @@ interface MarksDropdownInputProps {
   isTable?: boolean;
   rowIndex?: number;
   colIndex?: number;
-  onNavigate?: (rowIndex: number, colIndex: number, direction: 'next' | 'prev' | 'up' | 'down') => void;
+  onNavigate?: (rowIndex: number, colIndex: number, direction: 'next' | 'prev' | 'up' | 'down' | 'next-student') => void;
 }
 
 function MarksDropdownInput({
@@ -139,6 +139,7 @@ function MarksDropdownInput({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
+    if (val.includes('/')) return;
     setInputValue(val);
 
     const trimmed = val.trim().toLowerCase();
@@ -158,16 +159,22 @@ function MarksDropdownInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // 1. Enter key: moves to next input; if at last subject of student, goes to next student's first input box
+    // 0. Jump shortcut '/': prevent '/' from typing into marks and let it bubble to global jump handler
+    if (e.key === '/' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      return;
+    }
+
+    // 1. Enter key: Enter advances to next input; Shift+Enter jumps directly to next student
     if (e.key === 'Enter') {
       e.preventDefault();
       if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
-        onNavigate(rowIndex, colIndex, e.shiftKey ? 'prev' : 'next');
+        onNavigate(rowIndex, colIndex, e.shiftKey ? 'next-student' : 'next');
       }
       return;
     }
 
-    // 2. Tab key: horizontal cell navigation
+    // 2. Tab key: horizontal cell navigation (Tab = next, Shift+Tab = previous)
     if (e.key === 'Tab') {
       e.preventDefault();
       if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
@@ -222,13 +229,6 @@ function MarksDropdownInput({
       onChange(null, true);
       return;
     }
-
-    // 8. Escape key: cancel and blur
-    if (e.key === 'Escape') {
-      setIsOpen(false);
-      inputRef.current?.blur();
-      return;
-    }
   };
 
   const handleSelectAbsent = () => {
@@ -281,7 +281,18 @@ function MarksDropdownInput({
             data-col={colIndex}
             onClick={() => setIsOpen(!isOpen)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === 'Tab') {
+              if (e.key === '/' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                return;
+              }
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+                  onNavigate(rowIndex, colIndex, e.shiftKey ? 'next-student' : 'next');
+                }
+                return;
+              }
+              if (e.key === 'Tab') {
                 e.preventDefault();
                 if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
                   onNavigate(rowIndex, colIndex, e.shiftKey ? 'prev' : 'next');
@@ -817,46 +828,6 @@ export default function MarksEntryPage() {
     }
   };
 
-  // Global keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+Shift+T, ?, Esc)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // 1. Ctrl+S / Cmd+S: Save Marks
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        if (!saving) {
-          handleSave();
-        }
-        return;
-      }
-
-      // 2. Ctrl+F / Cmd+F: Focus Search Bar
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
-        return;
-      }
-
-      // 3. Ctrl+Shift+T: Toggle View Mode (Table / Cards)
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 't') {
-        e.preventDefault();
-        setViewMode((prev) => (prev === 'table' ? 'accordion' : 'table'));
-        return;
-      }
-
-      // 4. '?' or Ctrl+/ to open Keyboard Shortcuts modal
-      const activeTag = (document.activeElement as HTMLElement)?.tagName;
-      const isTyping = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
-      if ((e.key === '?' && !isTyping) || ((e.ctrlKey || e.metaKey) && e.key === '/')) {
-        e.preventDefault();
-        setShortcutsModalOpen((prev) => !prev);
-        return;
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [saving, handleSave]);
-
   const handlePublish = async () => {
     if (!periodId) return;
     try {
@@ -994,15 +965,28 @@ export default function MarksEntryPage() {
 
   // Spreadsheet Keyboard Navigation (Enter, Shift+Enter, Tab, Shift+Tab, Arrows)
   const handleCellNavigate = useCallback(
-    (rowIndex: number, colIndex: number, direction: 'next' | 'prev' | 'up' | 'down') => {
-      const totalRows = sortedAndFilteredStudents.length;
+    (
+      rowIndex: number,
+      colIndex: number,
+      direction: 'next' | 'prev' | 'up' | 'down' | 'next-student'
+    ) => {
+      const currentList = viewMode === 'table' ? sortedAndFilteredStudents : filteredStudents;
+      const totalRows = currentList.length;
       const totalCols = subjects.length;
       if (totalRows === 0 || totalCols === 0) return;
 
       let targetRow = rowIndex;
       let targetCol = colIndex;
 
-      if (direction === 'next') {
+      if (direction === 'next-student') {
+        // Shift + Enter: advance cursor directly to the next student's first input box
+        if (rowIndex < totalRows - 1) {
+          targetRow = rowIndex + 1;
+          targetCol = 0;
+        } else {
+          toast.info('Already at the last student', { duration: 1200 });
+        }
+      } else if (direction === 'next') {
         if (colIndex < totalCols - 1) {
           targetCol = colIndex + 1;
         } else {
@@ -1033,7 +1017,7 @@ export default function MarksEntryPage() {
 
       // If in accordion mode, expand target student card if collapsed
       if (viewMode === 'accordion') {
-        const targetStudent = sortedAndFilteredStudents[targetRow];
+        const targetStudent = currentList[targetRow];
         if (targetStudent) {
           setExpandedStudents((prev) => ({
             ...prev,
@@ -1061,8 +1045,170 @@ export default function MarksEntryPage() {
         }
       }, 30);
     },
-    [sortedAndFilteredStudents, subjects.length, viewMode]
+    [viewMode, sortedAndFilteredStudents, filteredStudents, subjects.length]
   );
+
+  // Jump to Last Filled Input Field or First Input Field ('/' shortcut)
+  const handleJumpToFirstOrLastFilled = useCallback(() => {
+    const currentList = viewMode === 'table' ? sortedAndFilteredStudents : filteredStudents;
+    if (currentList.length === 0) {
+      toast.info('No students available to focus');
+      return;
+    }
+
+    // 1. Scan from bottom to top, right to left to locate the last filled cell
+    let lastFilledPos: {
+      rowIndex: number;
+      colIndex: number;
+      student: StudentResult;
+      subjectName: string;
+    } | null = null;
+
+    for (let r = currentList.length - 1; r >= 0; r--) {
+      const s = currentList[r];
+      if (!s.marks || s.marks.length === 0) continue;
+      for (let c = s.marks.length - 1; c >= 0; c--) {
+        const m = s.marks[c];
+        if (m.isAbsent || (m.obtainedMarks !== null && m.obtainedMarks !== undefined)) {
+          lastFilledPos = {
+            rowIndex: r,
+            colIndex: c,
+            student: s,
+            subjectName: m.subjectName,
+          };
+          break;
+        }
+      }
+      if (lastFilledPos) break;
+    }
+
+    // 2. Check current focused element's data-row and data-col
+    const activeEl = document.activeElement as HTMLElement | null;
+    const activeRowStr = activeEl?.getAttribute('data-row');
+    const activeColStr = activeEl?.getAttribute('data-col');
+
+    const isCurrentlyAtLastFilled =
+      lastFilledPos !== null &&
+      activeRowStr !== null &&
+      activeColStr !== null &&
+      Number(activeRowStr) === lastFilledPos.rowIndex &&
+      Number(activeColStr) === lastFilledPos.colIndex;
+
+    // 3. Determine destination:
+    // If already at last filled -> jump to first input (toggle)
+    // Otherwise -> jump to last filled input (or first input if nothing is filled yet)
+    let targetRow = 0;
+    let targetCol = 0;
+    let targetStudent = currentList[0];
+    let feedbackMsg = '';
+
+    if (isCurrentlyAtLastFilled || !lastFilledPos) {
+      targetRow = 0;
+      targetCol = 0;
+      targetStudent = currentList[0];
+      feedbackMsg = `Jumped to first student: ${targetStudent.name}`;
+    } else {
+      targetRow = lastFilledPos.rowIndex;
+      targetCol = lastFilledPos.colIndex;
+      targetStudent = lastFilledPos.student;
+      feedbackMsg = `Jumped to last filled: ${targetStudent.name} (${lastFilledPos.subjectName})`;
+    }
+
+    // 4. In accordion mode, expand target student card if collapsed
+    if (viewMode === 'accordion' && targetStudent) {
+      setExpandedStudents((prev) => ({
+        ...prev,
+        [targetStudent.studentResultId]: true,
+      }));
+    }
+
+    // 5. Focus & select the target input / container smoothly
+    setTimeout(() => {
+      const targetInput = document.querySelector<HTMLInputElement>(
+        `input[data-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
+      );
+
+      if (targetInput) {
+        targetInput.focus();
+        targetInput.select();
+        targetInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        const targetContainer = document.querySelector<HTMLElement>(
+          `[data-marks-container="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
+        );
+        if (targetContainer) {
+          targetContainer.focus();
+          targetContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }, 40);
+
+    toast.info(feedbackMsg, { duration: 1500 });
+  }, [viewMode, sortedAndFilteredStudents, filteredStudents]);
+
+  // Global keyboard shortcuts (Ctrl+S, Ctrl+F, Ctrl+Shift+T, ?, /)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Ctrl+S / Cmd+S: Save Marks
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (!saving) {
+          handleSave();
+        }
+        return;
+      }
+
+      // 2. Ctrl+F / Cmd+F: Focus Search Bar
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      // 3. Ctrl+Shift+T: Toggle View Mode (Table / Cards)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setViewMode((prev) => (prev === 'table' ? 'accordion' : 'table'));
+        return;
+      }
+
+      // 4. '?' or Ctrl+/ to open Keyboard Shortcuts modal
+      const activeTag = (document.activeElement as HTMLElement)?.tagName;
+      const isTyping = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
+      if ((e.key === '?' && !isTyping) || ((e.ctrlKey || e.metaKey) && e.key === '/')) {
+        e.preventDefault();
+        setShortcutsModalOpen((prev) => !prev);
+        return;
+      }
+
+      // 5. '/' Shortcut: Jump to Last Filled Input Field or First Input Field
+      if (e.key === '/' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const activeEl = document.activeElement as HTMLElement | null;
+        // Never hijack '/' when typing in the search input
+        if (activeEl === searchInputRef.current) {
+          return;
+        }
+        // Do not intercept if inside a modal dialog
+        if (activeEl?.closest('[role="dialog"]')) {
+          return;
+        }
+        // Do not intercept if editing regular inputs like max-marks without data-marks-input
+        if (activeEl?.tagName === 'INPUT' && !activeEl.hasAttribute('data-marks-input')) {
+          return;
+        }
+        if (activeEl?.tagName === 'TEXTAREA') {
+          return;
+        }
+
+        e.preventDefault();
+        handleJumpToFirstOrLastFilled();
+        return;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [saving, handleSave, handleJumpToFirstOrLastFilled]);
 
   if (loading) {
     return (
@@ -2193,6 +2339,13 @@ export default function MarksEntryPage() {
 
       <ContextMenuSeparator />
 
+      {/* Quick Jump to Last Filled / First Input */}
+      <ContextMenuItem onClick={handleJumpToFirstOrLastFilled} className="cursor-pointer text-xs font-medium">
+        <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
+        <span>Jump to Last Filled / First</span>
+        <ContextMenuShortcut>/</ContextMenuShortcut>
+      </ContextMenuItem>
+
       {/* Keyboard Shortcuts Dialog Trigger */}
       <ContextMenuItem onClick={() => setShortcutsModalOpen(true)} className="cursor-pointer text-xs font-medium">
         <Keyboard className="h-4 w-4 mr-2 text-primary" />
@@ -2229,19 +2382,32 @@ export default function MarksEntryPage() {
           </h3>
           <div className="grid grid-cols-1 gap-1.5 rounded-lg border p-2.5 bg-muted/20">
             <div className="flex items-center justify-between py-1 border-b border-border/50">
-              <span className="text-foreground font-medium">Next Subject / Next Student</span>
-              <div className="flex items-center gap-1">
-                <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Enter</kbd>
-                <span className="text-muted-foreground text-[10px]">or</span>
-                <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Tab</kbd>
+              <div>
+                <span className="text-foreground font-medium block">Jump to Last Filled / First Cell</span>
+                <span className="text-[10px] text-muted-foreground">Jump directly to your resume point or start from top</span>
               </div>
+              <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">/</kbd>
             </div>
             <div className="flex items-center justify-between py-1 border-b border-border/50">
-              <span className="text-foreground font-medium">Previous Subject / Student</span>
+              <span className="text-foreground font-medium">Next Student Directly</span>
               <div className="flex items-center gap-1">
                 <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Shift</kbd>
                 <span>+</span>
                 <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Enter</kbd>
+              </div>
+            </div>
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Next Subject (Row Completion)</span>
+              <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Enter</kbd>
+            </div>
+            <div className="flex items-center justify-between py-1 border-b border-border/50">
+              <span className="text-foreground font-medium">Next / Previous Subject</span>
+              <div className="flex items-center gap-1">
+                <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Tab</kbd>
+                <span className="text-muted-foreground text-[10px]">/</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Shift</kbd>
+                <span>+</span>
+                <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Tab</kbd>
               </div>
             </div>
             <div className="flex items-center justify-between py-1 border-b border-border/50">
@@ -2272,13 +2438,9 @@ export default function MarksEntryPage() {
               <span className="text-foreground font-medium">Mark Student Absent</span>
               <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">A</kbd>
             </div>
-            <div className="flex items-center justify-between py-1 border-b border-border/50">
+            <div className="flex items-center justify-between py-1">
               <span className="text-foreground font-medium">Enter Marks Directly</span>
               <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">0 – 9</kbd>
-            </div>
-            <div className="flex items-center justify-between py-1">
-              <span className="text-foreground font-medium">Clear Cell / Cancel Dropdown</span>
-              <kbd className="px-2 py-0.5 rounded bg-muted border font-mono font-semibold text-[11px] shadow-xs">Esc</kbd>
             </div>
           </div>
         </div>
