@@ -1004,7 +1004,7 @@ export default function MarksEntryPage() {
     });
   };
 
-  // Column Visibility State for Data Table (School, Total, %, Rank can be toggled; input columns stay permanently on)
+  // Column Visibility State for Data Table (School, Total, %, Rank can be toggled; all OFF by default)
   const [columnVisibility, setColumnVisibility] = useState<{
     school: boolean;
     total: boolean;
@@ -1016,20 +1016,20 @@ export default function MarksEntryPage() {
       if (saved) {
         const parsed = JSON.parse(saved);
         return {
-          school: parsed.school !== undefined ? parsed.school : true,
-          total: parsed.total !== undefined ? parsed.total : true,
-          percentage: parsed.percentage !== undefined ? parsed.percentage : true,
-          rank: parsed.rank !== undefined ? parsed.rank : true,
+          school: parsed.school !== undefined ? parsed.school : false,
+          total: parsed.total !== undefined ? parsed.total : false,
+          percentage: parsed.percentage !== undefined ? parsed.percentage : false,
+          rank: parsed.rank !== undefined ? parsed.rank : false,
         };
       }
     } catch {
       // Ignore localStorage errors
     }
     return {
-      school: true,
-      total: true,
-      percentage: true,
-      rank: true,
+      school: false,
+      total: false,
+      percentage: false,
+      rank: false,
     };
   });
 
@@ -2396,17 +2396,56 @@ export default function MarksEntryPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-9 w-[116px] gap-1.5 px-2.5 text-xs font-semibold cursor-pointer bg-card shadow-xs hover:bg-accent justify-center"
+                    className="h-9 w-auto min-w-[116px] gap-1.5 px-2.5 text-xs font-semibold cursor-pointer bg-card shadow-xs hover:bg-accent justify-center"
                   >
                     <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
                     <span>Columns</span>
+                    {(columnVisibility.school ||
+                      columnVisibility.total ||
+                      columnVisibility.percentage ||
+                      columnVisibility.rank) && (
+                      <span className="h-2 w-2 rounded-full bg-primary" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Toggle Columns
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
+                <DropdownMenuContent align="end" className="w-52 p-1.5 shadow-xl border bg-popover text-popover-foreground z-50 rounded-xl">
+                  <div className="flex items-center justify-between px-2 py-1 text-xs">
+                    <span className="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">
+                      Toggle Columns
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateColumnVisibility(() => ({
+                            school: true,
+                            total: true,
+                            percentage: true,
+                            rank: true,
+                          }))
+                        }
+                        className="text-[10px] font-semibold text-primary hover:underline cursor-pointer"
+                      >
+                        All On
+                      </button>
+                      <span className="text-muted-foreground text-[10px]">•</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateColumnVisibility(() => ({
+                            school: false,
+                            total: false,
+                            percentage: false,
+                            rank: false,
+                          }))
+                        }
+                        className="text-[10px] font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                      >
+                        All Off
+                      </button>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator className="my-1" />
                   <DropdownMenuCheckboxItem
                     checked={columnVisibility.school}
                     onCheckedChange={(val) =>
