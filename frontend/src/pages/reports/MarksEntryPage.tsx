@@ -10,7 +10,10 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
@@ -71,6 +74,7 @@ import {
   ArrowDown,
   Keyboard,
   PenLine,
+  Settings,
 } from 'lucide-react';
 
 // ─── UNIFIED MARKS DROPDOWN + MANUAL INPUT COMPONENT ─────────────────────────────
@@ -109,6 +113,7 @@ function MarksDropdownInput({
   const [inputValue, setInputValue] = useState<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const divRef = useRef<HTMLDivElement>(null);
 
   // Sync internal display value with current props
   useEffect(() => {
@@ -302,7 +307,7 @@ function MarksDropdownInput({
   const handleClear = () => {
     onChange(null, false);
     setIsOpen(false);
-    if (inputRef.current) inputRef.current.focus();
+    if (inputMode === 'normal' && inputRef.current) inputRef.current.focus();
   };
 
   const marksListRef = useRef<HTMLDivElement>(null);
@@ -456,38 +461,50 @@ function MarksDropdownInput({
             )}
           </div>
         ) : (
-          /* Number Input: with chevron in dropdown mode, clean without chevron in normal mode */
+          /* Number Input: interactive div in dropdown mode (never opens mobile keyboard), real input in normal mode */
           <div className="flex items-center w-full">
-            <input
-              ref={inputRef}
-              type="text"
-              inputMode={inputMode === 'dropdown' ? 'none' : 'decimal'}
-              readOnly={inputMode === 'dropdown'}
-              placeholder="0"
-              value={inputValue}
-              onChange={inputMode === 'dropdown' ? undefined : handleInputChange}
-              onKeyDown={handleKeyDown}
-              onClick={() => {
-                if (inputMode === 'dropdown') {
-                  setIsOpen(!isOpen);
-                }
-              }}
-              data-marks-input="true"
-              data-row={rowIndex}
-              data-col={colIndex}
-              className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/60 placeholder:font-semibold ${
-                inputMode === 'dropdown' ? 'cursor-pointer select-none' : ''
-              } ${
-                inputMode === 'normal'
-                  ? isTable
+            {inputMode === 'dropdown' ? (
+              <div
+                ref={divRef}
+                tabIndex={0}
+                role="combobox"
+                aria-expanded={isOpen}
+                data-marks-input="true"
+                data-row={rowIndex}
+                data-col={colIndex}
+                onClick={() => setIsOpen(!isOpen)}
+                onKeyDown={handleKeyDown}
+                className={`w-full font-mono font-bold text-center bg-transparent outline-none cursor-pointer select-none flex items-center justify-center ${
+                  isTable ? 'h-8 text-xs pl-5 pr-1' : 'h-8 text-xs sm:text-sm pl-6 pr-1.5'
+                }`}
+                title="Select marks from dropdown"
+              >
+                {inputValue !== '' ? (
+                  <span>{inputValue}</span>
+                ) : (
+                  <span className="text-muted-foreground/60 font-semibold">0</span>
+                )}
+              </div>
+            ) : (
+              <input
+                ref={inputRef}
+                type="text"
+                inputMode="decimal"
+                placeholder="0"
+                value={inputValue}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                data-marks-input="true"
+                data-row={rowIndex}
+                data-col={colIndex}
+                className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/60 placeholder:font-semibold ${
+                  isTable
                     ? 'h-8 text-xs px-1'
                     : 'h-8 text-xs sm:text-sm px-1.5'
-                  : isTable
-                  ? 'h-8 text-xs pl-5 pr-1'
-                  : 'h-8 text-xs sm:text-sm pl-6 pr-1.5'
-              }`}
-              title={inputMode === 'dropdown' ? 'Select marks from dropdown' : 'Enter marks'}
-            />
+                }`}
+                title="Enter marks"
+              />
+            )}
             {inputMode !== 'normal' && (
               <button
                 type="button"
@@ -604,6 +621,7 @@ function MaxMarksDropdownInput({
   const [inputValue, setInputValue] = useState<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const divRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -760,7 +778,7 @@ function MaxMarksDropdownInput({
   const handleClear = () => {
     onChange('');
     setIsOpen(false);
-    if (inputRef.current) inputRef.current.focus();
+    if (inputMode === 'normal' && inputRef.current) inputRef.current.focus();
   };
 
   // Full 10 to 150 range options with no limitation
@@ -779,36 +797,52 @@ function MaxMarksDropdownInput({
     <div ref={containerRef} className={`relative inline-block w-full ${className}`}>
       <div className="flex items-center rounded-md border transition-all border-input bg-muted/30 hover:bg-muted/45 focus-within:ring-1 focus-within:ring-primary focus-within:border-primary focus-within:bg-card">
         <div className="flex items-center w-full">
-          <input
-            ref={inputRef}
-            type="text"
-            inputMode={inputMode === 'dropdown' ? 'none' : 'decimal'}
-            readOnly={inputMode === 'dropdown'}
-            placeholder="MAX"
-            value={inputValue}
-            onChange={inputMode === 'dropdown' ? undefined : handleInputChange}
-            onKeyDown={handleKeyDown}
-            onClick={() => {
-              if (inputMode === 'dropdown') {
-                setIsOpen(!isOpen);
-              }
-            }}
-            data-max-marks-input="true"
-            data-row={rowIndex}
-            data-col={colIndex}
-            className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/75 placeholder:font-semibold placeholder:tracking-wide ${
-              inputMode === 'dropdown' ? 'cursor-pointer select-none' : ''
-            } ${
-              inputMode === 'normal'
-                ? isTable
+          {inputMode === 'dropdown' ? (
+            <div
+              ref={divRef}
+              tabIndex={0}
+              role="combobox"
+              aria-expanded={isOpen}
+              data-max-marks-input="true"
+              data-row={rowIndex}
+              data-col={colIndex}
+              onClick={() => setIsOpen(!isOpen)}
+              onKeyDown={handleKeyDown}
+              className={`w-full font-mono font-bold text-center bg-transparent outline-none cursor-pointer select-none flex items-center justify-center ${
+                isTable
+                  ? 'h-8 text-xs pl-5 pr-1'
+                  : 'h-8 text-xs sm:text-sm pl-6 pr-1.5'
+              }`}
+              title="Select maximum marks from dropdown"
+            >
+              {inputValue !== '' ? (
+                <span>{inputValue}</span>
+              ) : (
+                <span className="text-muted-foreground/75 font-semibold tracking-wide text-[10px] sm:text-xs">
+                  MAX
+                </span>
+              )}
+            </div>
+          ) : (
+            <input
+              ref={inputRef}
+              type="text"
+              inputMode="decimal"
+              placeholder="MAX"
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              data-max-marks-input="true"
+              data-row={rowIndex}
+              data-col={colIndex}
+              className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/75 placeholder:font-semibold placeholder:tracking-wide ${
+                isTable
                   ? 'h-8 text-xs px-1 placeholder:text-[10px]'
                   : 'h-8 text-xs sm:text-sm px-1.5 placeholder:text-[11px] sm:placeholder:text-xs'
-                : isTable
-                ? 'h-8 text-xs pl-5 pr-1 placeholder:text-[10px]'
-                : 'h-8 text-xs sm:text-sm pl-6 pr-1.5 placeholder:text-[11px] sm:placeholder:text-xs'
-            }`}
-            title={inputMode === 'dropdown' ? 'Select maximum marks from dropdown' : 'Maximum marks (10 to 150 range)'}
-          />
+              }`}
+              title="Maximum marks (10 to 150 range)"
+            />
+          )}
           {inputMode !== 'normal' && (
             <button
               type="button"
@@ -1363,12 +1397,14 @@ export default function MarksEntryPage() {
     const nextRow = currentFilteredIndex + 1;
     if (nextRow < filteredStudents.length) {
       setTimeout(() => {
-        const targetInput = document.querySelector<HTMLInputElement>(
-          `input[data-marks-input="true"][data-row="${nextRow}"][data-col="0"]`
+        const targetInput = document.querySelector<HTMLElement>(
+          `[data-marks-input="true"][data-row="${nextRow}"][data-col="0"]`
         );
         if (targetInput) {
           targetInput.focus();
-          targetInput.select();
+          if (targetInput instanceof HTMLInputElement) {
+            targetInput.select();
+          }
         }
       }, 50);
     }
@@ -1682,21 +1718,25 @@ export default function MarksEntryPage() {
       // Allow DOM to adjust if card expanded, then focus and select text in target input
       const focusTarget = () => {
         if (targetField === 'max') {
-          const maxInput = document.querySelector<HTMLInputElement>(
-            `input[data-max-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
+          const maxInput = document.querySelector<HTMLElement>(
+            `[data-max-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
           );
           if (maxInput) {
             maxInput.focus();
-            maxInput.select();
+            if (maxInput instanceof HTMLInputElement) {
+              maxInput.select();
+            }
             return true;
           }
         } else {
-          const targetInput = document.querySelector<HTMLInputElement>(
-            `input[data-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
+          const targetInput = document.querySelector<HTMLElement>(
+            `[data-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
           );
           if (targetInput) {
             targetInput.focus();
-            targetInput.select();
+            if (targetInput instanceof HTMLInputElement) {
+              targetInput.select();
+            }
             return true;
           }
           const targetCell = document.querySelector<HTMLElement>(
@@ -1799,13 +1839,15 @@ export default function MarksEntryPage() {
 
     // 5. Focus & select the target input / container smoothly
     setTimeout(() => {
-      const targetInput = document.querySelector<HTMLInputElement>(
-        `input[data-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
+      const targetInput = document.querySelector<HTMLElement>(
+        `[data-marks-input="true"][data-row="${targetRow}"][data-col="${targetCol}"]`
       );
 
       if (targetInput) {
         targetInput.focus();
-        targetInput.select();
+        if (targetInput instanceof HTMLInputElement) {
+          targetInput.select();
+        }
         targetInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
         const targetContainer = document.querySelector<HTMLElement>(
@@ -1915,94 +1957,62 @@ export default function MarksEntryPage() {
         <ContextMenuTrigger asChild>
         <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 w-full max-w-[99vw] 2xl:max-w-[1850px] mx-auto min-h-[85vh]">
           {/* Top Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-card p-4 rounded-xl border shadow-xs w-full">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-lg sm:text-2xl font-black tracking-tight text-foreground">
-              {MONTH_NAMES[period.month] || period.month} {period.academic_year} Marks Entry
-            </h1>
-            <Badge
-              variant={isPublished ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'}
-              className="text-xs font-semibold uppercase tracking-wider"
-            >
-              {period.status}
-            </Badge>
-            <Badge variant="outline" className="text-xs font-semibold">
-              {period.category}
-            </Badge>
+      {/* Top Header Bar */}
+      <div className="bg-card p-3.5 sm:p-4 rounded-xl border shadow-xs w-full">
+        {/* MOBILE VIEW (< sm) */}
+        <div className="sm:hidden space-y-3">
+          {/* Top Title & Unsaved Alert */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base font-black tracking-tight text-foreground leading-snug">
+                {MONTH_NAMES[period.month] || period.month} {period.academic_year} Marks Entry
+              </h1>
+              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                <Badge
+                  variant={isPublished ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'}
+                  className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5"
+                >
+                  {period.status}
+                </Badge>
+                <Badge variant="outline" className="text-[10px] font-semibold px-2 py-0.5">
+                  {period.category}
+                </Badge>
+                <span className="text-xs text-muted-foreground font-medium">
+                  Group <strong className="text-foreground">{period.group_id}</strong>{' '}
+                  {period.group_class ? `(${period.group_class})` : ''}
+                </span>
+              </div>
+            </div>
+            {hasUnsavedChanges && (
+              <Badge variant="destructive" className="animate-pulse text-[10px] font-bold px-2 py-0.5 shrink-0 whitespace-nowrap shadow-xs">
+                Unsaved Changes
+              </Badge>
+            )}
           </div>
-          <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+
+          {/* Counts and status summary */}
+          <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
             <span>
-              Group <strong className="text-foreground">{period.group_id}</strong>{' '}
-              {period.group_class ? `(${period.group_class})` : ''}
-            </span>
-            <span>•</span>
-            <span>
-              <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{completedCount}</strong> of{' '}
-              {students.length} completed
+              <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{completedCount}</strong>/{students.length} done
             </span>
             {partialAbsentCount > 0 && (
               <>
                 <span>•</span>
                 <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                  {partialAbsentCount} partial absent
+                  {partialAbsentCount} partial
                 </span>
               </>
             )}
             {fullyAbsentCount > 0 && (
               <>
                 <span>•</span>
-                <span className="text-destructive font-semibold">{fullyAbsentCount} all absent</span>
+                <span className="text-destructive font-semibold">{fullyAbsentCount} absent</span>
               </>
             )}
           </div>
-        </div>
 
-        {/* Top Action Buttons */}
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {hasUnsavedChanges && (
-            <Badge variant="destructive" className="animate-pulse text-xs font-bold px-2.5 py-1">
-              Unsaved Changes
-            </Badge>
-          )}
-
-          <ButtonGroup aria-label="Marks entry actions">
-            <Button variant="outline" size="sm" onClick={() => loadData()} disabled={saving} className="text-xs">
-              <RotateCcw className="h-3.5 w-3.5 mr-1" />
-              Reset
-            </Button>
-
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={saving}
-              className="text-xs min-w-[95px] font-bold shadow-xs bg-primary hover:bg-primary/90 cursor-pointer"
-            >
-              <Save className="h-3.5 w-3.5 mr-1" />
-              {saving ? 'Saving...' : 'Save Marks'}
-            </Button>
-
-            <ButtonGroupSeparator />
-
-            {!isPublished ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPublishDialogOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer"
-              >
-                <ShieldCheck className="h-3.5 w-3.5 mr-1" />
-                Finalize
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" onClick={handleRevertToDraft} className="text-xs">
-                <Lock className="h-3.5 w-3.5 mr-1" />
-                Revert to Draft
-              </Button>
-            )}
-
-            <ButtonGroupSeparator />
-
+          {/* Mobile Action Buttons Grid */}
+          <div className="grid grid-cols-2 gap-2 w-full pt-1 border-t border-border/50">
             <Button
               variant="outline"
               size="sm"
@@ -2015,31 +2025,327 @@ export default function MarksEntryPage() {
                   navigate('/reports/monthly');
                 }
               }}
-              className="text-xs"
+              className="text-xs h-9 font-medium justify-center"
             >
               <ArrowLeft className="h-3.5 w-3.5 mr-1" />
               Back
             </Button>
-          </ButtonGroup>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => loadData()}
+              disabled={saving}
+              className="text-xs h-9 font-medium justify-center"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1" />
+              Reset
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving}
+              className="text-xs h-9 font-bold shadow-xs bg-primary hover:bg-primary/90 text-primary-foreground justify-center cursor-pointer"
+            >
+              <Save className="h-3.5 w-3.5 mr-1" />
+              {saving ? 'Saving...' : 'Save Marks'}
+            </Button>
+
+            {!isPublished ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setPublishDialogOpen(true)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 font-semibold justify-center cursor-pointer"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+                Finalize
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRevertToDraft}
+                className="text-xs h-9 font-medium justify-center"
+              >
+                <Lock className="h-3.5 w-3.5 mr-1" />
+                Revert to Draft
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* DESKTOP VIEW (>= sm) */}
+        <div className="hidden sm:flex sm:flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div className="space-y-1.5">
+            <h1 className="text-lg sm:text-2xl font-black tracking-tight text-foreground">
+              {MONTH_NAMES[period.month] || period.month} {period.academic_year} Marks Entry
+            </h1>
+            <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+              <span>
+                Group <strong className="text-foreground">{period.group_id}</strong>{' '}
+                {period.group_class ? `(${period.group_class})` : ''}
+              </span>
+              <span>•</span>
+              <span>
+                <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{completedCount}</strong> of{' '}
+                {students.length} completed
+              </span>
+              {partialAbsentCount > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                    {partialAbsentCount} partial absent
+                  </span>
+                </>
+              )}
+              {fullyAbsentCount > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="text-destructive font-semibold">{fullyAbsentCount} all absent</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop Right Side: Top Badges (from right to left) + Bottom Action Buttons */}
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            {/* Top Badges Row: Unsaved Changes (on left side), Draft status, Senior category */}
+            <div className="flex items-center gap-2 justify-end flex-wrap">
+              {hasUnsavedChanges && (
+                <Badge variant="destructive" className="animate-pulse text-xs font-bold px-2.5 py-0.5 shadow-xs">
+                  Unsaved Changes
+                </Badge>
+              )}
+              <Badge
+                variant={isPublished ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'}
+                className="text-xs font-semibold uppercase tracking-wider"
+              >
+                {period.status}
+              </Badge>
+              <Badge variant="outline" className="text-xs font-semibold">
+                {period.category}
+              </Badge>
+            </div>
+
+            {/* Bottom Row: Action Buttons */}
+            <ButtonGroup aria-label="Marks entry actions">
+              <Button variant="outline" size="sm" onClick={() => loadData()} disabled={saving} className="text-xs">
+                <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                Reset
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={saving}
+                className="text-xs min-w-[95px] font-bold shadow-xs bg-primary hover:bg-primary/90 cursor-pointer"
+              >
+                <Save className="h-3.5 w-3.5 mr-1" />
+                {saving ? 'Saving...' : 'Save Marks'}
+              </Button>
+
+              <ButtonGroupSeparator />
+
+              {!isPublished ? (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setPublishDialogOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+                  Finalize
+                </Button>
+              ) : (
+                <Button size="sm" variant="outline" onClick={handleRevertToDraft} className="text-xs">
+                  <Lock className="h-3.5 w-3.5 mr-1" />
+                  Revert to Draft
+                </Button>
+              )}
+
+              <ButtonGroupSeparator />
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (hasUnsavedChanges) {
+                    if (window.confirm('You have unsaved changes. Do you really want to leave?')) {
+                      navigate('/reports/monthly');
+                    }
+                  } else {
+                    navigate('/reports/monthly');
+                  }
+                }}
+                className="text-xs"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+                Back
+              </Button>
+            </ButtonGroup>
+          </div>
         </div>
       </div>
 
       {/* Search, Filter, and View Mode Toolbar */}
       <div className="space-y-2.5">
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3 justify-between">
-          {/* Search Bar */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              ref={searchInputRef}
-              placeholder="Search student name, roll number, school... (Ctrl+F)"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 text-xs sm:text-sm h-9 bg-card"
-            />
+          {/* Search Bar + Separate Standalone Settings Button */}
+          <div className="flex items-center gap-2 w-full flex-1 min-w-[200px]">
+            {/* Standalone Search Bar (Not fused, standard rounded borders) */}
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                ref={searchInputRef}
+                placeholder="Search student name, roll number, school... (Ctrl+F)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 pr-8 text-xs sm:text-sm h-9 bg-card rounded-md shadow-xs border"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer transition-colors"
+                  title="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Standalone Setting Button (Separate button OUTSIDE Search Bar, at same position) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="sm:hidden h-9 w-9 shrink-0 rounded-md bg-card hover:bg-accent border shadow-xs cursor-pointer relative"
+                  title="Settings & Filters"
+                  aria-label="Settings and Filters"
+                >
+                  <Settings className="h-4 w-4 text-foreground" />
+                  {filterStatus !== 'all' && (
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={6}
+                className="w-60 p-1.5 shadow-xl border bg-popover text-popover-foreground z-50 rounded-xl space-y-1"
+              >
+                {/* 1. Header with Title & Reset Button */}
+                <div className="flex items-center justify-between px-2 py-1.5 border-b mb-0.5">
+                  <span className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                    <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                    Settings & Filters
+                  </span>
+                  {(searchTerm.trim() !== '' || filterStatus !== 'all') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setFilterStatus('all');
+                      }}
+                      className="text-[11px] font-medium text-muted-foreground hover:text-destructive cursor-pointer transition-colors"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+
+                {/* 2. Input Mode Switcher (Sleek segmented pills) */}
+                <div className="px-2 py-1">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                    Input Mode
+                  </div>
+                  <div className="grid grid-cols-2 p-0.5 rounded-lg bg-muted/60 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setInputMode('dropdown')}
+                      className={`flex items-center justify-center gap-1 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                        inputMode === 'dropdown'
+                          ? 'bg-background text-foreground shadow-xs font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <ChevronDown className="h-3 w-3" />
+                      <span>Dropdown</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInputMode('normal')}
+                      className={`flex items-center justify-center gap-1 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                        inputMode === 'normal'
+                          ? 'bg-background text-foreground shadow-xs font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <PenLine className="h-3 w-3" />
+                      <span>Normal</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Cards Expand / Collapse All */}
+                {viewMode === 'accordion' && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleToggleExpandAll}
+                      className="cursor-pointer text-xs py-1.5 px-2 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        {hasAnyExpanded ? (
+                          <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                        )}
+                        <span>{hasAnyExpanded ? 'Collapse All Cards' : 'Expand All Cards'}</span>
+                      </div>
+                    </DropdownMenuItem>
+                  </>
+                )}
+
+                {/* 4. Filter by Status (Clean native Radix Radio Group) */}
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2 py-1">
+                  Filter By Status
+                </DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={filterStatus} onValueChange={setFilterStatus}>
+                  <DropdownMenuRadioItem value="all" className="text-xs cursor-pointer py-1.5">
+                    <span>All Students</span>
+                    <span className="ml-auto text-[10px] text-muted-foreground font-mono">{students.length}</span>
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="pending" className="text-xs cursor-pointer py-1.5">
+                    <span>Pending</span>
+                    <span className="ml-auto text-[10px] text-muted-foreground font-mono">{students.length - completedCount}</span>
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="completed" className="text-xs cursor-pointer py-1.5">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Completed</span>
+                    <span className="ml-auto text-[10px] text-muted-foreground font-mono">{completedCount}</span>
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="present_full" className="text-xs cursor-pointer py-1.5">
+                    <span>All Present</span>
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="partial_absent" className="text-xs cursor-pointer py-1.5">
+                    <span className="text-amber-500 font-semibold">Partial Absent</span>
+                    <span className="ml-auto text-[10px] text-muted-foreground font-mono">{partialAbsentCount}</span>
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="all_absent" className="text-xs cursor-pointer py-1.5">
+                    <span className="text-destructive font-semibold">All Absent</span>
+                    <span className="ml-auto text-[10px] text-muted-foreground font-mono">{fullyAbsentCount}</span>
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          {/* Desktop Toolbar (Hidden on phone/mobile screens) */}
+          <div className="hidden sm:flex flex-wrap items-center gap-2 sm:gap-2.5">
             {/* Status Filter */}
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[175px] text-xs sm:text-sm h-9 bg-card">
