@@ -1960,59 +1960,20 @@ export default function MarksEntryPage() {
       {/* Top Header Bar */}
       <div className="bg-card p-3.5 sm:p-4 rounded-xl border shadow-xs w-full">
         {/* MOBILE VIEW (< sm) */}
-        <div className="sm:hidden space-y-3">
-          {/* Top Title & Unsaved Alert */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <h1 className="text-base font-black tracking-tight text-foreground leading-snug">
+        <div className="sm:hidden space-y-2">
+          {/* Top Title & Group Info + Icon-only Back Button on the right */}
+          <div className="flex items-center justify-between gap-2 pb-2 border-b border-border/40">
+            <div className="space-y-0.5 min-w-0 flex-1">
+              <h1 className="text-base font-black tracking-tight text-foreground leading-snug truncate">
                 {MONTH_NAMES[period.month] || period.month} {period.academic_year} Marks Entry
               </h1>
-              <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                <Badge
-                  variant={isPublished ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'}
-                  className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5"
-                >
-                  {period.status}
-                </Badge>
-                <Badge variant="outline" className="text-[10px] font-semibold px-2 py-0.5">
-                  {period.category}
-                </Badge>
-                <span className="text-xs text-muted-foreground font-medium">
-                  Group <strong className="text-foreground">{period.group_id}</strong>{' '}
-                  {period.group_class ? `(${period.group_class})` : ''}
-                </span>
+              <div className="text-xs text-muted-foreground font-medium">
+                Group <strong className="text-foreground">{period.group_id}</strong>{' '}
+                {period.group_class ? `(${period.group_class})` : ''}
               </div>
             </div>
-            {hasUnsavedChanges && (
-              <Badge variant="destructive" className="animate-pulse text-[10px] font-bold px-2 py-0.5 shrink-0 whitespace-nowrap shadow-xs">
-                Unsaved Changes
-              </Badge>
-            )}
-          </div>
 
-          {/* Counts and status summary */}
-          <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
-            <span>
-              <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{completedCount}</strong>/{students.length} done
-            </span>
-            {partialAbsentCount > 0 && (
-              <>
-                <span>•</span>
-                <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                  {partialAbsentCount} partial
-                </span>
-              </>
-            )}
-            {fullyAbsentCount > 0 && (
-              <>
-                <span>•</span>
-                <span className="text-destructive font-semibold">{fullyAbsentCount} absent</span>
-              </>
-            )}
-          </div>
-
-          {/* Mobile Action Buttons Grid */}
-          <div className="grid grid-cols-2 gap-2 w-full pt-1 border-t border-border/50">
+            {/* Back Button (Icon Only) */}
             <Button
               variant="outline"
               size="sm"
@@ -2025,20 +1986,64 @@ export default function MarksEntryPage() {
                   navigate('/reports/monthly');
                 }
               }}
-              className="text-xs h-9 font-medium justify-center"
+              className="h-8 w-8 p-0 shrink-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
+              title="Back to Monthly Reports"
+              aria-label="Back"
             >
-              <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-              Back
+              <ArrowLeft className="h-4 w-4" />
             </Button>
+          </div>
 
+          {/* Centered Single Line: Counts + Badges (Unsaved Changes, Draft, Senior) */}
+          <div className="text-xs text-muted-foreground flex items-center justify-center gap-2 flex-wrap text-center py-0.5">
+            <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              <span>
+                <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{completedCount}</strong>/{students.length} done
+              </span>
+              {partialAbsentCount > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                    {partialAbsentCount} partial
+                  </span>
+                </>
+              )}
+              {fullyAbsentCount > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="text-destructive font-semibold">{fullyAbsentCount} absent</span>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0 justify-center">
+              {hasUnsavedChanges && (
+                <Badge variant="destructive" className="animate-pulse text-[10px] font-bold px-1.5 py-0.5 shadow-xs">
+                  Unsaved Changes
+                </Badge>
+              )}
+              <Badge
+                variant={isPublished ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'}
+                className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5"
+              >
+                {period.status}
+              </Badge>
+              <Badge variant="outline" className="text-[10px] font-semibold px-1.5 py-0.5">
+                {period.category}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Mobile Action Buttons in a Single Line: Reset, Marks, Finalize */}
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full pt-2 border-t border-border/40">
             <Button
               variant="outline"
               size="sm"
               onClick={() => loadData()}
               disabled={saving}
-              className="text-xs h-9 font-medium justify-center"
+              className="text-xs h-9 font-medium justify-center px-2 cursor-pointer"
             >
-              <RotateCcw className="h-3.5 w-3.5 mr-1" />
+              <RotateCcw className="h-3.5 w-3.5 mr-1 shrink-0" />
               Reset
             </Button>
 
@@ -2046,10 +2051,10 @@ export default function MarksEntryPage() {
               size="sm"
               onClick={handleSave}
               disabled={saving}
-              className="text-xs h-9 font-bold shadow-xs bg-primary hover:bg-primary/90 text-primary-foreground justify-center cursor-pointer"
+              className="text-xs h-9 font-bold shadow-xs bg-primary hover:bg-primary/90 text-primary-foreground justify-center px-2 cursor-pointer"
             >
-              <Save className="h-3.5 w-3.5 mr-1" />
-              {saving ? 'Saving...' : 'Save Marks'}
+              <Save className="h-3.5 w-3.5 mr-1 shrink-0" />
+              {saving ? 'Saving...' : 'Marks'}
             </Button>
 
             {!isPublished ? (
@@ -2057,9 +2062,9 @@ export default function MarksEntryPage() {
                 size="sm"
                 variant="secondary"
                 onClick={() => setPublishDialogOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 font-semibold justify-center cursor-pointer"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 font-semibold justify-center px-2 cursor-pointer"
               >
-                <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+                <ShieldCheck className="h-3.5 w-3.5 mr-1 shrink-0" />
                 Finalize
               </Button>
             ) : (
@@ -2067,10 +2072,10 @@ export default function MarksEntryPage() {
                 size="sm"
                 variant="outline"
                 onClick={handleRevertToDraft}
-                className="text-xs h-9 font-medium justify-center"
+                className="text-xs h-9 font-medium justify-center px-2 cursor-pointer"
               >
-                <Lock className="h-3.5 w-3.5 mr-1" />
-                Revert to Draft
+                <Lock className="h-3.5 w-3.5 mr-1 shrink-0" />
+                Revert
               </Button>
             )}
           </div>
