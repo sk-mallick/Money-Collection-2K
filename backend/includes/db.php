@@ -4,144 +4,7 @@
  * Reads credentials from .env file
  */
 
-// Helper to output user-friendly error responses based on request context
-function mcms_render_fatal_error(string $title, string $message, array $steps = [], int $httpCode = 503): void {
-    http_response_code($httpCode);
-    
-    // Check if client expects JSON (API call)
-    $isApi = (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') !== false)
-          || (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
-          || (isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') !== false);
-
-    if ($isApi) {
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode([
-            'success' => false,
-            'error' => $message,
-            'title' => $title,
-            'needs_setup' => true
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-        exit;
-    }
-
-    // Interactive Browser page: Render styled dark-mode card instead of raw JSON
-    header('Content-Type: text/html; charset=utf-8');
-    $stepsHtml = '';
-    if (!empty($steps)) {
-        $stepsHtml = '<div class="steps"><div class="steps-title">Recommended Steps:</div><ul>';
-        foreach ($steps as $step) {
-            $stepsHtml .= '<li>' . $step . '</li>';
-        }
-        $stepsHtml .= '</ul></div>';
-    }
-
-    echo <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{$title} — MCMS</title>
-    <style>
-        :root {
-            --bg: #09090b;
-            --card: #18181b;
-            --border: #27272a;
-            --text: #f4f4f5;
-            --muted: #a1a1aa;
-            --primary: #3b82f6;
-            --danger: #f87171;
-            --danger-bg: rgba(248, 113, 113, 0.12);
-        }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            padding: 30px 16px;
-            background: var(--bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 80vh;
-        }
-        .card {
-            max-width: 520px;
-            width: 100%;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 28px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-        }
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--danger-bg);
-            color: var(--danger);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 14px;
-        }
-        h1 { font-size: 19px; margin: 0 0 8px; font-weight: 600; color: #fff; }
-        p { color: var(--muted); font-size: 13.5px; line-height: 1.55; margin: 0 0 18px; }
-        .steps {
-            background: #111113;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 14px 16px;
-            margin-bottom: 22px;
-            font-size: 13px;
-        }
-        .steps-title { font-weight: 600; color: #e4e4e7; margin-bottom: 6px; }
-        .steps ul { margin: 0; padding-left: 18px; color: var(--muted); }
-        .steps li { margin-bottom: 4px; }
-        .actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--primary);
-            color: #fff;
-            padding: 9px 16px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-        }
-        .btn:hover { opacity: 0.9; }
-        .btn-outline {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text);
-        }
-        .btn-outline:hover { background: rgba(255,255,255,0.05); }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <div class="badge">
-            <span style="width:6px;height:6px;border-radius:50%;background:var(--danger);display:inline-block;"></span>
-            Configuration Notice
-        </div>
-        <h1>{$title}</h1>
-        <p>{$message}</p>
-        {$stepsHtml}
-        <div class="actions">
-            <a href="setup.php" class="btn">Open Setup Wizard</a>
-            <a href="javascript:location.reload()" class="btn btn-outline">Reload Page</a>
-        </div>
-    </div>
-</body>
-</html>
-HTML;
-    exit;
-}
-
-// Load .env file with smart discovery and fallbacks
+// Load .env file with intelligent auto-creation and zero-crash fallbacks
 function load_env(bool $required = true): array {
     static $cache = null;
     if ($cache !== null) {
@@ -151,77 +14,63 @@ function load_env(bool $required = true): array {
     $rootDir = dirname(__DIR__, 2);
     $envFile = $rootDir . '/.env';
     $prodFile = $rootDir . '/.env.production';
+    $exampleFile = $rootDir . '/.env.example';
 
-    // 1. Smart Discovery: If .env is missing but .env.production exists, auto-adopt it
-    if (!file_exists($envFile) && file_exists($prodFile)) {
-        @copy($prodFile, $envFile);
-        if (file_exists($envFile)) {
-            // Adopted .env.production as .env successfully
+    // 1. Auto-create .env if missing from .env.production or .env.example
+    if (!file_exists($envFile)) {
+        if (file_exists($prodFile)) {
+            @copy($prodFile, $envFile);
+        } elseif (file_exists($exampleFile)) {
+            @copy($exampleFile, $envFile);
         } else {
-            // Read directly from .env.production if root is read-only
-            $envFile = $prodFile;
+            // Auto-generate fresh default .env
+            $defaultSecret = bin2hex(random_bytes(32));
+            $defaultContent = "# Auto-Generated Environment Configuration\n"
+                            . "APP_ENV=production\n"
+                            . "DB_HOST=localhost\n"
+                            . "DB_PORT=3306\n"
+                            . "DB_NAME=mcms\n"
+                            . "DB_USER=root\n"
+                            . "DB_PASS=\n"
+                            . "JWT_SECRET={$defaultSecret}\n"
+                            . "CORS_ORIGIN=*\n";
+            @file_put_contents($envFile, $defaultContent);
         }
     }
 
     $env = [];
 
-    // If .env is completely missing
-    if (!file_exists($envFile)) {
-        if (!$required || defined('MCMS_SETUP')) {
-            return [];
+    // Parse .env if file is readable
+    $targetFile = file_exists($envFile) ? $envFile : (file_exists($prodFile) ? $prodFile : null);
+
+    if ($targetFile && file_exists($targetFile)) {
+        $lines = @file($targetFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($lines !== false) {
+            foreach ($lines as $line) {
+                if (strpos(trim($line), '#') === 0) continue;
+                if (strpos($line, '=') === false) continue;
+                list($key, $value) = array_map('trim', explode('=', $line, 2));
+                $env[$key] = $value;
+            }
         }
-
-        mcms_render_fatal_error(
-            'Environment Configuration Missing',
-            'The environment configuration file (<code>.env</code>) was not found on this server.',
-            [
-                'If you just uploaded to InfinityFree or cPanel, visit the <a href="setup.php" style="color:var(--primary);text-decoration:underline;">Setup Wizard</a> to configure your database.',
-                'Alternatively, rename <code>.env.production</code> to <code>.env</code> via FTP or File Manager.',
-                'Ensure your database credentials match your MySQL server.'
-            ]
-        );
     }
 
-    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue;
-        if (strpos($line, '=') === false) continue;
-        list($key, $value) = array_map('trim', explode('=', $line, 2));
-        $env[$key] = $value;
-    }
+    // 2. Guarantee robust defaults so the system NEVER crashes on missing variables
+    $env['APP_ENV']     = $env['APP_ENV'] ?? 'production';
+    $env['DB_HOST']     = $env['DB_HOST'] ?? 'localhost';
+    $env['DB_PORT']     = $env['DB_PORT'] ?? '3306';
+    $env['DB_NAME']     = $env['DB_NAME'] ?? 'mcms';
+    $env['DB_USER']     = $env['DB_USER'] ?? 'root';
+    $env['DB_PASS']     = $env['DB_PASS'] ?? '';
+    $env['CORS_ORIGIN'] = $env['CORS_ORIGIN'] ?? '*';
 
-    // Auto-generate strong JWT_SECRET if missing or too short
+    // 3. Ensure a strong 64-char JWT_SECRET always exists
     if (empty($env['JWT_SECRET']) || strlen($env['JWT_SECRET']) < 32 || stripos($env['JWT_SECRET'], 'CHANGE_ME') !== false) {
-        $generatedSecret = bin2hex(random_bytes(32)); // 64 chars
+        $generatedSecret = bin2hex(random_bytes(32));
         $env['JWT_SECRET'] = $generatedSecret;
         if (file_exists($envFile) && is_writable($envFile)) {
             @file_put_contents($envFile, "\n# Auto-generated secure JWT secret\nJWT_SECRET={$generatedSecret}\n", FILE_APPEND);
         }
-    }
-
-    // Check essential DB keys
-    $requiredKeys = ['DB_HOST', 'DB_NAME', 'DB_USER'];
-    $missing = [];
-    foreach ($requiredKeys as $key) {
-        if (!isset($env[$key]) || $env[$key] === '') {
-            $missing[] = $key;
-        }
-    }
-
-    if (!empty($missing)) {
-        if (!$required || defined('MCMS_SETUP')) {
-            $env['_missing_keys'] = $missing;
-            return $env;
-        }
-
-        mcms_render_fatal_error(
-            'Incomplete Database Configuration',
-            'Missing required configuration values in <code>.env</code>: <strong>' . implode(', ', $missing) . '</strong>.',
-            [
-                'Open <a href="setup.php" style="color:var(--primary);text-decoration:underline;">setup.php</a> to fill in and test your database connection.',
-                'Make sure your host, database name, and username are correct.'
-            ]
-        );
     }
 
     $cache = $env;
@@ -299,24 +148,37 @@ function get_db(): PDO {
             if (function_exists('write_log')) {
                 write_log('error', 'Database connection failed', ['error' => $e->getMessage(), 'host' => $host, 'db' => $dbname]);
             }
-            http_response_code(500);
+            
+            $isApi = (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') !== false)
+                  || (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+
+            if (!$isApi && file_exists(dirname(__DIR__, 2) . '/setup.php')) {
+                header('Location: setup.php');
+                exit;
+            }
+
+            http_response_code(503);
             header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['success' => false, 'error' => 'Database connection failed: ' . $e->getMessage()]);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Database connection failed. Please verify credentials in setup.php.',
+                'details' => $e->getMessage()
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
             exit;
         }
     }
 
-    // Check if tables exist. If empty database, automatically import schema.sql
+    // Check if tables exist. If empty database, automatically import migrate.sql
     try {
         $stmt = $pdo->query("SHOW TABLES LIKE 'settings'");
         $settingsExists = $stmt->rowCount() > 0;
         
         if (!$settingsExists) {
-            $schemaPath = __DIR__ . '/../database/schema.sql';
+            $schemaPath = __DIR__ . '/../database/migrate.sql';
             if (file_exists($schemaPath)) {
                 $sql = file_get_contents($schemaPath);
                 
-                // Strip CREATE DATABASE / USE statements from schema.sql to run within currently selected database context safely
+                // Strip CREATE DATABASE / USE statements if present to run within currently selected database context safely
                 $lines = explode("\n", $sql);
                 $filteredLines = [];
                 foreach ($lines as $line) {
