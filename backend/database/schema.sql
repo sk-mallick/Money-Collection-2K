@@ -139,6 +139,7 @@ CREATE TABLE `receipts` (
   PRIMARY KEY (`id`),
   KEY `idx_receipts_student` (`student_id`),
   KEY `idx_receipts_generated` (`generated_on`),
+  KEY `idx_receipts_year_student` (`academic_year`, `student_id`),
   CONSTRAINT `fk_receipt_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

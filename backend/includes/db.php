@@ -208,6 +208,16 @@ function get_db(): PDO {
         }
     }
 
+    // Self-healing: ensure composite index on receipts(academic_year, student_id) for multi-year scaling
+    try {
+        $idxCheck = $pdo->query("SHOW INDEX FROM `receipts` WHERE Key_name = 'idx_receipts_year_student'");
+        if ($idxCheck->rowCount() === 0) {
+            $pdo->exec("CREATE INDEX `idx_receipts_year_student` ON `receipts` (`academic_year`, `student_id`)");
+        }
+    } catch (Exception $idxEx) {
+        // Suppress if already exists or table empty
+    }
+
     // Self-healing: auto-import Report Card tables if they don't exist
     try {
         $rcCheck = $pdo->query("SHOW TABLES LIKE 'rc_subjects'");
