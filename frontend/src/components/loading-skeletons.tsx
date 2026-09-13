@@ -1278,3 +1278,83 @@ export function ResultSettingsPageLoading() {
     </div>
   );
 }
+
+// 16. Module Selection Page loading state
+export function ModuleSelectionPageLoading() {
+  return (
+    <div className="page-enter min-h-svh flex flex-col items-center justify-center bg-background px-4 py-8 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="mb-8 sm:mb-10 text-center flex flex-col items-center">
+        <Skeleton className="h-11 w-11 sm:h-13 sm:w-13 rounded-xl mb-3" />
+        <Skeleton className="h-7 sm:h-8 w-44 sm:w-56 mb-2" />
+        <Skeleton className="h-4 w-36 sm:w-44" />
+      </div>
+
+      {/* Module Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full max-w-2xl">
+        {/* Card 1 — MCMS */}
+        <div className="flex flex-col items-start text-left rounded-2xl border border-border/70 bg-card p-6 sm:p-7 min-h-[220px]">
+          <Skeleton className="h-12 w-12 sm:h-13 sm:w-13 rounded-xl mb-4 bg-blue-500/20" />
+          <Skeleton className="h-6 w-20 sm:w-24 mb-1.5" />
+          <Skeleton className="h-4 w-48 sm:w-56 mb-6" />
+          <div className="flex items-center gap-1.5 mt-auto pt-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-3.5 w-3.5 rounded" />
+          </div>
+        </div>
+
+        {/* Card 2 — Student Report Cards */}
+        <div className="flex flex-col items-start text-left rounded-2xl border border-border/70 bg-card p-6 sm:p-7 min-h-[220px]">
+          <Skeleton className="h-12 w-12 sm:h-13 sm:w-13 rounded-xl mb-4 bg-emerald-500/20" />
+          <Skeleton className="h-6 w-36 sm:w-44 mb-1.5" />
+          <Skeleton className="h-4 w-52 sm:w-60 mb-6" />
+          <div className="flex items-center gap-1.5 mt-auto pt-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-3.5 w-3.5 rounded" />
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <Skeleton className="mt-8 sm:mt-10 h-3 w-52 opacity-40" />
+    </div>
+  );
+}
+
+// 17. Login Page loading state
+export function LoginPageLoading() {
+  return (
+    <div className="page-enter relative flex min-h-svh items-center justify-center overflow-hidden bg-zinc-950 px-6 py-12">
+      {/* Decorative blurred gradient backgrounds */}
+      <div className="absolute -left-40 -top-40 h-[600px] w-[600px] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none" />
+      <div className="absolute -right-40 -bottom-40 h-[600px] w-[600px] rounded-full bg-purple-500/10 blur-[120px] pointer-events-none" />
+
+      {/* Glassmorphic Login Card */}
+      <div className="relative z-10 w-full max-w-[400px] rounded-2xl border border-white/5 bg-zinc-900/50 p-8 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        {/* Logo & Header */}
+        <div className="flex flex-col items-center mb-8">
+          <Skeleton className="h-14 w-14 rounded-xl border border-white/10 mb-4 bg-zinc-800" />
+          <Skeleton className="h-6 w-20 mb-1.5 bg-zinc-800" />
+          <Skeleton className="h-3.5 w-36 bg-zinc-800/70" />
+        </div>
+
+        {/* Form fields */}
+        <div className="space-y-5">
+          <div className="space-y-1.5">
+            <Skeleton className="h-3.5 w-16 bg-zinc-800/70" />
+            <Skeleton className="h-10 w-full rounded-md bg-zinc-850/40 border border-zinc-700/40" />
+          </div>
+
+          <div className="space-y-1.5">
+            <Skeleton className="h-3.5 w-16 bg-zinc-800/70" />
+            <Skeleton className="h-10 w-full rounded-md bg-zinc-850/40 border border-zinc-700/40" />
+          </div>
+
+          <div className="pt-2">
+            <Skeleton className="h-10 w-full rounded-md bg-indigo-600/30" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

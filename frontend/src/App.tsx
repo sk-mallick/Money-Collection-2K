@@ -9,6 +9,8 @@ import { Loader2 } from 'lucide-react';
 import { Suspense, lazy } from 'react';
 import { 
   PageLoading, 
+  ModuleSelectionPageLoading,
+  LoginPageLoading,
   CollectPageLoading, 
   StudentsPageLoading, 
   ReceiptsPageLoading, 
@@ -29,6 +31,9 @@ import { getApiBase } from '@/lib/constants';
 function DynamicSuspenseFallback() {
   const path = window.location.pathname.toLowerCase();
   
+  if (path.includes('/login')) {
+    return <LoginPageLoading />;
+  }
   if (path.includes('/reports/dashboard') || path.endsWith('/reports') || path.endsWith('/reports/')) {
     return <ReportsDashboardLoading />;
   }
@@ -70,6 +75,17 @@ function DynamicSuspenseFallback() {
   }
   if (path.includes('/about')) {
     return <AboutPageLoading />;
+  }
+  
+  // Root / Module Selection fallback
+  const cleanPath = path.replace(/\/+$/, '');
+  if (
+    cleanPath === '' || 
+    cleanPath === '/' || 
+    cleanPath.endsWith('/money collection 2k') || 
+    cleanPath.endsWith('/money%20collection%202k')
+  ) {
+    return <ModuleSelectionPageLoading />;
   }
   
   return <PageLoading />;
@@ -179,7 +195,7 @@ export default function App() {
           <Route
             path="/login"
             element={
-              <Suspense fallback={<DynamicSuspenseFallback />}>
+              <Suspense fallback={<LoginPageLoading />}>
                 <LoginPage />
               </Suspense>
             }
@@ -191,7 +207,7 @@ export default function App() {
             <Route
               path="/"
               element={
-                <Suspense fallback={<PageLoading />}>
+                <Suspense fallback={<ModuleSelectionPageLoading />}>
                   <ModuleSelectionPage />
                 </Suspense>
               }
