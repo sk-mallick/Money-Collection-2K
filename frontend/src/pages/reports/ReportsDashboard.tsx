@@ -60,7 +60,7 @@ export default function ReportsDashboard() {
   ];
 
   return (
-    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
       {/* Page Header */}
       <div className="border-b pb-3.5 sm:pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">

@@ -516,7 +516,7 @@ export default function StudentReportsPage() {
   // If a student is selected -> Show Detail View ("Inside")
   if (selectedStudentId) {
     return (
-      <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
+      <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
         {/* ─── TOP STREAMLINED RESPONSIVE TOOLBAR ─── */}
         <div className="no-print flex items-center justify-between gap-2.5 sm:gap-4 border-b pb-3.5">
           {/* Left: Responsive Header: Only ID on mobile (< sm), ID + Name on desktop */}

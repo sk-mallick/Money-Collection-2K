@@ -1,29 +1,28 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { fetchBlankSheet, type BlankSheetData } from '@/lib/reports-api';
 import { fetchGroups, fetchSettings } from '@/lib/api';
 import type { Group } from '@/lib/constants';
-import { MONTH_NAMES, MONTH_CODES } from '@/lib/constants';
+import { MONTH_NAMES, MONTH_CODES, MONTH_SHORT } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 import {
   Printer,
   Download,
   FileText,
   ChevronLeft,
   ChevronRight,
-  Filter,
-  Check,
+  ChevronDown,
 } from 'lucide-react';
 import {
   generateBlankMarksSheetPDF,
@@ -45,10 +44,6 @@ export default function BlankMarksSheetPage() {
   // Preview navigation state
   const [previewGroupIndex, setPreviewGroupIndex] = useState(0);
   const [previewPageIndex, setPreviewPageIndex] = useState(0);
-
-  // Multi-group selector modal
-  const [isMultiSelectOpen, setIsMultiSelectOpen] = useState(false);
-  const [tempSelectedGroupIds, setTempSelectedGroupIds] = useState<string[]>([]);
 
   // A4 Landscape scale reference (1123px width x 794px height at 96 DPI)
   const a4ContainerRef = useRef<HTMLDivElement>(null);
@@ -176,39 +171,38 @@ export default function BlankMarksSheetPage() {
 
   const totalPagesForActiveGroup = Math.max(1, Math.ceil(activeStudentMap.maxN / 25));
 
-  // Group selector modes: "all" vs specific group
-  const handleGroupSelectChange = (val: string) => {
-    if (val === 'all') {
-      setSelectedGroupIds(groups.map((g) => g.id));
-      setPreviewGroupIndex(0);
-      setPreviewPageIndex(0);
-    } else {
-      setSelectedGroupIds([val]);
-      setPreviewGroupIndex(0);
-      setPreviewPageIndex(0);
-    }
-  };
-
-  const openMultiSelectDialog = () => {
-    setTempSelectedGroupIds([...selectedGroupIds]);
-    setIsMultiSelectOpen(true);
-  };
-
-  const toggleGroupInTemp = (gId: string) => {
-    setTempSelectedGroupIds((prev) =>
-      prev.includes(gId) ? prev.filter((id) => id !== gId) : [...prev, gId]
-    );
-  };
-
-  const handleApplyMultiSelect = () => {
-    if (tempSelectedGroupIds.length === 0) {
-      toast.error('Please select at least one group');
-      return;
-    }
-    setSelectedGroupIds(tempSelectedGroupIds);
+  // Group selection handlers
+  const selectAllGroups = () => {
+    setSelectedGroupIds(groups.map((g) => g.id));
     setPreviewGroupIndex(0);
     setPreviewPageIndex(0);
-    setIsMultiSelectOpen(false);
+  };
+
+  const selectSingleGroup = (gId: string) => {
+    setSelectedGroupIds([gId]);
+    setPreviewGroupIndex(0);
+    setPreviewPageIndex(0);
+  };
+
+  const toggleGroup = (gId: string) => {
+    setSelectedGroupIds((prev) => {
+      if (prev.includes(gId)) {
+        if (prev.length <= 1) return prev; // Keep at least one selected
+        return prev.filter((id) => id !== gId);
+      } else {
+        return [...prev, gId];
+      }
+    });
+    setPreviewGroupIndex(0);
+    setPreviewPageIndex(0);
+  };
+
+  const handleDesktopGroupClick = (gId: string, e: React.MouseEvent) => {
+    if (isAllGroupsSelected) {
+      selectSingleGroup(gId);
+      return;
+    }
+    toggleGroup(gId);
   };
 
   // Helper to get group items for PDF generator
@@ -320,22 +314,16 @@ export default function BlankMarksSheetPage() {
     }
   };
 
-  // Determine current dropdown value
+  // State helper for group selection
   const isAllGroupsSelected =
     groups.length > 0 && selectedGroupIds.length === groups.length;
-  const isSingleGroupSelected = selectedGroupIds.length === 1;
-  const dropdownValue = isAllGroupsSelected
-    ? 'all'
-    : isSingleGroupSelected
-    ? selectedGroupIds[0]
-    : 'custom';
 
   return (
-    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
-      {/* ─── TOP STREAMLINED RESPONSIVE TOOLBAR ─── */}
-      <div className="no-print space-y-3.5 border-b pb-3.5 sm:pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div className="min-w-0">
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
+      {/* ─── PAGE HEADER (WITH BOTTOM DIVIDER LINE) ─── */}
+      <div className="no-print border-b pb-3 sm:pb-3.5">
+        <div className="flex items-center sm:items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
               Offline Blank Marks Entry Sheet
             </h1>
@@ -344,7 +332,7 @@ export default function BlankMarksSheetPage() {
                 A4 Landscape printable sheets with 25 fixed rows per page for classroom marks entry
               </span>
               <span className="sm:hidden">
-                A4 Landscape printable blank sheets with 25 fixed rows
+                A4 printable marks sheets
               </span>
             </p>
           </div>
@@ -368,20 +356,20 @@ export default function BlankMarksSheetPage() {
               <span>{isPrinting ? 'Printing...' : 'Print'}</span>
             </Button>
 
-            {/* Download Button */}
+            {/* Download Button (Icon-only on mobile, full text on desktop) */}
             <Button
               size="sm"
               onClick={handleDownloadPDF}
               disabled={selectedGroupIds.length === 0 || loading || isDownloading}
-              className="h-9 gap-1.5 px-3 sm:px-3.5 text-xs sm:text-sm bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer rounded-md"
+              className="h-8 w-8 sm:h-9 sm:w-auto p-0 sm:px-3.5 text-xs sm:text-sm bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer rounded-md shrink-0 flex items-center justify-center gap-1.5"
               title="Download A4 Landscape PDF for selected groups"
             >
               {isDownloading ? (
                 <div className="h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               ) : (
-                <Download className="h-3.5 w-3.5" />
+                <Download className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
               )}
-              <span>
+              <span className="hidden sm:inline">
                 {isDownloading
                   ? 'Downloading...'
                   : selectedGroupIds.length > 1
@@ -391,148 +379,296 @@ export default function BlankMarksSheetPage() {
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Filter Controls Row */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-          {/* Academic Year */}
-          <Select value={academicYear} onValueChange={setAcademicYear}>
-            <SelectTrigger className="w-[125px] sm:w-[135px] text-xs sm:text-sm h-9 bg-card shadow-2xs">
-              <SelectValue placeholder="Academic Year" />
-            </SelectTrigger>
-            <SelectContent>
-              {yearOptions.map((y) => (
-                <SelectItem key={y} value={y} className="text-xs sm:text-sm">
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Month */}
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="w-[125px] sm:w-[135px] text-xs sm:text-sm h-9 bg-card shadow-2xs">
-              <SelectValue placeholder="Month" />
-            </SelectTrigger>
-            <SelectContent>
-              {MONTH_CODES.map((m) => (
-                <SelectItem key={m} value={m} className="text-xs sm:text-sm">
-                  {MONTH_NAMES[m]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Group Selector */}
-          <Select value={dropdownValue} onValueChange={handleGroupSelectChange}>
-            <SelectTrigger className="w-[180px] sm:w-[230px] text-xs sm:text-sm h-9 bg-card shadow-2xs">
-              <SelectValue placeholder="Select Group">
-                {isAllGroupsSelected
-                  ? `All Groups (${groups.length})`
-                  : isSingleGroupSelected
-                  ? `Group ${selectedGroupIds[0]} — ${
-                      groups.find((g) => g.id === selectedGroupIds[0])?.class || ''
-                    }`
-                  : `${selectedGroupIds.length} Groups Selected`}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs sm:text-sm font-semibold">
-                All Groups ({groups.length} Groups)
+      {/* ─── FILTER CONTROLS TOOLBAR (DESKTOP: DIRECT GROUP TOGGLE BUTTONS STRIP) ─── */}
+      <div className="no-print hidden sm:flex sm:flex-wrap sm:items-center sm:gap-2.5">
+        {/* Academic Year */}
+        <Select value={academicYear} onValueChange={setAcademicYear}>
+          <SelectTrigger className="w-[125px] sm:w-[130px] text-xs sm:text-sm h-9 bg-card shadow-2xs hover:bg-accent/30 hover:border-primary/40 transition-colors cursor-pointer">
+            <SelectValue placeholder="Academic Year" />
+          </SelectTrigger>
+          <SelectContent>
+            {yearOptions.map((y) => (
+              <SelectItem key={y} value={y} className="text-xs sm:text-sm cursor-pointer">
+                {y}
               </SelectItem>
-              {groups.map((g) => (
-                <SelectItem key={g.id} value={g.id} className="text-xs sm:text-sm">
-                  Group {g.id} — {g.class} ({g.category})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            ))}
+          </SelectContent>
+        </Select>
 
-          {/* Custom Multi-Group Select Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={openMultiSelectDialog}
-            className="h-9 px-2.5 sm:px-3 gap-1.5 text-xs sm:text-sm shadow-2xs cursor-pointer hover:bg-muted font-medium"
-            title="Choose specific groups"
+        {/* Month */}
+        <Select value={month} onValueChange={setMonth}>
+          <SelectTrigger className="w-[125px] sm:w-[130px] text-xs sm:text-sm h-9 bg-card shadow-2xs hover:bg-accent/30 hover:border-primary/40 transition-colors cursor-pointer">
+            <SelectValue placeholder="Month" />
+          </SelectTrigger>
+          <SelectContent>
+            {MONTH_CODES.map((m) => (
+              <SelectItem key={m} value={m} className="text-xs sm:text-sm cursor-pointer">
+                {MONTH_NAMES[m]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Desktop Direct Group Toggle Buttons in a Single Line */}
+        <div className="flex items-center gap-0.5 p-1 bg-muted/40 dark:bg-muted/25 border border-border/80 rounded-lg shadow-2xs h-9">
+          <button
+            type="button"
+            onClick={selectAllGroups}
+            className={cn(
+              "h-7 px-2.5 text-xs rounded-md transition-all cursor-pointer select-none flex items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0",
+              isAllGroupsSelected
+                ? "bg-primary text-primary-foreground shadow-xs font-bold hover:bg-primary/90"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/70 font-semibold"
+            )}
+            title="Select all groups"
           >
-            <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="hidden sm:inline">Select Specific Groups</span>
-            <span className="sm:hidden">Specific</span>
-            {selectedGroupIds.length > 0 && !isAllGroupsSelected && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-bold">
-                {selectedGroupIds.length}
-              </Badge>
-            )}
-          </Button>
-
-          {/* Preview Navigation Switcher (When Multiple Groups or Multiple Pages) */}
-          <div className="ml-auto flex items-center gap-2">
-            {selectedGroupIds.length > 1 && (
-              <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-9">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 px-2.5 rounded-none cursor-pointer text-xs font-semibold"
-                  onClick={() => {
-                    setPreviewGroupIndex((p) => Math.max(0, p - 1));
-                    setPreviewPageIndex(0);
-                  }}
-                  disabled={previewGroupIndex <= 0}
-                  title="Previous Group"
+            All
+          </button>
+          <div className="h-4 w-px bg-border/80 mx-1 shrink-0" />
+          <div className="flex items-center gap-0.5">
+            {groups.map((g) => {
+              const isSelected = !isAllGroupsSelected && selectedGroupIds.includes(g.id);
+              return (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={(e) => handleDesktopGroupClick(g.id, e)}
+                  className={cn(
+                    "h-7 min-w-[28px] px-2 text-xs rounded-md transition-all cursor-pointer select-none flex items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0",
+                    isSelected
+                      ? "bg-primary text-primary-foreground shadow-xs font-bold hover:bg-primary/90"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/70 font-semibold"
+                  )}
+                  title={`Group ${g.id} — ${g.class} (${g.category})`}
                 >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                  <span className="hidden md:inline ml-0.5">Prev</span>
-                </Button>
-                <span className="text-[11px] sm:text-xs font-bold text-foreground px-2.5 border-x leading-9 whitespace-nowrap bg-muted/20">
-                  Group {activeGroupId} ({previewGroupIndex + 1}/{selectedGroupIds.length})
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 px-2.5 rounded-none cursor-pointer text-xs font-semibold"
-                  onClick={() => {
-                    setPreviewGroupIndex((p) => Math.min(selectedGroupIds.length - 1, p + 1));
-                    setPreviewPageIndex(0);
-                  }}
-                  disabled={previewGroupIndex >= selectedGroupIds.length - 1}
-                  title="Next Group"
-                >
-                  <span className="hidden md:inline mr-0.5">Next</span>
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            )}
-
-            {totalPagesForActiveGroup > 1 && (
-              <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-9">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 px-2 rounded-none cursor-pointer text-xs"
-                  onClick={() => setPreviewPageIndex((p) => Math.max(0, p - 1))}
-                  disabled={previewPageIndex <= 0}
-                  title="Previous Page"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </Button>
-                <span className="text-[11px] sm:text-xs font-bold text-foreground px-2.5 border-x leading-9 whitespace-nowrap bg-muted/20">
-                  Page {previewPageIndex + 1}/{totalPagesForActiveGroup}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 px-2 rounded-none cursor-pointer text-xs"
-                  onClick={() => setPreviewPageIndex((p) => Math.min(totalPagesForActiveGroup - 1, p + 1))}
-                  disabled={previewPageIndex >= totalPagesForActiveGroup - 1}
-                  title="Next Page"
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            )}
+                  {g.id}
+                </button>
+              );
+            })}
           </div>
         </div>
+
+        {/* Preview Navigation Switcher (When Multiple Groups or Multiple Pages) */}
+        <div className="ml-auto flex items-center gap-2">
+          {selectedGroupIds.length > 1 && (
+            <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-9">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 px-2.5 rounded-none cursor-pointer text-xs font-semibold hover:bg-accent hover:text-accent-foreground transition-colors"
+                onClick={() => {
+                  setPreviewGroupIndex((p) => Math.max(0, p - 1));
+                  setPreviewPageIndex(0);
+                }}
+                disabled={previewGroupIndex <= 0}
+                title="Previous Group"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                <span className="hidden md:inline ml-0.5">Prev</span>
+              </Button>
+              <span className="text-[11px] sm:text-xs font-bold text-foreground px-2.5 border-x leading-9 whitespace-nowrap bg-muted/20">
+                Group {activeGroupId} ({previewGroupIndex + 1}/{selectedGroupIds.length})
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 px-2.5 rounded-none cursor-pointer text-xs font-semibold hover:bg-accent hover:text-accent-foreground transition-colors"
+                onClick={() => {
+                  setPreviewGroupIndex((p) => Math.min(selectedGroupIds.length - 1, p + 1));
+                  setPreviewPageIndex(0);
+                }}
+                disabled={previewGroupIndex >= selectedGroupIds.length - 1}
+                title="Next Group"
+              >
+                <span className="hidden md:inline mr-0.5">Next</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+
+          {totalPagesForActiveGroup > 1 && (
+            <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-9">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 px-2 rounded-none cursor-pointer text-xs hover:bg-accent hover:text-accent-foreground transition-colors"
+                onClick={() => setPreviewPageIndex((p) => Math.max(0, p - 1))}
+                disabled={previewPageIndex <= 0}
+                title="Previous Page"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <span className="text-[11px] sm:text-xs font-bold text-foreground px-2.5 border-x leading-9 whitespace-nowrap bg-muted/20">
+                Page {previewPageIndex + 1}/{totalPagesForActiveGroup}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 px-2 rounded-none cursor-pointer text-xs hover:bg-accent hover:text-accent-foreground transition-colors"
+                onClick={() => setPreviewPageIndex((p) => Math.min(totalPagesForActiveGroup - 1, p + 1))}
+                disabled={previewPageIndex >= totalPagesForActiveGroup - 1}
+                title="Next Page"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* ─── FILTER CONTROLS TOOLBAR (MOBILE: 3 CONTROLS IN 1 LINE WITH 3-LETTER MONTH & GROUP CHECKBOX TOGGLE) ─── */}
+      <div className="no-print grid sm:hidden grid-cols-3 gap-1.5">
+        {/* Academic Year */}
+        <Select value={academicYear} onValueChange={setAcademicYear}>
+          <SelectTrigger size="sm" className="w-full text-xs h-8 bg-card shadow-2xs px-2 truncate hover:bg-accent/30 hover:border-primary/40 transition-colors cursor-pointer">
+            <SelectValue placeholder="Year" />
+          </SelectTrigger>
+          <SelectContent>
+            {yearOptions.map((y) => (
+              <SelectItem key={y} value={y} className="text-xs cursor-pointer">
+                {y}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Month (3-letter codes) */}
+        <Select value={month} onValueChange={setMonth}>
+          <SelectTrigger size="sm" className="w-full text-xs h-8 bg-card shadow-2xs px-2 font-semibold truncate hover:bg-accent/30 hover:border-primary/40 transition-colors cursor-pointer">
+            <SelectValue>{MONTH_SHORT[month] || month}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {MONTH_CODES.map((m) => (
+              <SelectItem key={m} value={m} className="text-xs cursor-pointer">
+                <span className="font-bold mr-1.5">{MONTH_SHORT[m]}</span>
+                <span className="text-muted-foreground text-[11px]">({MONTH_NAMES[m]})</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Group Dropdown with Tick (✓) Checkbox Toggles */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs h-8 bg-card shadow-2xs px-2 flex items-center justify-between truncate cursor-pointer font-semibold hover:bg-accent/30 hover:border-primary/40 transition-colors"
+            >
+              <span className="truncate">
+                {isAllGroupsSelected
+                  ? 'All Groups'
+                  : selectedGroupIds.length === 1
+                  ? `Group ${selectedGroupIds[0]}`
+                  : `${selectedGroupIds.length} Groups`}
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0 ml-0.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 max-h-72 overflow-y-auto">
+            <div className="flex items-center justify-between px-2 py-1.5 border-b text-[11px] font-semibold text-muted-foreground">
+              <span>Select Groups</span>
+              <button
+                type="button"
+                onClick={isAllGroupsSelected ? () => selectSingleGroup(groups[0]?.id || 'A') : selectAllGroups}
+                className="text-primary hover:underline text-[11px] font-bold cursor-pointer"
+              >
+                {isAllGroupsSelected ? 'Single' : 'Select All'}
+              </button>
+            </div>
+            <DropdownMenuCheckboxItem
+              checked={isAllGroupsSelected}
+              onCheckedChange={selectAllGroups}
+              className="text-xs font-bold cursor-pointer"
+            >
+              All Groups ({groups.length})
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
+            {groups.map((g) => (
+              <DropdownMenuCheckboxItem
+                key={g.id}
+                checked={selectedGroupIds.includes(g.id)}
+                onCheckedChange={() => toggleGroup(g.id)}
+                className="text-xs cursor-pointer"
+              >
+                <div className="flex flex-col">
+                  <span className="font-bold">Group {g.id}</span>
+                  <span className="text-[10px] text-muted-foreground">{g.class} ({g.category})</span>
+                </div>
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Mobile Preview Switchers Strip (When Multiple Groups/Pages on Mobile) */}
+      {(selectedGroupIds.length > 1 || totalPagesForActiveGroup > 1) && (
+        <div className="no-print flex sm:hidden items-center justify-between gap-1.5 text-xs">
+          {selectedGroupIds.length > 1 && (
+            <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-8 flex-1 justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                onClick={() => {
+                  setPreviewGroupIndex((p) => Math.max(0, p - 1));
+                  setPreviewPageIndex(0);
+                }}
+                disabled={previewGroupIndex <= 0}
+                title="Previous Group"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <span className="text-[10.5px] font-bold text-foreground px-1 truncate">
+                Group {activeGroupId} ({previewGroupIndex + 1}/{selectedGroupIds.length})
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                onClick={() => {
+                  setPreviewGroupIndex((p) => Math.min(selectedGroupIds.length - 1, p + 1));
+                  setPreviewPageIndex(0);
+                }}
+                disabled={previewGroupIndex >= selectedGroupIds.length - 1}
+                title="Next Group"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+
+          {totalPagesForActiveGroup > 1 && (
+            <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-8">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                onClick={() => setPreviewPageIndex((p) => Math.max(0, p - 1))}
+                disabled={previewPageIndex <= 0}
+                title="Previous Page"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              <span className="text-[10.5px] font-bold text-foreground px-2 border-x leading-8">
+                {previewPageIndex + 1}/{totalPagesForActiveGroup}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                onClick={() => setPreviewPageIndex((p) => Math.min(totalPagesForActiveGroup - 1, p + 1))}
+                disabled={previewPageIndex >= totalPagesForActiveGroup - 1}
+                title="Next Page"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── PREVIEW DISPLAY AREA (RESPONSIVE A4 LANDSCAPE, NO HORIZONTAL SCROLL) ─── */}
       {loading && !activeSheetData ? (
@@ -547,17 +683,14 @@ export default function BlankMarksSheetPage() {
         </Card>
       ) : (
         <div className="w-full flex flex-col items-center space-y-2">
-          {/* Document Preview Info Strip (Desktop & Tablet) */}
-          <div className="w-full flex items-center justify-between text-xs text-muted-foreground px-1">
+          {/* Document Preview Info Strip (Centered) */}
+          <div className="w-full flex items-center justify-center text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5 font-medium">
               <FileText className="h-3.5 w-3.5 text-primary" />
               <span>
                 A4 Landscape Preview — Group {activeSheetData.group?.id}
                 {activeSheetData.group?.class ? ` (${activeSheetData.group?.class})` : ''}
               </span>
-            </span>
-            <span className="font-mono text-[11px] bg-muted/40 px-2 py-0.5 rounded-md border text-muted-foreground">
-              {Math.round(a4Scale * 100)}% Preview Scale
             </span>
           </div>
 
@@ -726,84 +859,6 @@ export default function BlankMarksSheetPage() {
           </div>
         </div>
       )}
-
-      {/* ─── MULTI-GROUP SELECTION DIALOG ─── */}
-      <Dialog open={isMultiSelectOpen} onOpenChange={setIsMultiSelectOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-base font-bold">Select Groups to Include</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">
-                {tempSelectedGroupIds.length} of {groups.length} groups selected
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs px-2"
-                  onClick={() => setTempSelectedGroupIds(groups.map((g) => g.id))}
-                >
-                  Select All
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs px-2 text-muted-foreground"
-                  onClick={() => setTempSelectedGroupIds([])}
-                >
-                  Clear All
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1 border rounded-lg">
-              {groups.map((g) => {
-                const isChecked = tempSelectedGroupIds.includes(g.id);
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => toggleGroupInTemp(g.id)}
-                    className={`flex items-center justify-between p-2.5 rounded-md border text-left cursor-pointer transition-colors text-xs ${
-                      isChecked
-                        ? 'border-primary bg-primary/5 text-primary font-semibold'
-                        : 'border-border hover:bg-muted/50 text-foreground'
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <div className="font-bold">Group {g.id}</div>
-                      <div className="text-[10.5px] text-muted-foreground truncate">
-                        {g.class} ({g.category})
-                      </div>
-                    </div>
-                    {isChecked && <Check className="h-4 w-4 text-primary shrink-0 ml-1.5" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <DialogFooter className="flex gap-2 sm:justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsMultiSelectOpen(false)}
-              className="text-xs"
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleApplyMultiSelect}
-              className="text-xs"
-              disabled={tempSelectedGroupIds.length === 0}
-            >
-              Apply ({tempSelectedGroupIds.length} Groups)
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

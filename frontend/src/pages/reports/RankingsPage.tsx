@@ -603,10 +603,10 @@ export default function RankingsPage() {
   };
 
   return (
-    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
-      {/* ─── TOP HEADER & ACTIONS ─── */}
-      <div className="no-print space-y-3.5 border-b pb-3.5">
-        <div className="flex flex-row items-end justify-between gap-3 w-full">
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
+      {/* ─── TOP HEADER & ACTIONS (WITH BOTTOM DIVIDER LINE ABOVE SEARCH BAR) ─── */}
+      <div className="no-print border-b pb-3 sm:pb-3.5">
+        <div className="flex flex-row items-center sm:items-end justify-between gap-3 w-full">
           <div className="min-w-0 flex-1 flex flex-col justify-end">
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
               Academic Rankings
@@ -730,8 +730,10 @@ export default function RankingsPage() {
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* ─── TOOLBAR ─── */}
+      {/* ─── TOOLBAR & SEARCH SECTION (BELOW THE DIVIDER LINE) ─── */}
+      <div className="no-print space-y-2.5">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full justify-between">
           {/* Search Input (flexible expanding) + Mobile Settings Button */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
