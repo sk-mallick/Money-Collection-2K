@@ -98,7 +98,7 @@ export function CollectPageLoading() {
   return (
     <div className="page-enter space-y-6 p-4 md:p-6">
       {/* Header */}
-      <div>
+      <div className="border-b pb-4">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="mt-2 h-4 w-60" />
       </div>
@@ -437,7 +437,7 @@ export function SettingsPageLoading() {
   return (
     <div className="page-enter space-y-6 p-4 md:p-6">
       {/* Header */}
-      <div>
+      <div className="border-b pb-4">
         <Skeleton className="h-8 w-28 sm:w-36" />
         <Skeleton className="mt-2 h-4 w-52 sm:w-72" />
       </div>
@@ -564,7 +564,7 @@ export function GroupsPageLoading() {
   return (
     <div className="space-y-6 text-left p-4 md:p-6">
       {/* Top Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-row items-center justify-between gap-4 border-b pb-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Groups</h1>
           <p className="text-muted-foreground text-sm">

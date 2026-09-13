@@ -188,7 +188,7 @@ export default function SettingsPage() {
 
   return (
     <div className="page-enter space-y-6 p-4 md:p-6 w-full">
-      <div>
+      <div className="border-b pb-4">
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-sm text-muted-foreground">Configure institute information, fees, and database operations</p>
       </div>

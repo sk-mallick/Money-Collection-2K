@@ -164,7 +164,7 @@ export default function GroupsPage() {
   return (
     <div className="page-enter space-y-6 text-left p-4 md:p-6 w-full">
       {/* Top Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-row items-center justify-between gap-4 border-b pb-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Groups</h1>
           <p className="text-muted-foreground text-sm">
