@@ -5,9 +5,9 @@ import { Button } from './button';
 interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  actionLabel: string;
+  title: React.ReactNode;
+  description: React.ReactNode;
+  actionLabel: React.ReactNode;
   onConfirm: () => void;
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
 }

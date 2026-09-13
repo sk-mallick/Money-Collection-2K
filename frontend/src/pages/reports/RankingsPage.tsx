@@ -347,13 +347,18 @@ export default function RankingsPage() {
 
   // Options for the single unified dynamic Class/Group dropdown
   const filterDropdownOptions = useMemo(() => {
-    const totalStudents = rankings.reduce((sum, b) => sum + b.students.length, 0);
-    const allLabel = rankingType === 'class' ? `All Classes (${totalStudents})` : `All Groups (${totalStudents})`;
+    const allLabel = 'All';
 
-    const items = rankings.map((r) => ({
-      value: r.key,
-      label: `${r.label} (${r.students.length})`,
-    }));
+    const items = rankings.map((r) => {
+      // Strip "Class " prefix and strip any trailing bracketed numbers e.g. "(2)"
+      const cleanLabel = rankingType === 'class'
+        ? r.label.replace(/^Class\s+/i, '').replace(/\s*\(\d+\)$/, '').trim()
+        : r.label.replace(/\s*\(\d+\)$/, '').trim();
+      return {
+        value: r.key,
+        label: cleanLabel,
+      };
+    });
 
     return [{ value: 'all', label: allLabel }, ...items];
   }, [rankings, rankingType]);
@@ -361,7 +366,7 @@ export default function RankingsPage() {
   // Selected filter label for compact display
   const selectedFilterOptionLabel = useMemo(() => {
     const opt = filterDropdownOptions.find((f) => f.value === selectedFilterKey);
-    return opt ? opt.label : selectedFilterKey === 'all' ? 'All' : selectedFilterKey;
+    return opt ? opt.label : selectedFilterKey === 'all' ? 'All' : selectedFilterKey.replace(/^Class\s+/i, '');
   }, [filterDropdownOptions, selectedFilterKey]);
 
   // Available months with rankings in the current academic year
@@ -380,26 +385,13 @@ export default function RankingsPage() {
     }));
   }, [periods]);
 
-  // Enhanced month dropdown options showing evaluated student count
+  // Month dropdown options
   const monthDropdownOptions = useMemo(() => {
-    return RANKING_MONTH_CODES.map((m) => {
-      const mPeriods = periods.filter((p) => p.month === m);
-      const totalRanked = mPeriods.reduce((sum, p) => sum + (Number(p.ranked_count) || 0), 0);
-      const hasPublished = mPeriods.some((p) => p.status === 'Published' || p.status === 'Completed');
-
-      let suffix = '';
-      if (totalRanked > 0) {
-        suffix = ` (${totalRanked})`;
-      } else if (mPeriods.length > 0) {
-        suffix = hasPublished ? ' (Completed)' : ' (Draft)';
-      }
-
-      return {
-        label: `${MONTH_NAMES[m] || m}${suffix}`,
-        value: m,
-      };
-    });
-  }, [periods]);
+    return RANKING_MONTH_CODES.map((m) => ({
+      label: MONTH_NAMES[m] || m,
+      value: m,
+    }));
+  }, []);
 
   // Active bucket for A4 sheet preview
   const activeBucket = displayedRankings[previewBucketIndex] || displayedRankings[0] || null;
@@ -614,8 +606,8 @@ export default function RankingsPage() {
     <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
       {/* ─── TOP HEADER & ACTIONS ─── */}
       <div className="no-print space-y-3.5 border-b pb-3.5">
-        <div className="flex flex-row items-center justify-between gap-3 w-full">
-          <div className="min-w-0 flex-1 flex flex-col justify-center">
+        <div className="flex flex-row items-end justify-between gap-3 w-full">
+          <div className="min-w-0 flex-1 flex flex-col justify-end">
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
               Academic Rankings
             </h1>
@@ -808,59 +800,58 @@ export default function RankingsPage() {
                   )}
                 </div>
 
-                {/* 2. View Mode (Single Tap Toggle Button) */}
-                <div className="space-y-1">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">
-                    View Mode
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleViewModeChange(viewMode === 'standard' ? 'sheet' : 'standard')}
-                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-card hover:bg-muted/50 border text-xs font-medium cursor-pointer transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      {viewMode === 'standard' ? (
-                        <LayoutList className="h-4 w-4 text-primary" />
-                      ) : (
-                        <FileText className="h-4 w-4 text-primary" />
-                      )}
-                      <span className="font-semibold text-foreground">
-                        {viewMode === 'standard' ? 'Standard' : 'A4 Sheet'}
+                {/* 2 & 3. View Mode & Ranking Group (Side-by-side in 1 single row) */}
+                <div className="grid grid-cols-2 gap-2">
+                  {/* View Mode */}
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-0.5">
+                      View Mode
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleViewModeChange(viewMode === 'standard' ? 'sheet' : 'standard')}
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-card hover:bg-muted/60 border text-xs font-medium cursor-pointer transition-all shadow-2xs active:scale-[0.98]"
+                      title="Tap to switch view"
+                    >
+                      <span className="flex items-center gap-1.5 min-w-0">
+                        {viewMode === 'standard' ? (
+                          <LayoutList className="h-3.5 w-3.5 text-primary shrink-0" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                        )}
+                        <span className="font-semibold text-foreground text-xs truncate">
+                          {viewMode === 'standard' ? 'Standard' : 'A4 Sheet'}
+                        </span>
                       </span>
-                    </span>
-                    <span className="text-[10px] font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
-                      Tap to toggle
-                    </span>
-                  </button>
-                </div>
+                    </button>
+                  </div>
 
-                {/* 3. Ranking Group (Single Tap Toggle Button) */}
-                <div className="space-y-1">
-                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">
-                    Ranking Group
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRankingType(rankingType === 'class' ? 'group' : 'class');
-                      setSelectedFilterKey('all');
-                    }}
-                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-card hover:bg-muted/50 border text-xs font-medium cursor-pointer transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      {rankingType === 'class' ? (
-                        <GraduationCap className="h-4 w-4 text-primary" />
-                      ) : (
-                        <Users className="h-4 w-4 text-primary" />
-                      )}
-                      <span className="font-semibold text-foreground">
-                        {rankingType === 'class' ? 'Class-Wise' : 'Group-Wise'}
+                  {/* Ranking Group */}
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-0.5">
+                      Ranking Group
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRankingType(rankingType === 'class' ? 'group' : 'class');
+                        setSelectedFilterKey('all');
+                      }}
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-card hover:bg-muted/60 border text-xs font-medium cursor-pointer transition-all shadow-2xs active:scale-[0.98]"
+                      title="Tap to switch ranking group"
+                    >
+                      <span className="flex items-center gap-1.5 min-w-0">
+                        {rankingType === 'class' ? (
+                          <GraduationCap className="h-3.5 w-3.5 text-primary shrink-0" />
+                        ) : (
+                          <Users className="h-3.5 w-3.5 text-primary shrink-0" />
+                        )}
+                        <span className="font-semibold text-foreground text-xs truncate">
+                          {rankingType === 'class' ? 'Class-Wise' : 'Group-Wise'}
+                        </span>
                       </span>
-                    </span>
-                    <span className="text-[10px] font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
-                      Tap to toggle
-                    </span>
-                  </button>
+                    </button>
+                  </div>
                 </div>
 
                 <DropdownMenuSeparator className="my-1" />
@@ -951,11 +942,9 @@ export default function RankingsPage() {
                   </button>
                   {mobileExpandedSection === 'month' && (
                     <div className="p-2 rounded-lg bg-muted/30 border space-y-1 animate-in fade-in zoom-in-95 duration-150">
-                      <div className="grid grid-cols-3 gap-1.5 max-h-[160px] overflow-y-auto p-0.5">
+                      <div className="grid grid-cols-3 gap-1.5 p-0.5">
                         {monthDropdownOptions.map((m) => {
                           const isSelected = m.value === month;
-                          const countMatch = m.label.match(/\((\d+)\)/);
-                          const count = countMatch ? countMatch[1] : null;
                           const shortCode = m.value.toUpperCase().slice(0, 3);
                           return (
                             <button
@@ -965,30 +954,13 @@ export default function RankingsPage() {
                                 setMonth(m.value);
                                 setMobileExpandedSection(null);
                               }}
-                              className={`py-1.5 px-1 text-xs rounded-md border text-center transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                              className={`py-1.5 px-1 text-xs rounded-md border text-center transition-all cursor-pointer font-bold ${
                                 isSelected
-                                  ? 'bg-primary text-primary-foreground border-primary font-bold shadow-2xs'
+                                  ? 'bg-primary text-primary-foreground border-primary shadow-2xs'
                                   : 'bg-card hover:bg-muted text-foreground border-border/70 font-medium'
                               }`}
                             >
-                              <span className="text-xs font-bold leading-none tracking-wide">{shortCode}</span>
-                              {count ? (
-                                <span
-                                  className={`text-[9px] leading-none font-semibold ${
-                                    isSelected ? 'text-primary-foreground/90' : 'text-primary font-bold'
-                                  }`}
-                                >
-                                  ({count})
-                                </span>
-                              ) : (
-                                <span
-                                  className={`text-[9px] leading-none ${
-                                    isSelected ? 'text-primary-foreground/75' : 'text-muted-foreground/60'
-                                  }`}
-                                >
-                                  {MONTH_NAMES[m.value]?.slice(0, 3)}
-                                </span>
-                              )}
+                              {shortCode}
                             </button>
                           );
                         })}
@@ -997,7 +969,7 @@ export default function RankingsPage() {
                   )}
                 </div>
 
-                {/* 6. Class / Group Filter Row (Accordion Dropdown) */}
+                {/* 6. Class / Group Filter Row (Accordion Dropdown with Box Tiles) */}
                 <div className="space-y-1">
                   <button
                     type="button"
@@ -1016,11 +988,13 @@ export default function RankingsPage() {
                       ) : (
                         <Users className="h-4 w-4 text-muted-foreground" />
                       )}
-                      <span>{rankingType === 'class' ? 'Class Filter' : 'Group Filter'}</span>
+                      <span>{rankingType === 'class' ? 'Class' : 'Group'}</span>
                     </span>
                     <span className="flex items-center gap-2 truncate max-w-[140px]">
                       <span className="text-xs font-semibold text-foreground truncate">
-                        {selectedFilterOptionLabel}
+                        {selectedFilterKey === 'all'
+                          ? 'All'
+                          : selectedFilterOptionLabel.replace(/^Class\s+/i, '')}
                       </span>
                       <ChevronRight
                         className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
@@ -1031,7 +1005,7 @@ export default function RankingsPage() {
                   </button>
                   {mobileExpandedSection === 'filter' && (
                     <div className="p-2 rounded-lg bg-muted/30 border space-y-1 animate-in fade-in zoom-in-95 duration-150">
-                      <div className="flex flex-col gap-1 max-h-[150px] overflow-y-auto p-0.5">
+                      <div className="grid grid-cols-3 gap-1.5 p-0.5">
                         {filterDropdownOptions.map((f) => {
                           const isSelected = f.value === selectedFilterKey;
                           return (
@@ -1042,14 +1016,13 @@ export default function RankingsPage() {
                                 setSelectedFilterKey(f.value);
                                 setMobileExpandedSection(null);
                               }}
-                              className={`w-full text-left px-2.5 py-1.5 text-xs rounded-md border transition-all cursor-pointer flex items-center justify-between ${
+                              className={`py-1.5 px-1 text-xs rounded-md border text-center cursor-pointer transition-all ${
                                 isSelected
-                                  ? 'bg-primary text-primary-foreground border-primary font-semibold shadow-2xs'
-                                  : 'bg-card hover:bg-muted text-foreground border-border/70'
+                                  ? 'bg-primary text-primary-foreground border-primary font-bold shadow-2xs'
+                                  : 'bg-card text-foreground hover:bg-muted border-border/70 font-medium'
                               }`}
                             >
-                              <span className="truncate">{f.label}</span>
-                              {isSelected && <Check className="h-3.5 w-3.5 shrink-0 ml-1" />}
+                              {f.label}
                             </button>
                           );
                         })}
@@ -1078,16 +1051,16 @@ export default function RankingsPage() {
               placeholder="Month"
               options={monthDropdownOptions}
               onChange={setMonth}
-              width="w-[145px] shrink-0"
+              width="w-[140px] shrink-0"
             />
 
             {/* Class / Group Filter Dropdown */}
             <CustomDropdown
               value={selectedFilterKey}
-              placeholder={rankingType === 'class' ? 'All Classes' : 'All Groups'}
+              placeholder={rankingType === 'class' ? 'All' : 'All Groups'}
               options={filterDropdownOptions}
               onChange={setSelectedFilterKey}
-              width="w-[160px] shrink-0"
+              width="w-[125px] shrink-0"
             />
 
             {/* View Mode Toggle: Class-Wise vs Group-Wise */}
@@ -1261,6 +1234,11 @@ export default function RankingsPage() {
               return sortDirection === 'asc' ? b.percentage - a.percentage : a.percentage - b.percentage;
             });
 
+            // Extract main label and optional bracketed sub-label (e.g. "Group A" and "(6th & 7th)")
+            const labelMatch = group.label.match(/^(.*?)\s*(\([^)]+\))$/);
+            const mainLabel = labelMatch ? labelMatch[1] : group.label;
+            const subLabel = labelMatch ? labelMatch[2] : null;
+
             return (
               <Card key={group.key} className="overflow-hidden border shadow-sm rounded-xl">
                 <CardHeader className="bg-muted/40 py-3.5 px-4 sm:px-6 border-b">
@@ -1271,8 +1249,13 @@ export default function RankingsPage() {
                       ) : (
                         <Users className="h-5 w-5 text-primary" />
                       )}
-                      <span>{group.label}</span>
-                      <span className="text-xs font-normal text-muted-foreground">
+                      <span>{mainLabel}</span>
+                      {subLabel && (
+                        <span className="hidden sm:inline text-xs font-normal text-muted-foreground">
+                          {subLabel}
+                        </span>
+                      )}
+                      <span className="hidden sm:inline text-xs font-normal text-muted-foreground">
                         • {MONTH_NAMES[month] || month} {academicYear}
                       </span>
                     </CardTitle>

@@ -3341,9 +3341,28 @@ export default function MarksEntryPage() {
       <ConfirmDialog
         open={publishDialogOpen}
         onOpenChange={setPublishDialogOpen}
-        title="Finalize & Publish Results"
-        description="Publishing will mark this result period as finalized. Report cards will be accessible for printing and students/parents viewing. You can still unlock it later if revisions are needed."
-        actionLabel="Publish Results"
+        title={
+          <>
+            <span className="sm:hidden">Publish Results</span>
+            <span className="hidden sm:inline">Finalize & Publish Results</span>
+          </>
+        }
+        description={
+          <>
+            <span className="sm:hidden">
+              Finalize this period? Report cards will become accessible for viewing and printing.
+            </span>
+            <span className="hidden sm:inline">
+              Publishing will mark this result period as finalized. Report cards will be accessible for printing and students/parents viewing. You can still unlock it later if revisions are needed.
+            </span>
+          </>
+        }
+        actionLabel={
+          <>
+            <span className="sm:hidden">Publish</span>
+            <span className="hidden sm:inline">Publish Results</span>
+          </>
+        }
         onConfirm={handlePublish}
         variant="default"
       />
