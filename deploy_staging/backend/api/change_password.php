@@ -45,8 +45,18 @@ try {
         json_response(['success' => false, 'error' => 'Admin user not found'], 404);
     }
 
-    // 2. Verify current password
-    if (!password_verify($oldPassword, $admin['password_hash'])) {
+    // 2. Verify current password (supports both Bcrypt and direct plain-text in MySQL)
+    $stored = (string)($admin['password_hash'] ?? '');
+    $hashInfo = password_get_info($stored);
+    $isCurrentValid = false;
+
+    if (!empty($hashInfo['algo'])) {
+        $isCurrentValid = password_verify($oldPassword, $stored);
+    } else {
+        $isCurrentValid = hash_equals($stored, $oldPassword) || hash_equals(trim($stored), trim($oldPassword));
+    }
+
+    if (!$isCurrentValid) {
         write_log('warning', 'Password change failed: incorrect current password', ['admin_id' => $user['sub']]);
         json_response(['success' => false, 'error' => 'Incorrect current password'], 400);
     }

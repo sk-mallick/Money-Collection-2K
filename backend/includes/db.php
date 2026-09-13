@@ -208,104 +208,37 @@ function get_db(): PDO {
         exit;
     }
 
-    // Self-healing: ensure remaining_months column exists in receipts table
+    // Self-healing: ensure remaining_months column and composite index exist in receipts table
     try {
-        $stmtCol = $pdo->query("SHOW COLUMNS FROM `receipts` LIKE 'remaining_months'");
-        if ($stmtCol->rowCount() === 0) {
-            $pdo->exec("ALTER TABLE `receipts` ADD COLUMN `remaining_months` VARCHAR(100) DEFAULT NULL AFTER `remaining_amount`");
+        $tblCheck = $pdo->query("SHOW TABLES LIKE 'receipts'");
+        if ($tblCheck->rowCount() > 0) {
+            $stmtCol = $pdo->query("SHOW COLUMNS FROM `receipts` LIKE 'remaining_months'");
+            if ($stmtCol->rowCount() === 0) {
+                $pdo->exec("ALTER TABLE `receipts` ADD COLUMN `remaining_months` VARCHAR(100) DEFAULT NULL AFTER `remaining_amount`");
+            }
+            $idxCheck = $pdo->query("SHOW INDEX FROM `receipts` WHERE Key_name = 'idx_receipts_year_student'");
+            if ($idxCheck->rowCount() === 0) {
+                $pdo->exec("CREATE INDEX `idx_receipts_year_student` ON `receipts` (`academic_year`, `student_id`)");
+            }
         }
-    } catch (Exception $colEx) {
-        if (function_exists('write_log')) {
-            write_log('warning', 'Failed to auto-add remaining_months column', ['error' => $colEx->getMessage()]);
-        }
+    } catch (Throwable $colEx) {
+        // Suppress if table not initialized yet
     }
 
-    // Self-healing: ensure composite index on receipts(academic_year, student_id) for multi-year scaling
+    // Self-healing: clean legacy deleted_at from students table if still present
     try {
-        $idxCheck = $pdo->query("SHOW INDEX FROM `receipts` WHERE Key_name = 'idx_receipts_year_student'");
-        if ($idxCheck->rowCount() === 0) {
-            $pdo->exec("CREATE INDEX `idx_receipts_year_student` ON `receipts` (`academic_year`, `student_id`)");
-        }
-    } catch (Exception $idxEx) {
-        // Suppress if already exists or table empty
-    }
-
-    // Self-healing: auto-import Report Card tables if they don't exist
-    try {
-        $rcCheck = $pdo->query("SHOW TABLES LIKE 'rc_subjects'");
-        if ($rcCheck->rowCount() === 0) {
-            $rcMigrationPath = __DIR__ . '/../database/migration_report_cards.sql';
-            if (file_exists($rcMigrationPath)) {
-                $rcSql = file_get_contents($rcMigrationPath);
-                $pdo->exec($rcSql);
+        $stCheck = $pdo->query("SHOW TABLES LIKE 'students'");
+        if ($stCheck->rowCount() > 0) {
+            $delAtCheck = $pdo->query("SHOW COLUMNS FROM `students` LIKE 'deleted_at'");
+            if ($delAtCheck->rowCount() > 0) {
+                try {
+                    $pdo->exec("ALTER TABLE `students` DROP INDEX `idx_students_deleted`");
+                } catch (Throwable $idxEx) {}
+                $pdo->exec("ALTER TABLE `students` DROP COLUMN `deleted_at`");
             }
         }
-    } catch (Exception $rcEx) {
-        if (function_exists('write_log')) {
-            write_log('warning', 'Failed to auto-import report card tables', ['error' => $rcEx->getMessage()]);
-        }
-    }
-
-    // Self-healing: create old_students table + migrate soft-deleted students + drop deleted_at
-    try {
-        $osCheck = $pdo->query("SHOW TABLES LIKE 'old_students'");
-        if ($osCheck->rowCount() === 0) {
-            $osMigrationPath = __DIR__ . '/../database/migration_old_students.sql';
-            if (file_exists($osMigrationPath)) {
-                $osSql = file_get_contents($osMigrationPath);
-                $pdo->exec($osSql);
-            }
-        }
-
-        // Migrate any existing soft-deleted students to old_students, then hard-delete them
-        $delAtCheck = $pdo->query("SHOW COLUMNS FROM `students` LIKE 'deleted_at'");
-        if ($delAtCheck->rowCount() > 0) {
-            // Move soft-deleted students to old_students
-            $softDeleted = $pdo->query("SELECT * FROM `students` WHERE `deleted_at` IS NOT NULL");
-            $softDeletedRows = $softDeleted->fetchAll();
-            if (!empty($softDeletedRows)) {
-                $archiveStmt = $pdo->prepare('INSERT INTO `old_students` (`original_id`, `name`, `category`, `last_group_id`, `last_class`, `school`, `contact_no`, `father_no`, `mother_no`, `adm_date`, `dob`, `fee_per_month`, `notes`, `archived_date`, `archived_reason`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-                foreach ($softDeletedRows as $row) {
-                    // Extract original ID from DEL-prefixed ID if possible
-                    $originalId = $row['id'];
-                    if (strpos($originalId, 'DEL') === 0) {
-                        $originalId = 'DEL'; // Mark as unknown original
-                    }
-                    $archiveStmt->execute([
-                        $originalId,
-                        $row['name'],
-                        $row['category'],
-                        $row['group_id'],
-                        $row['class'],
-                        $row['school'],
-                        $row['contact_no'],
-                        $row['father_no'],
-                        $row['mother_no'],
-                        $row['adm_date'],
-                        $row['dob'] ?? null,
-                        $row['fee_per_month'],
-                        $row['notes'],
-                        date('Y-m-d', strtotime($row['deleted_at'])),
-                        'Migrated from soft-delete'
-                    ]);
-                }
-                // Hard-delete the migrated soft-deleted records
-                $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
-                $pdo->exec("DELETE FROM `students` WHERE `deleted_at` IS NOT NULL");
-                $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
-            }
-            // Drop deleted_at column and index
-            try {
-                $pdo->exec("ALTER TABLE `students` DROP INDEX `idx_students_deleted`");
-            } catch (Exception $idxEx) {
-                // Index may not exist
-            }
-            $pdo->exec("ALTER TABLE `students` DROP COLUMN `deleted_at`");
-        }
-    } catch (Exception $osEx) {
-        if (function_exists('write_log')) {
-            write_log('warning', 'Failed to run old_students migration', ['error' => $osEx->getMessage()]);
-        }
+    } catch (Throwable $osEx) {
+        // Suppress if table not initialized yet
     }
 
     // Self-healing: drop rc_default_max_marks table if it exists (no longer needed)

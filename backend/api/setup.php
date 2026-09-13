@@ -185,6 +185,32 @@ if ($pdo && $actionTriggered && !$isLocked) {
         } catch (Exception $ex) {
             $migrationMessage = "Purge failed: " . $ex->getMessage();
         }
+    } elseif ($actionTriggered === 'clear_rate_limits') {
+        try {
+            $pdo->exec("TRUNCATE TABLE `login_attempts`");
+            $migrationSuccess = true;
+            $migrationMessage = "Rate limits cleared! All blocked IP addresses can now log in immediately.";
+        } catch (Exception $ex) {
+            $migrationMessage = "Failed to clear rate limits: " . $ex->getMessage();
+        }
+    } elseif ($actionTriggered === 'reset_admin_credentials') {
+        try {
+            $pdo->exec("TRUNCATE TABLE `login_attempts`");
+
+            $h1 = '$2y$10$a0Wne4bNgeeQlc1yloEDDOn10j7IRM5Pcywjn536NEpFaFPZaFtvy'; // 2024
+            $h2 = '$2y$10$NdzYCWXLrqPzuSggjBmURufZ5jLU9K57zNO8jIuG5pX6ky9UU6B2.'; // 454
+
+            $u1 = $pdo->prepare("INSERT INTO `admins` (`username`, `password_hash`, `name`) VALUES ('18102024', ?, 'Chirinjibi Sir') ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`), `name` = VALUES(`name`)");
+            $u1->execute([$h1]);
+
+            $u2 = $pdo->prepare("INSERT INTO `admins` (`username`, `password_hash`, `name`) VALUES ('454', ?, 'Subham Sir') ON DUPLICATE KEY UPDATE `password_hash` = VALUES(`password_hash`), `name` = VALUES(`name`)");
+            $u2->execute([$h2]);
+
+            $migrationSuccess = true;
+            $migrationMessage = "Admin credentials reset successfully! User 454 (Password: 454) & User 18102024 (Password: 2024). All rate limits cleared.";
+        } catch (Exception $ex) {
+            $migrationMessage = "Failed to reset admin credentials: " . $ex->getMessage();
+        }
     }
 }
 
@@ -999,6 +1025,25 @@ $syncPercentage = $totalTablesCount > 0 ? round(($existingTablesCount / $totalTa
                             </a>
                         <?php endif; ?>
                     </div>
+
+                    <?php if ($pdo && !$isLocked): ?>
+                        <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
+                            <form method="POST" onsubmit="return confirm('Reset admin credentials to 454 (password: 454) and 18102024 (password: 2024) and unblock all IPs?');">
+                                <input type="hidden" name="action" value="reset_admin_credentials">
+                                <button type="submit" class="btn btn-secondary btn-block" style="border-color:#38bdf8;color:#38bdf8;">
+                                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                                    Reset Passwords (454 &amp; 2024)
+                                </button>
+                            </form>
+                            <form method="POST">
+                                <input type="hidden" name="action" value="clear_rate_limits">
+                                <button type="submit" class="btn btn-outline btn-block" style="color:#a1a1aa;">
+                                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                    Unblock IPs (Clear Rate Limits)
+                                </button>
+                            </form>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
 

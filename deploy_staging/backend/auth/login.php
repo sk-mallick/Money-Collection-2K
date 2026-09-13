@@ -61,13 +61,44 @@ try {
     $stmt->execute([$username]);
     $admin = $stmt->fetch();
 
-    if (!$admin || !password_verify($password, $admin['password_hash'])) {
+    $isValid = false;
+    $shouldRehash = false;
+
+    if ($admin) {
+        $stored = (string)($admin['password_hash'] ?? '');
+        $hashInfo = password_get_info($stored);
+
+        if (!empty($hashInfo['algo'])) {
+            // Standard Bcrypt/Argon2 hash in database
+            $isValid = password_verify($password, $stored);
+        } else {
+            // Direct plain-text password entered in MySQL by admin
+            if (hash_equals($stored, $password) || hash_equals(trim($stored), trim($password))) {
+                $isValid = true;
+                $shouldRehash = true;
+            }
+        }
+    }
+
+    if (!$admin || !$isValid) {
         // Log failed attempt
         $logAttemptStmt = $pdo->prepare('INSERT INTO login_attempts (ip_address, username) VALUES (?, ?)');
         $logAttemptStmt->execute([$ipAddress, $username]);
 
         write_log('warning', 'Failed login attempt', ['ip' => $ipAddress, 'username' => $username]);
         json_response(['success' => false, 'error' => 'Invalid username or password'], 401);
+    }
+
+    // Auto-hash plain text password on first successful login
+    if ($shouldRehash) {
+        try {
+            $newHash = password_hash($password, PASSWORD_BCRYPT);
+            $rehashStmt = $pdo->prepare('UPDATE admins SET password_hash = ? WHERE id = ?');
+            $rehashStmt->execute([$newHash, $admin['id']]);
+            write_log('info', 'Auto-hashed plain text password for admin', ['username' => $username]);
+        } catch (Throwable $rehashEx) {
+            // Continue even if background rehash encounters an issue
+        }
     }
 
     // 3. Clear failed attempts on successful login
