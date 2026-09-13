@@ -9,13 +9,21 @@
  * Backend: Multi-statement PDO migration executor from `migrate.sql`
  */
 
+if (!defined('MCMS_SETUP')) {
+    define('MCMS_SETUP', true);
+}
+
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 $lockFile = __DIR__ . '/setup.lock';
 $isLocked = file_exists($lockFile);
 
-// Handle Actions (Lock, Unlock, Migrate, Purge)
+$rootDir = dirname(__DIR__, 2);
+$envPath = $rootDir . '/.env';
+$prodEnvPath = $rootDir . '/.env.production';
+
+// Handle Actions (Lock, Unlock, Migrate, Purge, Save Env, Adopt Prod Env)
 $actionTriggered = $_POST['action'] ?? null;
 
 if ($actionTriggered) {
@@ -29,18 +37,46 @@ if ($actionTriggered) {
         }
         header('Location: setup.php?unlocked=1');
         exit;
+    } elseif ($actionTriggered === 'init_env_production') {
+        if (file_exists($prodEnvPath)) {
+            @copy($prodEnvPath, $envPath);
+        }
+        header('Location: setup.php?env_initialized=1');
+        exit;
+    } elseif ($actionTriggered === 'save_env') {
+        $h = trim($_POST['db_host'] ?? 'localhost');
+        $p = trim($_POST['db_port'] ?? '3306');
+        $d = trim($_POST['db_name'] ?? '');
+        $u = trim($_POST['db_user'] ?? '');
+        $pw = trim($_POST['db_pass'] ?? '');
+        $sec = bin2hex(random_bytes(32));
+        $content = "# MCMS Environment Configuration\n"
+                 . "APP_ENV=production\n"
+                 . "DB_HOST={$h}\n"
+                 . "DB_PORT={$p}\n"
+                 . "DB_NAME={$d}\n"
+                 . "DB_USER={$u}\n"
+                 . "DB_PASS={$pw}\n"
+                 . "JWT_SECRET={$sec}\n"
+                 . "CORS_ORIGIN=*\n";
+        @file_put_contents($envPath, $content);
+        header('Location: setup.php?env_saved=1');
+        exit;
     }
 }
 
 // ── Database Connection ──
 require_once __DIR__ . '/../includes/db.php';
 
-$env = load_env();
+$env = load_env(false);
 $DB_HOST = $env['DB_HOST'] ?? 'localhost';
 $DB_PORT = $env['DB_PORT'] ?? '3306';
-$DB_NAME = $env['DB_NAME'] ?? 'mcms';
-$DB_USER = $env['DB_USER'] ?? 'root';
+$DB_NAME = $env['DB_NAME'] ?? '';
+$DB_USER = $env['DB_USER'] ?? '';
 $DB_PASS = $env['DB_PASS'] ?? '';
+
+$hasEnv = file_exists($envPath);
+$hasProdEnv = file_exists($prodEnvPath);
 
 $isLocal = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'])
         || in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1'])
@@ -51,28 +87,33 @@ $pdo = null;
 $dbError = null;
 $dbVersion = null;
 
-try {
-    $pdo = new PDO(
-        "mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4",
-        $DB_USER,
-        $DB_PASS,
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::MYSQL_ATTR_MULTI_STATEMENTS => true,
-            PDO::ATTR_EMULATE_PREPARES => false
-        ]
-    );
+if (!$hasEnv && !$hasProdEnv && empty($DB_NAME)) {
+    $dbError = "Environment configuration (.env) is not set up yet. Please enter your database credentials below.";
+} else {
     try {
-        $pdo->exec("SET time_zone = '+05:30'");
-    } catch (Throwable $tz) {}
-    $dbVersion = $pdo->query('SELECT VERSION()')->fetchColumn();
-} catch (PDOException $e) {
-    $dbError = $e->getMessage();
+        $pdo = new PDO(
+            "mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4",
+            $DB_USER,
+            $DB_PASS,
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::MYSQL_ATTR_MULTI_STATEMENTS => true,
+                PDO::ATTR_EMULATE_PREPARES => false
+            ]
+        );
+        try {
+            $pdo->exec("SET time_zone = '+05:30'");
+        } catch (Throwable $tz) {}
+        $dbVersion = $pdo->query('SELECT VERSION()')->fetchColumn();
+    } catch (PDOException $e) {
+        $dbError = $e->getMessage();
+    }
 }
 
 // ── Migration & Maintenance Operations ──
 $migrationSuccess = false;
+
 $migrationMessage = '';
 
 if ($pdo && $actionTriggered && !$isLocked) {
@@ -789,14 +830,76 @@ $syncPercentage = $totalTablesCount > 0 ? round(($existingTablesCount / $totalTa
         </div>
     <?php endif; ?>
 
-    <?php if ($dbError): ?>
-        <div class="alert alert-destructive">
-            <svg class="alert-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-            <div>
-                <strong>Database Connection Error:</strong> <?= htmlspecialchars($dbError) ?>
-            </div>
+    <?php if (isset($_GET['env_saved'])): ?>
+        <div class="alert alert-success">
+            <svg class="alert-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div><strong>Configuration Saved:</strong> Database connection settings were written to <code>.env</code> successfully!</div>
         </div>
     <?php endif; ?>
+
+    <?php if (isset($_GET['env_initialized'])): ?>
+        <div class="alert alert-success">
+            <svg class="alert-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div><strong>Production Setup Adopted:</strong> Loaded production credentials from <code>.env.production</code>!</div>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($dbError): ?>
+        <div class="alert alert-destructive" style="flex-direction:column;align-items:flex-start;gap:12px;">
+            <div style="display:flex;gap:10px;align-items:center;">
+                <svg class="alert-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <div>
+                    <strong>Database Connection Notice:</strong> <?= htmlspecialchars($dbError) ?>
+                </div>
+            </div>
+
+            <?php if ($hasProdEnv && !$hasEnv): ?>
+                <div style="margin-top:4px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:10px;">
+                    <div>
+                        <div style="font-weight:600;font-size:13px;color:#fff;">Production Configuration Template Detected (.env.production)</div>
+                        <div style="font-size:12px;color:var(--muted-foreground);">Pre-configured for your InfinityFree MySQL server.</div>
+                    </div>
+                    <form method="POST" style="margin:0;">
+                        <input type="hidden" name="action" value="init_env_production">
+                        <button type="submit" class="btn btn-primary btn-sm">Adopt .env.production</button>
+                    </form>
+                </div>
+            <?php endif; ?>
+
+            <details style="width:100%;margin-top:4px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px 14px;" <?= (!$hasEnv && !$hasProdEnv) ? 'open' : '' ?>>
+                <summary style="font-size:13px;font-weight:600;cursor:pointer;color:var(--primary);outline:none;">
+                    Configure / Update Database Credentials
+                </summary>
+                <form method="POST" style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <input type="hidden" name="action" value="save_env">
+                    <div>
+                        <label style="font-size:11.5px;color:var(--muted-foreground);display:block;margin-bottom:4px;">MySQL Host</label>
+                        <input type="text" name="db_host" value="<?= htmlspecialchars($DB_HOST ?: 'localhost') ?>" class="table-filter-input" required>
+                    </div>
+                    <div>
+                        <label style="font-size:11.5px;color:var(--muted-foreground);display:block;margin-bottom:4px;">MySQL Port</label>
+                        <input type="text" name="db_port" value="<?= htmlspecialchars($DB_PORT ?: '3306') ?>" class="table-filter-input" required>
+                    </div>
+                    <div>
+                        <label style="font-size:11.5px;color:var(--muted-foreground);display:block;margin-bottom:4px;">Database Name</label>
+                        <input type="text" name="db_name" value="<?= htmlspecialchars($DB_NAME) ?>" class="table-filter-input" placeholder="e.g. if0_42656840_mcms_db" required>
+                    </div>
+                    <div>
+                        <label style="font-size:11.5px;color:var(--muted-foreground);display:block;margin-bottom:4px;">MySQL Username</label>
+                        <input type="text" name="db_user" value="<?= htmlspecialchars($DB_USER) ?>" class="table-filter-input" placeholder="e.g. if0_42656840" required>
+                    </div>
+                    <div style="grid-column:1 / -1;">
+                        <label style="font-size:11.5px;color:var(--muted-foreground);display:block;margin-bottom:4px;">MySQL Password</label>
+                        <input type="password" name="db_pass" value="<?= htmlspecialchars($DB_PASS) ?>" class="table-filter-input" placeholder="MySQL Password">
+                    </div>
+                    <div style="grid-column:1 / -1;display:flex;justify-content:flex-end;">
+                        <button type="submit" class="btn btn-primary btn-sm">Save &amp; Connect</button>
+                    </div>
+                </form>
+            </details>
+        </div>
+    <?php endif; ?>
+
 
     <!-- ── TELEMETRY CARDS ── -->
     <div class="telemetry-grid">

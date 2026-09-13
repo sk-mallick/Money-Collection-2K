@@ -4,21 +4,182 @@
  * Reads credentials from .env file
  */
 
-// Load .env file
-function load_env(): array {
+// Helper to output user-friendly error responses based on request context
+function mcms_render_fatal_error(string $title, string $message, array $steps = [], int $httpCode = 503): void {
+    http_response_code($httpCode);
+    
+    // Check if client expects JSON (API call)
+    $isApi = (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') !== false)
+          || (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
+          || (isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') !== false);
+
+    if ($isApi) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'error' => $message,
+            'title' => $title,
+            'needs_setup' => true
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    // Interactive Browser page: Render styled dark-mode card instead of raw JSON
+    header('Content-Type: text/html; charset=utf-8');
+    $stepsHtml = '';
+    if (!empty($steps)) {
+        $stepsHtml = '<div class="steps"><div class="steps-title">Recommended Steps:</div><ul>';
+        foreach ($steps as $step) {
+            $stepsHtml .= '<li>' . $step . '</li>';
+        }
+        $stepsHtml .= '</ul></div>';
+    }
+
+    echo <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$title} — MCMS</title>
+    <style>
+        :root {
+            --bg: #09090b;
+            --card: #18181b;
+            --border: #27272a;
+            --text: #f4f4f5;
+            --muted: #a1a1aa;
+            --primary: #3b82f6;
+            --danger: #f87171;
+            --danger-bg: rgba(248, 113, 113, 0.12);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 30px 16px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+        }
+        .card {
+            max-width: 520px;
+            width: 100%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--danger-bg);
+            color: var(--danger);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+        h1 { font-size: 19px; margin: 0 0 8px; font-weight: 600; color: #fff; }
+        p { color: var(--muted); font-size: 13.5px; line-height: 1.55; margin: 0 0 18px; }
+        .steps {
+            background: #111113;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 22px;
+            font-size: 13px;
+        }
+        .steps-title { font-weight: 600; color: #e4e4e7; margin-bottom: 6px; }
+        .steps ul { margin: 0; padding-left: 18px; color: var(--muted); }
+        .steps li { margin-bottom: 4px; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--primary);
+            color: #fff;
+            padding: 9px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .btn-outline:hover { background: rgba(255,255,255,0.05); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="badge">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--danger);display:inline-block;"></span>
+            Configuration Notice
+        </div>
+        <h1>{$title}</h1>
+        <p>{$message}</p>
+        {$stepsHtml}
+        <div class="actions">
+            <a href="setup.php" class="btn">Open Setup Wizard</a>
+            <a href="javascript:location.reload()" class="btn btn-outline">Reload Page</a>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    exit;
+}
+
+// Load .env file with smart discovery and fallbacks
+function load_env(bool $required = true): array {
     static $cache = null;
     if ($cache !== null) {
         return $cache;
     }
 
-    $envFile = __DIR__ . '/../../.env';
+    $rootDir = dirname(__DIR__, 2);
+    $envFile = $rootDir . '/.env';
+    $prodFile = $rootDir . '/.env.production';
+
+    // 1. Smart Discovery: If .env is missing but .env.production exists, auto-adopt it
+    if (!file_exists($envFile) && file_exists($prodFile)) {
+        @copy($prodFile, $envFile);
+        if (file_exists($envFile)) {
+            // Adopted .env.production as .env successfully
+        } else {
+            // Read directly from .env.production if root is read-only
+            $envFile = $prodFile;
+        }
+    }
+
     $env = [];
 
+    // If .env is completely missing
     if (!file_exists($envFile)) {
-        http_response_code(500);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['success' => false, 'error' => 'Environment configuration file (.env) is missing.']);
-        exit;
+        if (!$required || defined('MCMS_SETUP')) {
+            return [];
+        }
+
+        mcms_render_fatal_error(
+            'Environment Configuration Missing',
+            'The environment configuration file (<code>.env</code>) was not found on this server.',
+            [
+                'If you just uploaded to InfinityFree or cPanel, visit the <a href="setup.php" style="color:var(--primary);text-decoration:underline;">Setup Wizard</a> to configure your database.',
+                'Alternatively, rename <code>.env.production</code> to <code>.env</code> via FTP or File Manager.',
+                'Ensure your database credentials match your MySQL server.'
+            ]
+        );
     }
 
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -29,8 +190,17 @@ function load_env(): array {
         $env[$key] = $value;
     }
 
-    // Ensure required keys exist
-    $requiredKeys = ['DB_HOST', 'DB_NAME', 'DB_USER', 'JWT_SECRET'];
+    // Auto-generate strong JWT_SECRET if missing or too short
+    if (empty($env['JWT_SECRET']) || strlen($env['JWT_SECRET']) < 32 || stripos($env['JWT_SECRET'], 'CHANGE_ME') !== false) {
+        $generatedSecret = bin2hex(random_bytes(32)); // 64 chars
+        $env['JWT_SECRET'] = $generatedSecret;
+        if (file_exists($envFile) && is_writable($envFile)) {
+            @file_put_contents($envFile, "\n# Auto-generated secure JWT secret\nJWT_SECRET={$generatedSecret}\n", FILE_APPEND);
+        }
+    }
+
+    // Check essential DB keys
+    $requiredKeys = ['DB_HOST', 'DB_NAME', 'DB_USER'];
     $missing = [];
     foreach ($requiredKeys as $key) {
         if (!isset($env[$key]) || $env[$key] === '') {
@@ -39,40 +209,19 @@ function load_env(): array {
     }
 
     if (!empty($missing)) {
-        http_response_code(500);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['success' => false, 'error' => 'Missing required environment configuration keys: ' . implode(', ', $missing)]);
-        exit;
-    }
+        if (!$required || defined('MCMS_SETUP')) {
+            $env['_missing_keys'] = $missing;
+            return $env;
+        }
 
-    // Validate JWT secret strength — reject defaults and weak secrets
-    $jwtSecret = $env['JWT_SECRET'];
-    $weakPatterns = [
-        'mcms_jwt_secret_key_change_in_production',
-        'CHANGE_ME',
-        'your_jwt_secret_here',
-        'secret',
-        'password',
-    ];
-    $isWeak = strlen($jwtSecret) < 32;
-    foreach ($weakPatterns as $pattern) {
-        if (stripos($jwtSecret, $pattern) !== false) {
-            $isWeak = true;
-            break;
-        }
-    }
-    if ($isWeak) {
-        if (($env['APP_ENV'] ?? 'development') === 'production') {
-            http_response_code(500);
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode([
-                'success' => false,
-                'error' => 'JWT_SECRET is too weak or unchanged from default. Generate a strong secret: php -r "echo bin2hex(random_bytes(32));"'
-            ]);
-            exit;
-        } else {
-            header('X-MCMS-Security-Warning: JWT_SECRET is weak. Update before deploying to production.');
-        }
+        mcms_render_fatal_error(
+            'Incomplete Database Configuration',
+            'Missing required configuration values in <code>.env</code>: <strong>' . implode(', ', $missing) . '</strong>.',
+            [
+                'Open <a href="setup.php" style="color:var(--primary);text-decoration:underline;">setup.php</a> to fill in and test your database connection.',
+                'Make sure your host, database name, and username are correct.'
+            ]
+        );
     }
 
     $cache = $env;
