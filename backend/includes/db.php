@@ -302,6 +302,17 @@ function get_db(): PDO {
         // Suppress
     }
 
+    // Self-healing: mark admission_fee_paid = 1 for students with existing payments/receipts
+    try {
+        $stCheck = $pdo->query("SHOW TABLES LIKE 'students'");
+        $rcCheck = $pdo->query("SHOW TABLES LIKE 'receipts'");
+        if ($stCheck->rowCount() > 0 && $rcCheck->rowCount() > 0) {
+            $pdo->exec("UPDATE students SET admission_fee_paid = 1 WHERE admission_fee_paid = 0 AND id IN (SELECT DISTINCT student_id FROM receipts WHERE student_id IS NOT NULL)");
+        }
+    } catch (Throwable $afEx) {
+        // Suppress
+    }
+
     return $pdo;
 }
 

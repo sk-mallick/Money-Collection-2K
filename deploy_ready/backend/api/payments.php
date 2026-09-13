@@ -303,11 +303,9 @@ function submitPayment(PDO $pdo, array $user): void {
             $academicYear,
         ]);
 
-        // Mark student's admission fee as paid if included
-        if ($admissionFee > 0) {
-            $admFeeStmt = $pdo->prepare('UPDATE students SET admission_fee_paid = 1 WHERE id = ?');
-            $admFeeStmt->execute([$studentId]);
-        }
+        // Once any payment is completed, student is no longer a new student requiring admission fee
+        $admFeeStmt = $pdo->prepare('UPDATE students SET admission_fee_paid = 1 WHERE id = ?');
+        $admFeeStmt->execute([$studentId]);
 
         $pdo->commit();
 

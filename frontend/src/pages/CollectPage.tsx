@@ -45,6 +45,7 @@ export default function CollectPage() {
   const [isRemainingOverridden, setIsRemainingOverridden] = useState(false);
   const [isPrevDueOverridden, setIsPrevDueOverridden] = useState(false);
   const [includeAdmissionFee, setIncludeAdmissionFee] = useState(false);
+  const [hasPaidReceipts, setHasPaidReceipts] = useState(false);
 
   // Declare usePayments and paidMonths first so they are available to everything below
   const { payments, refresh: refreshPayments } = usePayments(selected?.id || null, selectedYear);
@@ -62,6 +63,15 @@ export default function CollectPage() {
     }
     return sum;
   }, 0);
+
+  // Once any payment is already done (admission fee paid flag, existing receipts, or any paid payment record),
+  // there is no need to display the Admission Fee card.
+  const hasPaymentAlreadyDone = Boolean(
+    selected?.admissionFeePaid ||
+    hasPaidReceipts ||
+    payments.some(p => p.paid)
+  );
+  const showAdmissionFeeToggle = Boolean(selected && !hasPaymentAlreadyDone);
 
   const getSelectedMonthsDue = useCallback((months: string[]) => {
     if (!selected) return 0;
@@ -129,8 +139,11 @@ export default function CollectPage() {
       try {
         const studentReceipts = await fetchStudentReceipts(selected.id);
         if (studentReceipts.length > 0) {
+          setHasPaidReceipts(true);
           studentReceipts.sort((a, b) => new Date(b.generatedOn).getTime() - new Date(a.generatedOn).getTime());
           lastReceiptRemaining = studentReceipts[0].remainingAmount || 0;
+        } else {
+          setHasPaidReceipts(Boolean(selected.admissionFeePaid));
         }
       } catch {
         // Ignore — use 0 as fallback
@@ -216,7 +229,10 @@ export default function CollectPage() {
     if (studentIdParam && students.length > 0) {
       const match = students.find(s => s.id === studentIdParam);
       if (match) {
-        const timer = setTimeout(() => setSelected(match), 0);
+        const timer = setTimeout(() => {
+          setSelected(match);
+          setHasPaidReceipts(Boolean(match.admissionFeePaid));
+        }, 0);
         return () => clearTimeout(timer);
       }
     }
@@ -242,6 +258,7 @@ export default function CollectPage() {
     setNextDue('');
     setNotes('');
     setIncludeAdmissionFee(false);
+    setHasPaidReceipts(Boolean(student.admissionFeePaid));
   };
 
   const toggleMonth = (month: string) => {
@@ -303,6 +320,11 @@ export default function CollectPage() {
       setNextDue('');
       setNotes('');
 
+      // Once any payment or waiver is processed, student is no longer a new student
+      if (selected) {
+        selected.admissionFeePaid = true;
+      }
+      setHasPaidReceipts(true);
       refreshPayments();
     } catch {
       toast.error('Failed to waive fee');
@@ -336,7 +358,7 @@ export default function CollectPage() {
       const receiptId = generateReceiptId(selected.category);
 
       // Submit payment via the API — server handles payment allocation + receipt creation
-      const admissionFeeAmt = (includeAdmissionFee && selected && !selected.admissionFeePaid) ? parseInt(settings?.admissionFee || '500', 10) : 0;
+      const admissionFeeAmt = (includeAdmissionFee && selected && !hasPaymentAlreadyDone) ? parseInt(settings?.admissionFee || '500', 10) : 0;
       await api.submitPayment({
         studentId: selected.id,
         months: sortedMonths,
@@ -439,10 +461,11 @@ export default function CollectPage() {
       setNextDue('');
       setNotes('');
       setIncludeAdmissionFee(false);
-      // Mark admission fee as paid locally so toggle disappears immediately
-      if (admissionFeeAmt > 0 && selected) {
+      // Once any payment is done, student is no longer a new student requiring admission fee
+      if (selected) {
         selected.admissionFeePaid = true;
       }
+      setHasPaidReceipts(true);
       refreshPayments();
     } catch (error) {
       toast.error('Failed to process payment');
@@ -513,7 +536,7 @@ export default function CollectPage() {
               handleMarkNA={handleMarkNA}
               submitting={submitting}
               selectedMonthsLength={selectedMonths.length}
-              showAdmissionFeeToggle={!!selected && !selected.admissionFeePaid}
+              showAdmissionFeeToggle={showAdmissionFeeToggle}
               includeAdmissionFee={includeAdmissionFee}
               setIncludeAdmissionFee={setIncludeAdmissionFee}
               admissionFeeAmount={parseInt(settings?.admissionFee || '500', 10)}
