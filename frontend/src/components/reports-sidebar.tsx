@@ -31,12 +31,12 @@ export function ReportsSidebar() {
       <SidebarHeader className="border-b border-sidebar-border h-14 flex flex-row items-center py-0 px-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="hover:bg-transparent cursor-default">
-              <div className="flex items-center justify-center h-8 w-8 rounded-lg shadow-md bg-gradient-to-br from-emerald-500 to-teal-600">
-                <GraduationCap className="h-4.5 w-4.5 text-white" strokeWidth={2} />
+            <SidebarMenuButton size="lg" className="hover:bg-transparent cursor-default p-0! group-data-[collapsible=icon]:p-0!">
+              <div className="flex items-center justify-center size-8 shrink-0 rounded-lg shadow-md bg-gradient-to-br from-emerald-500 to-teal-600 aspect-square">
+                <GraduationCap className="size-4.5 text-white shrink-0" strokeWidth={2} />
               </div>
-              <div className="flex-1 text-left group-data-[collapsible=icon]:hidden">
-                <span className="font-bold text-sm text-foreground tracking-wider">Reports</span>
+              <div className="flex-1 text-left min-w-0 overflow-hidden group-data-[collapsible=icon]:hidden">
+                <span className="font-bold text-sm text-foreground tracking-wider truncate block">Reports</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -44,26 +44,6 @@ export function ReportsSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Back to Modules */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="All Modules"
-                  className="transition-all duration-200 text-muted-foreground hover:text-foreground"
-                >
-                  <Link to="/" onClick={() => isMobile && setOpenMobile(false)}>
-                    <LayoutGrid />
-                    <span>All Modules</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         {/* Main Navigation */}
         <SidebarGroup>
           <SidebarGroupContent>
@@ -87,6 +67,26 @@ export function ReportsSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Back to Modules (Bottom) */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="All Modules"
+                  className="transition-all duration-200 text-muted-foreground hover:text-foreground"
+                >
+                  <Link to="/" onClick={() => isMobile && setOpenMobile(false)}>
+                    <LayoutGrid />
+                    <span>All Modules</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

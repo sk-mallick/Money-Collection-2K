@@ -360,11 +360,15 @@ export default function StudentsPage() {
 
             {/* Sort Field */}
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[130px] text-xs sm:text-sm h-9 bg-card">
-                <span className="text-muted-foreground/60 mr-1 shrink-0 font-medium">Sort:</span>
-                <SelectValue />
+              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[190px] text-xs sm:text-sm h-9 bg-card px-2.5 sm:px-3">
+                <span className="flex items-center gap-1.5 min-w-0 text-left">
+                  <span className="text-muted-foreground/70 shrink-0 font-medium">Sort:</span>
+                  <span className="truncate">
+                    <SelectValue />
+                  </span>
+                </span>
               </SelectTrigger>
-              <SelectContent position="popper">
+              <SelectContent position="popper" align="start">
                 <SelectItem value="name">Name</SelectItem>
                 <SelectItem value="group">Group</SelectItem>
                 <SelectItem value="class">Class</SelectItem>

@@ -32,10 +32,10 @@ export function McmsSidebar() {
       <SidebarHeader className="border-b border-sidebar-border h-14 flex flex-row items-center py-0 px-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" className="hover:bg-transparent cursor-default">
-              <img src={logoUrl} alt="Logo" className="h-8 w-8 rounded-lg shadow-md" />
-              <div className="flex-1 text-left group-data-[collapsible=icon]:hidden">
-                <span className="font-bold text-sm text-foreground tracking-wider">MCMS</span>
+            <SidebarMenuButton size="lg" className="hover:bg-transparent cursor-default p-0! group-data-[collapsible=icon]:p-0!">
+              <img src={logoUrl} alt="Logo" className="size-8 rounded-lg shadow-md shrink-0 aspect-square" />
+              <div className="flex-1 text-left min-w-0 overflow-hidden group-data-[collapsible=icon]:hidden">
+                <span className="font-bold text-sm text-foreground tracking-wider truncate block">MCMS</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -43,26 +43,6 @@ export function McmsSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Back to Modules */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  tooltip="All Modules"
-                  className="transition-all duration-200 text-muted-foreground hover:text-foreground"
-                >
-                  <Link to="/" onClick={() => isMobile && setOpenMobile(false)}>
-                    <LayoutGrid />
-                    <span>All Modules</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
         {/* Main Navigation */}
         <SidebarGroup>
           <SidebarGroupContent>
@@ -85,6 +65,26 @@ export function McmsSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Back to Modules (Bottom) */}
+        <SidebarGroup className="mt-auto">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="All Modules"
+                  className="transition-all duration-200 text-muted-foreground hover:text-foreground"
+                >
+                  <Link to="/" onClick={() => isMobile && setOpenMobile(false)}>
+                    <LayoutGrid />
+                    <span>All Modules</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
