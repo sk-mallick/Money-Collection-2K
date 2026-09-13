@@ -1,4 +1,0 @@
-# Block direct web access to all files in this directory (e.g. JSON backups, logs)
-<Files "*">
-    Require all denied
-</Files>

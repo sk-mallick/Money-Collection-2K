@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ReportsDashboardLoading } from '@/components/loading-skeletons';
 import { fetchResultPeriods, fetchSubjects, type ResultPeriod } from '@/lib/reports-api';
 import { fetchSettings, fetchStudents } from '@/lib/api';
 import { MONTH_NAMES, MONTH_CODES } from '@/lib/constants';
@@ -59,6 +59,10 @@ export default function ReportsDashboard() {
     { label: 'Blank Marks Sheet', icon: FileText, action: () => navigate('/reports/blank-sheet'), variant: 'outline' as const },
   ];
 
+  if (loading) {
+    return <ReportsDashboardLoading />;
+  }
+
   return (
     <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
       {/* Page Header */}
@@ -80,20 +84,11 @@ export default function ReportsDashboard() {
         {stats.map((stat) => (
           <Card key={stat.label} className="relative overflow-hidden">
             <CardContent className="p-4">
-              {loading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-8 w-12" />
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2 mb-2">
-                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                    <span className="text-xs text-muted-foreground font-medium">{stat.label}</span>
-                  </div>
-                  <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
-                </>
-              )}
+              <div className="flex items-center gap-2 mb-2">
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                <span className="text-xs text-muted-foreground font-medium">{stat.label}</span>
+              </div>
+              <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
             </CardContent>
           </Card>
         ))}
@@ -125,13 +120,7 @@ export default function ReportsDashboard() {
             View All
           </Button>
         </div>
-        {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-16 w-full rounded-lg" />
-            ))}
-          </div>
-        ) : periods.length === 0 ? (
+        {periods.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <ClipboardList className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />

@@ -624,3 +624,95 @@ export function GroupsPageLoading() {
     </div>
   );
 }
+
+// 8. Reports Dashboard loading state (Pixel-perfect responsive & desktop skeleton)
+export function ReportsDashboardLoading() {
+  return (
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
+      {/* Page Header */}
+      <div className="border-b pb-3.5 sm:pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          <div className="space-y-1.5">
+            <Skeleton className="h-6 sm:h-7 w-52 sm:w-64 rounded-md" />
+            <div className="flex items-center gap-1.5">
+              <Skeleton className="h-3.5 w-24 rounded-md" />
+              <Skeleton className="h-3.5 w-16 rounded-md font-semibold" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Grid — 2 cols mobile, 3 cols tablet, 5 cols desktop */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        {[
+          { labelW: 'w-20', valW: 'w-12 sm:w-16' },
+          { labelW: 'w-18', valW: 'w-20 sm:w-24' },
+          { labelW: 'w-16', valW: 'w-8 sm:w-12' },
+          { labelW: 'w-14', valW: 'w-8 sm:w-12' },
+          { labelW: 'w-20', valW: 'w-10 sm:w-14' },
+        ].map((stat, i) => (
+          <Card key={i} className="relative overflow-hidden border bg-card/60 shadow-xs">
+            <CardContent className="p-3.5 sm:p-4 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <Skeleton className="size-4 rounded-md shrink-0" />
+                <Skeleton className={`h-3.5 ${stat.labelW} rounded-md`} />
+              </div>
+              <Skeleton className={`h-7 sm:h-8 ${stat.valW} rounded-md`} />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Quick Actions — 1 col mobile, 2 cols tablet, 4 cols desktop */}
+      <div>
+        <Skeleton className="h-3.5 w-28 rounded-md mb-3" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            'w-36',
+            'w-24',
+            'w-32',
+            'w-30',
+          ].map((w, i) => (
+            <div
+              key={i}
+              className="h-[76px] sm:h-[80px] rounded-xl border border-border/50 bg-card/40 p-4 flex flex-col items-center justify-center gap-2 shadow-2xs"
+            >
+              <Skeleton className="size-5 rounded-lg shrink-0" />
+              <Skeleton className={`h-3.5 ${w} rounded-md`} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Recent Result Periods */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <Skeleton className="h-3.5 w-40 sm:w-48 rounded-md" />
+          <Skeleton className="h-7 w-16 rounded-md" />
+        </div>
+        <div className="space-y-2">
+          {[
+            { titleW: 'w-36 sm:w-44', badgeW: 'w-18', subW: 'w-56 sm:w-72', statusW: 'w-18' },
+            { titleW: 'w-32 sm:w-40', badgeW: 'w-20', subW: 'w-48 sm:w-64', statusW: 'w-20' },
+            { titleW: 'w-36 sm:w-44', badgeW: 'w-18', subW: 'w-52 sm:w-68', statusW: 'w-16' },
+            { titleW: 'w-28 sm:w-36', badgeW: 'w-20', subW: 'w-44 sm:w-60', statusW: 'w-18' },
+          ].map((item, i) => (
+            <Card key={i} className="border bg-card/50 shadow-xs">
+              <CardContent className="p-3 sm:p-3.5 flex items-center justify-between gap-3">
+                <div className="space-y-1.5 sm:space-y-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className={`h-4 ${item.titleW} rounded-md`} />
+                    <Skeleton className={`h-4.5 ${item.badgeW} rounded-md`} />
+                  </div>
+                  <Skeleton className={`h-3 ${item.subW} rounded-md`} />
+                </div>
+                <Skeleton className={`h-5.5 sm:h-6 ${item.statusW} rounded-full shrink-0`} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+

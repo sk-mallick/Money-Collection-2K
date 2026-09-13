@@ -15,13 +15,17 @@ import {
   DuesPageLoading, 
   SettingsPageLoading,
   AboutPageLoading,
-  GroupsPageLoading
+  GroupsPageLoading,
+  ReportsDashboardLoading
 } from '@/components/loading-skeletons';
 import { getApiBase } from '@/lib/constants';
 
 function DynamicSuspenseFallback() {
   const path = window.location.pathname.toLowerCase();
   
+  if (path.includes('/reports/dashboard') || path.endsWith('/reports') || path.endsWith('/reports/')) {
+    return <ReportsDashboardLoading />;
+  }
   if (path.includes('/students')) {
     return <StudentsPageLoading />;
   }
