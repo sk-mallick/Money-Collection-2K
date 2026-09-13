@@ -77,7 +77,7 @@ export function PricingCard({
             Default Fee Pricing
           </CardTitle>
           <CardDescription className="text-xs leading-relaxed">
-            Set default fees for Junior, Senior, and Admission categories. Changing defaults will update student profiles accordingly (you can still override this individually when adding or editing a student).
+            Set default tuition rates and admission fee.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col justify-between gap-4">
@@ -113,7 +113,7 @@ export function PricingCard({
 
               <div className="flex items-center gap-2 shrink-0">
                 <Label htmlFor="feeJunior" className="text-[11px] font-bold text-muted-foreground shrink-0 whitespace-nowrap">
-                  Monthly Fee
+                  Monthly
                 </Label>
                 <div className="relative w-28">
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground/60">₹</span>
@@ -124,7 +124,7 @@ export function PricingCard({
                     placeholder="1000"
                     value={form.feeJunior}
                     onChange={e => updateField('feeJunior', e.target.value)}
-                    className="pl-6 text-sm font-bold h-9 bg-background/80 w-full"
+                    className="pl-6 text-sm font-bold h-9 bg-background/80 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
@@ -160,7 +160,7 @@ export function PricingCard({
 
               <div className="flex items-center gap-2 shrink-0">
                 <Label htmlFor="feeSenior" className="text-[11px] font-bold text-muted-foreground shrink-0 whitespace-nowrap">
-                  Monthly Fee
+                  Monthly
                 </Label>
                 <div className="relative w-28">
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground/60">₹</span>
@@ -171,7 +171,7 @@ export function PricingCard({
                     placeholder="1000"
                     value={form.feeSenior}
                     onChange={e => updateField('feeSenior', e.target.value)}
-                    className="pl-6 text-sm font-bold h-9 bg-background/80 w-full"
+                    className="pl-6 text-sm font-bold h-9 bg-background/80 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
@@ -218,7 +218,7 @@ export function PricingCard({
                     placeholder="500"
                     value={form.admissionFee || ''}
                     onChange={e => updateField('admissionFee', e.target.value)}
-                    className="pl-6 text-sm font-bold h-9 bg-background/80 w-full"
+                    className="pl-6 text-sm font-bold h-9 bg-background/80 w-full [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
@@ -230,13 +230,13 @@ export function PricingCard({
             {hasFeeChanged && (
               <span className="text-xs font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 animate-in fade-in duration-300">
                 <ShieldAlert className="size-3.5" />
-                Unsaved changes detected
+                Unsaved changes
               </span>
             )}
             {!hasFeeChanged && (
               <span className="text-xs text-muted-foreground/60 flex items-center gap-1.5">
                 <CheckCircle className="size-3.5" />
-                All fees are saved
+                All fees saved
               </span>
             )}
             <Button
@@ -250,7 +250,7 @@ export function PricingCard({
               variant={hasFeeChanged ? 'default' : 'outline'}
             >
               {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-              {hasFeeChanged ? 'Apply Fee Changes' : 'Fees Saved'}
+              {hasFeeChanged ? 'Save Changes' : 'Saved'}
             </Button>
           </div>
         </CardContent>
