@@ -287,9 +287,9 @@ export default function GroupsPage() {
       {loading ? (
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, idx) => (
-            <Card key={idx} className="overflow-hidden flex flex-col justify-between pb-3">
+            <Card key={idx} className="overflow-hidden flex flex-col justify-between">
               <div>
-                <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 p-3.5 sm:p-4 pb-2.5">
+                <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 px-4 pt-4 pb-3">
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <div className="h-9 w-9 rounded-lg bg-accent animate-pulse shrink-0" />
                     <div className="space-y-1.5 min-w-0 flex-1">
@@ -302,15 +302,15 @@ export default function GroupsPage() {
                     <div className="h-7 w-7 rounded-md bg-accent animate-pulse" />
                   </div>
                 </CardHeader>
-                <CardContent className="p-3.5 sm:p-4 pt-0 pb-3 space-y-2">
-                  <div className="flex items-center justify-between p-2 rounded-lg">
+                <CardContent className="px-4 pt-0 pb-4 space-y-2">
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg">
                     <div className="flex items-center space-x-1.5">
                       <div className="h-3.5 w-3.5 rounded-sm bg-accent animate-pulse shrink-0" />
                       <div className="h-3 w-[72px] rounded-md bg-accent animate-pulse" />
                     </div>
                     <div className="h-3 w-20 rounded-md bg-accent animate-pulse" />
                   </div>
-                  <div className="flex items-center justify-between p-2 rounded-lg">
+                  <div className="flex items-center justify-between px-3 py-2 rounded-lg">
                     <div className="flex items-center space-x-1.5">
                       <div className="h-3.5 w-3.5 rounded-sm bg-accent animate-pulse shrink-0" />
                       <div className="h-3 w-[58px] rounded-md bg-accent animate-pulse" />
@@ -356,10 +356,10 @@ export default function GroupsPage() {
           {groups.map((group) => (
             <Card
               key={group.id}
-              className="relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary/20 flex flex-col justify-between pb-3"
+              className="relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary/20 flex flex-col justify-between"
             >
               <div>
-                <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 p-3.5 sm:p-4 pb-2.5">
+                <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 px-4 pt-4 pb-3">
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 font-mono text-base font-bold text-primary ring-1 ring-primary/20 shrink-0">
                       {group.id}
@@ -405,8 +405,8 @@ export default function GroupsPage() {
                     </DropdownMenu>
                   </div>
                 </CardHeader>
-                <CardContent className="p-3.5 sm:p-4 pt-0 pb-3 space-y-2">
-                  <div className="text-xs text-muted-foreground flex items-center justify-between p-2 rounded-lg border border-border/50 bg-muted/40">
+                <CardContent className="px-4 pt-0 pb-4 space-y-2">
+                  <div className="text-xs text-muted-foreground flex items-center justify-between px-3 py-2 rounded-lg border border-border/50 bg-muted/40">
                     <div className="flex items-center space-x-1.5 min-w-0">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span className="font-medium shrink-0">Classes On:</span>
@@ -417,7 +417,7 @@ export default function GroupsPage() {
                   </div>
                   <div
                     onClick={() => navigate(`/mcms/students?group=${group.id}`)}
-                    className="text-xs text-muted-foreground flex items-center justify-between p-2 rounded-lg border border-border/50 bg-muted/40 cursor-pointer hover:bg-muted/70 hover:border-primary/20 transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                    className="text-xs text-muted-foreground flex items-center justify-between px-3 py-2 rounded-lg border border-border/50 bg-muted/40 cursor-pointer hover:bg-muted/70 hover:border-primary/20 transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
                     tabIndex={0}
                     role="button"
                     onKeyDown={(e) => {
