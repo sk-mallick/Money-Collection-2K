@@ -51,12 +51,9 @@ export function PaymentHistoryTable({
         ) : (
           <div>
             {/* Minimal Column Header */}
-            <div className="grid grid-cols-[85px_1fr_auto] items-center px-3.5 sm:px-4 py-2.5 bg-muted/25 border-b text-[10px] font-bold text-muted-foreground uppercase tracking-wider select-none">
-              <div className="flex items-center gap-2">
-                <span className="size-1.5 opacity-0 shrink-0" />
-                <span>Month</span>
-              </div>
-              <span className="pl-1">Date</span>
+            <div className="grid grid-cols-3 items-center px-3.5 sm:px-4 py-2.5 bg-muted/30 border-b text-[10px] font-bold text-muted-foreground uppercase tracking-wider select-none">
+              <span className="text-left">Month</span>
+              <span className="text-center">Date</span>
               <span className="text-right">Amount</span>
             </div>
 
@@ -67,23 +64,23 @@ export function PaymentHistoryTable({
                 return (
                   <div
                     key={i}
-                    className="grid grid-cols-[85px_1fr_auto] items-center px-3.5 sm:px-4 py-2.5 sm:py-3 hover:bg-muted/20 transition-colors text-xs"
+                    className="grid grid-cols-3 items-center px-3.5 sm:px-4 py-2.5 sm:py-3 hover:bg-muted/20 transition-colors text-xs"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex items-center gap-2 text-left min-w-0">
                       <span
-                        className={`size-1.5 rounded-full shrink-0 ${
+                        className={`size-2 rounded-full shrink-0 ${
                           isWaived ? 'bg-amber-500' : 'bg-emerald-500'
                         }`}
                       />
-                      <span className="font-semibold text-foreground text-xs shrink-0">
+                      <span className="font-semibold text-foreground text-xs truncate">
                         {MONTH_SHORT[p.month] || p.month}
                       </span>
                     </div>
-                    <span className="text-[11px] text-muted-foreground truncate pl-1">
+                    <span className="text-[11px] text-muted-foreground truncate text-center block">
                       {formatDate(p.date)}
                     </span>
                     <span
-                      className={`font-bold shrink-0 text-right ${
+                      className={`font-bold text-xs text-right truncate block ${
                         isWaived
                           ? 'text-amber-600 dark:text-amber-400'
                           : 'text-emerald-600 dark:text-emerald-400'
@@ -97,9 +94,12 @@ export function PaymentHistoryTable({
             </div>
 
             {/* Footer Summary */}
-            <div className="px-3.5 sm:px-4 py-2.5 border-t bg-muted/20 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground font-medium">Total Paid</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="grid grid-cols-3 items-center px-3.5 sm:px-4 py-2.5 border-t bg-muted/20 text-xs">
+              <span className="text-muted-foreground font-semibold text-left">Total Paid</span>
+              <span className="text-[10px] text-muted-foreground/70 text-center truncate">
+                {paidPayments.length} {paidPayments.length === 1 ? 'month' : 'months'}
+              </span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400 text-right truncate">
                 {formatCurrency(totalReceived)}
               </span>
             </div>
