@@ -75,6 +75,7 @@ RewriteRule ^api/receipts$ backend/api/receipts.php [L,QSA]
 RewriteRule ^api/settings$ backend/api/settings.php [L,QSA]
 RewriteRule ^api/groups$ backend/api/groups.php [L,QSA]
 RewriteRule ^api/change-password$ backend/api/change_password.php [L,QSA]
+RewriteRule ^api/rollover$ backend/api/rollover.php [L,QSA]
 
 # Report Card API endpoints
 RewriteRule ^api/result-subjects$ backend/api/result_subjects.php [L,QSA]
