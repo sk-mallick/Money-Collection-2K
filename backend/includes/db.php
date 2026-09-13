@@ -94,12 +94,13 @@ function get_db(): PDO {
     $env = load_env();
 
     $host = $env['DB_HOST'];
+    $port = $env['DB_PORT'] ?? 3306;
     $dbname = $env['DB_NAME'];
     $user = $env['DB_USER'];
     $pass = $env['DB_PASS'] ?? '';
 
     try {
-        $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
+        $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
         $pdo = new PDO($dsn, $user, $pass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
