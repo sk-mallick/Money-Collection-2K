@@ -119,7 +119,7 @@ export default function SettingsPage() {
 
       const totalAffected = feeChangePreviews.reduce((sum, p) => sum + p.affectedCount - p.customCount, 0);
       if (applyFeeChanges && totalAffected > 0) {
-        toast.success(`Settings saved! Fee updated for ${totalAffected} student${totalAffected !== 1 ? 's' : ''}.`);
+        toast.success('Settings saved and student fees updated');
       } else {
         toast.success('Settings saved successfully');
       }
@@ -168,7 +168,7 @@ export default function SettingsPage() {
         throw new Error('Rollover failed on server');
       }
 
-      toast.success(`Successfully rolled over to Academic Year ${res.nextAcademicYear}!`);
+      toast.success(`Rollover complete for Academic Year ${res.nextAcademicYear}`);
       setConfirmText('');
       setRolloverDialogOpen(false);
       refresh();

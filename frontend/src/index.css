@@ -403,3 +403,161 @@
     margin: 0 !important;
   }
 }
+
+/* ─── Single-Line Compact shadcn/ui Toast ───────────────────── */
+[data-sonner-toaster] {
+  --normal-bg: var(--card);
+  --normal-text: var(--foreground);
+  --normal-border: var(--border);
+  --width: 356px !important;
+  --gap: 8px !important;
+  font-family: inherit !important;
+}
+
+[data-sonner-toast] {
+  padding: 8px 14px 8px 12px !important;
+  min-height: 42px !important;
+  height: 42px !important;
+  font-family: inherit !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.45), 0 2px 8px -1px rgba(0, 0, 0, 0.25) !important;
+  backdrop-filter: blur(14px) !important;
+  background-color: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--foreground) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  width: 356px !important;
+  max-width: 356px !important;
+  min-width: 356px !important;
+}
+
+/* Neutral card background for success/error/info/warning to match sleek shadcn theme */
+[data-sonner-toast][data-styled="true"] {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+/* Subtle accent edge per status */
+[data-sonner-toast][data-type="success"] {
+  border-left: 3.5px solid oklch(0.623 0.214 145) !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  border-left: 3.5px solid oklch(0.577 0.245 27.325) !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  border-left: 3.5px solid oklch(0.623 0.214 259.815) !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  border-left: 3.5px solid oklch(0.809 0.105 85) !important;
+}
+
+/* Prevent ugly neon high-saturation backgrounds even if rich-colors attribute is present */
+[data-sonner-toast][data-rich-colors="true"][data-type="success"] {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+[data-sonner-toast][data-rich-colors="true"][data-type="error"] {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+[data-sonner-toast][data-rich-colors="true"][data-type="info"] {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+[data-sonner-toast][data-rich-colors="true"][data-type="warning"] {
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+[data-sonner-toast] [data-icon] {
+  order: 1 !important;
+  margin-right: 10px !important;
+  margin-top: 0 !important;
+  margin-left: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  align-self: center !important;
+  flex-shrink: 0 !important;
+}
+
+[data-sonner-toast] [data-content] {
+  order: 2 !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 0 !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  padding-right: 0 !important;
+  overflow: hidden !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--foreground) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: inline !important;
+}
+
+/* Enforce strictly single-line: hide description */
+[data-sonner-toast] [data-description] {
+  display: none !important;
+}
+
+/* Close button matches Image 2: centered flex child on the right */
+[data-sonner-toast] [data-close-button] {
+  order: 3 !important;
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  margin-left: 14px !important;
+  margin-right: 0 !important;
+  border-radius: 6px !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--muted-foreground) !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+  opacity: 0.6 !important;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  opacity: 1 !important;
+  color: var(--foreground) !important;
+  background-color: var(--accent) !important;
+}
+
+[data-sonner-toast] [data-close-button] svg {
+  width: 14px !important;
+  height: 14px !important;
+  stroke-width: 1.75 !important;
+}
+
+
+

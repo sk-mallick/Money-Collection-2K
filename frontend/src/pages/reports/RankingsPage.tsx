@@ -495,7 +495,7 @@ export default function RankingsPage() {
         rankingType,
         settings,
       });
-      toast.success('Official A4 Landscape Rankings PDF downloaded successfully');
+      toast.success('Rankings PDF downloaded');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to generate rankings PDF';
       toast.error(msg);

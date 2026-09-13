@@ -175,7 +175,7 @@ function MarksDropdownInput({
       const num = parseFloat(val);
       if (!isNaN(num)) {
         if (maxMarks > 0 && num > maxMarks) {
-          toast.error(`Marks cannot exceed maximum (${maxMarks})`);
+          toast.error(`Marks cannot exceed maximum of ${maxMarks}`);
         }
         onChange(num, false);
       }
@@ -997,7 +997,7 @@ export default function MarksEntryPage() {
       }
       toast.info(
         next === 'normal'
-          ? 'Switched to Normal Input Mode (direct typing)'
+          ? 'Switched to Normal Input Mode'
           : 'Switched to Dropdown Input Mode'
       );
       return next;
@@ -1254,8 +1254,8 @@ export default function MarksEntryPage() {
 
     toast.info(
       isAbsent
-        ? 'All subjects marked as Absent for this student'
-        : 'All subjects marked as Present.'
+        ? 'All subjects marked Absent'
+        : 'All subjects marked Present'
     );
   };
 
@@ -1288,7 +1288,7 @@ export default function MarksEntryPage() {
         return next;
       });
 
-      toast.success('Cleared secured and maximum marks for this student');
+      toast.success('Marks cleared');
     } else {
       lastClearClickRef.current = { studentResultId, time: now };
       setStudents((prev) => {
@@ -1305,7 +1305,7 @@ export default function MarksEntryPage() {
         return next;
       });
 
-      toast.info('Secured marks cleared (tap again within 2s to clear max marks too)');
+      toast.info('Secured marks cleared');
     }
   };
 
@@ -1340,8 +1340,8 @@ export default function MarksEntryPage() {
     );
     toast.info(
       isNowAbsent
-        ? 'All subjects marked as Absent for this student'
-        : 'All subjects marked as Present for this student'
+        ? 'All subjects marked Absent'
+        : 'All subjects marked Present'
     );
   };
 
@@ -1414,7 +1414,7 @@ export default function MarksEntryPage() {
   const handleCopyMaxMarksToNext = (sourceStudent: StudentResult, currentFilteredIndex: number) => {
     const nextStudent = filteredStudents[currentFilteredIndex + 1];
     if (!nextStudent) {
-      toast.info('This is the last student card in the list; no next student to copy to.');
+      toast.info('Last student reached');
       return;
     }
 
@@ -1441,7 +1441,7 @@ export default function MarksEntryPage() {
       return next;
     });
 
-    toast.success(`Copied maximum marks from ${sourceStudent.name} to ${nextStudent.name}`);
+    toast.success(`Max marks copied to ${nextStudent.name}`);
   };
 
   const handleSave = async () => {
@@ -1461,7 +1461,7 @@ export default function MarksEntryPage() {
       }));
 
       await saveMarks(Number(periodId), payload);
-      toast.success('All student marks saved and rankings recalculated successfully!');
+      toast.success('Marks saved successfully');
       await loadData(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to save marks';

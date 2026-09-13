@@ -280,7 +280,7 @@ export default function MonthlyResultsPage() {
         defaultMaxMarks,
       });
 
-      toast.success(`Result period created with ${result.studentCount} students`);
+      toast.success(`Period created with ${result.studentCount} students`);
       setCreateOpen(false);
       setFormMonth('');
       setFormGroupId('');
