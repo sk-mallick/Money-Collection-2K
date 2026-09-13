@@ -181,7 +181,7 @@ export default function GroupsPage() {
 
       {/* Group Create/Edit Modal Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{isEdit ? "Edit Group" : "Add Group"}</DialogTitle>
             <DialogDescription>Configure class group, timing, and days.</DialogDescription>

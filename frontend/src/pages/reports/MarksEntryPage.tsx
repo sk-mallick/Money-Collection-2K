@@ -3529,7 +3529,7 @@ export default function MarksEntryPage() {
 
   {/* Keyboard Shortcuts Help Dialog Modal */}
   <Dialog open={shortcutsModalOpen} onOpenChange={setShortcutsModalOpen}>
-    <DialogContent className="max-w-md sm:max-w-lg max-h-[85vh] overflow-y-auto">
+    <DialogContent className="sm:max-w-lg">
       <DialogHeader>
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-lg bg-primary/10 text-primary">

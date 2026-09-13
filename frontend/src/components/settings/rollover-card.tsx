@@ -77,7 +77,7 @@ export function RolloverCard({
                 Start New Year Rollover
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <AlertTriangle className="size-5 text-destructive" />

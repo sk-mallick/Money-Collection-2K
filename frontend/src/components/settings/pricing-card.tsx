@@ -258,7 +258,7 @@ export function PricingCard({
 
       {/* Confirmation Dialog */}
       <Dialog open={feeChangeDialogOpen} onOpenChange={setFeeChangeDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2.5 text-base font-bold">
               <div className="p-1.5 rounded-lg bg-amber-500/15">

@@ -233,7 +233,7 @@ export function StudentForm({ open, onOpenChange, student, onSaved }: StudentFor
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Edit Student' : 'Add New Student'}</DialogTitle>
           <DialogDescription className="sr-only">

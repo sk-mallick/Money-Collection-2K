@@ -616,7 +616,7 @@ export default function MonthlyResultsPage() {
 
       {/* Create Dialog (Mobile only / fallback) */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Create Monthly Result</DialogTitle>
             <DialogDescription>Select the academic year, month, and group to create a new result period</DialogDescription>
