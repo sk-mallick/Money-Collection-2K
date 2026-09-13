@@ -15,7 +15,20 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetClose,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { fetchRankings, fetchResultPeriods, type RankingGroup, type ResultPeriod } from '@/lib/reports-api';
@@ -44,6 +57,7 @@ import {
   LayoutList,
   ArrowLeft,
   Settings,
+  Calendar,
 } from 'lucide-react';
 import {
   generateRankingsPDF,
@@ -164,6 +178,7 @@ export default function RankingsPage() {
   const [selectedFilterKey, setSelectedFilterKey] = useState<string>('all');
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [periods, setPeriods] = useState<ResultPeriod[]>([]);
+  const [mobileExpandedSection, setMobileExpandedSection] = useState<'year' | 'month' | 'filter' | null>(null);
 
   // View Mode: 'standard' (interactive cards view) vs 'sheet' (exact A4 offline sheet preview)
   const [viewMode, setViewMode] = useState<'standard' | 'sheet'>(() => {
@@ -342,6 +357,12 @@ export default function RankingsPage() {
 
     return [{ value: 'all', label: allLabel }, ...items];
   }, [rankings, rankingType]);
+
+  // Selected filter label for compact display
+  const selectedFilterOptionLabel = useMemo(() => {
+    const opt = filterDropdownOptions.find((f) => f.value === selectedFilterKey);
+    return opt ? opt.label : selectedFilterKey === 'all' ? 'All' : selectedFilterKey;
+  }, [filterDropdownOptions, selectedFilterKey]);
 
   // Available months with rankings in the current academic year
   const availableMonthsWithRankings = useMemo(() => {
@@ -593,48 +614,76 @@ export default function RankingsPage() {
     <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
       {/* ─── TOP HEADER & ACTIONS ─── */}
       <div className="no-print space-y-3.5 border-b pb-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <span>Academic Rankings</span>
-              <Badge variant="outline" className="text-xs font-semibold px-2 py-0.5 bg-muted/40 font-normal">
-                {MONTH_NAMES[month] || month} {academicYear}
-              </Badge>
+        <div className="flex flex-row items-center justify-between gap-3 w-full">
+          <div className="min-w-0 flex-1 flex flex-col justify-center">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+              Academic Rankings
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              Official merit list with all individual subject scores, total, percentage, and rank
-            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs font-semibold text-muted-foreground shrink-0">
+                {MONTH_NAMES[month] || month} {academicYear}
+              </span>
+              <p className="hidden sm:block text-xs sm:text-sm text-muted-foreground truncate">
+                • Official merit list with all individual subject scores, total, percentage, and rank
+              </p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {/* Mobile Action Buttons: Print & Download (< sm only) */}
+          <div className="sm:hidden flex items-center gap-1.5 shrink-0">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleDirectPrint}
+              disabled={displayedRankings.length === 0 || loading || isPrinting}
+              className="h-8 w-8 rounded-md bg-card shadow-2xs border cursor-pointer shrink-0"
+              title="Print exact A4 rankings sheet"
+            >
+              {isPrinting ? (
+                <div className="h-3.5 w-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              ) : (
+                <Printer className="h-4 w-4 text-primary" />
+              )}
+            </Button>
+            <Button
+              size="icon"
+              onClick={handleDownloadPDF}
+              disabled={displayedRankings.length === 0 || loading || isDownloading}
+              className="h-8 w-8 rounded-md bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 cursor-pointer shrink-0"
+              title="Download official A4 PDF"
+            >
+              {isDownloading ? (
+                <div className="h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+
+          {/* Desktop Header Actions (>= sm only) */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0 ml-auto">
             {/* View Mode Switcher: Standard vs A4 Sheet */}
-            <div className="flex items-center border rounded-md p-0.5 bg-muted/60 shadow-2xs h-8">
-              <button
-                type="button"
+            <div className="flex items-center border rounded-lg p-0.5 bg-muted/40 h-8">
+              <Button
+                variant={viewMode === 'standard' ? 'default' : 'ghost'}
+                size="sm"
                 onClick={() => handleViewModeChange('standard')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-xs transition-all cursor-pointer ${
-                  viewMode === 'standard'
-                    ? 'bg-background text-foreground shadow-xs font-semibold'
-                    : 'text-muted-foreground hover:text-foreground font-medium'
-                }`}
+                className="h-7 px-2.5 text-xs font-medium cursor-pointer"
                 title="Standard Dashboard View"
               >
-                <LayoutList className="h-3.5 w-3.5" />
+                <LayoutList className="h-3.5 w-3.5 mr-1" />
                 <span>Standard</span>
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant={viewMode === 'sheet' ? 'default' : 'ghost'}
+                size="sm"
                 onClick={() => handleViewModeChange('sheet')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-xs transition-all cursor-pointer ${
-                  viewMode === 'sheet'
-                    ? 'bg-background text-foreground shadow-xs font-semibold'
-                    : 'text-muted-foreground hover:text-foreground font-medium'
-                }`}
+                className="h-7 px-2.5 text-xs font-medium cursor-pointer"
                 title="A4 Sheet Preview"
               >
-                <FileText className="h-3.5 w-3.5" />
+                <FileText className="h-3.5 w-3.5 mr-1" />
                 <span>A4 Sheet</span>
-              </button>
+              </Button>
             </div>
 
             {/* Print Button */}
@@ -643,7 +692,7 @@ export default function RankingsPage() {
               size="sm"
               onClick={handleDirectPrint}
               disabled={displayedRankings.length === 0 || loading || isPrinting}
-              className="hidden sm:inline-flex h-8 gap-1.5 px-2.5 sm:px-3 text-xs font-semibold shadow-2xs cursor-pointer hover:bg-muted rounded-md"
+              className="inline-flex h-8 gap-1.5 px-2.5 sm:px-3 text-xs font-semibold shadow-2xs cursor-pointer hover:bg-muted rounded-md"
               title="Print exact A4 Landscape rankings sheet"
             >
               {isPrinting ? (
@@ -681,7 +730,7 @@ export default function RankingsPage() {
               variant="outline"
               size="sm"
               onClick={() => navigate('/reports/monthly')}
-              className="hidden sm:inline-flex h-8 gap-1.5 px-2.5 text-xs font-semibold shadow-2xs cursor-pointer hover:bg-muted rounded-md"
+              className="inline-flex h-8 gap-1.5 px-2.5 text-xs font-semibold shadow-2xs cursor-pointer hover:bg-muted rounded-md"
               title="Back to Monthly Reports"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -691,148 +740,384 @@ export default function RankingsPage() {
         </div>
 
         {/* ─── TOOLBAR ─── */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-          {/* Search Input with flexible expanding width across full row */}
-          <div className="relative flex-1 min-w-[180px] sm:min-w-[200px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <Input
-              ref={searchInputRef}
-              placeholder="Search student or ID... (Ctrl+F)"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPreviewPageIndex(0);
-              }}
-              className="pl-8 pr-7 text-xs h-8 w-full bg-card rounded-md shadow-2xs border"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer transition-colors"
-                title="Clear search"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-
-          {/* Academic Year Dropdown */}
-          <CustomDropdown
-            value={academicYear}
-            placeholder="Academic Year"
-            options={yearOptions.map((y) => ({ label: y, value: y }))}
-            onChange={handleAcademicYearChange}
-            width="w-[125px] shrink-0"
-          />
-
-          {/* Month Dropdown */}
-          <CustomDropdown
-            value={month}
-            placeholder="Month"
-            options={monthDropdownOptions}
-            onChange={setMonth}
-            width="w-[155px] shrink-0"
-          />
-
-          {/* Class / Group Filter Dropdown */}
-          <CustomDropdown
-            value={selectedFilterKey}
-            placeholder={rankingType === 'class' ? 'All Classes' : 'All Groups'}
-            options={filterDropdownOptions}
-            onChange={setSelectedFilterKey}
-            width="w-[170px] shrink-0"
-          />
-
-          {/* View Mode Toggle: Class-Wise vs Group-Wise */}
-          <Tabs
-            value={rankingType}
-            onValueChange={(val) => {
-              setRankingType(val as 'class' | 'group');
-              setSelectedFilterKey('all');
-            }}
-            className="w-full sm:w-auto shrink-0"
-          >
-            <TabsList className="grid grid-cols-2 w-full sm:w-[240px] h-8 bg-muted/60 p-0.5 rounded-md border">
-              <TabsTrigger value="class" className="text-xs h-7 gap-1.5 font-medium rounded-xs cursor-pointer">
-                <GraduationCap className="h-3.5 w-3.5" />
-                <span>Class-Wise</span>
-              </TabsTrigger>
-              <TabsTrigger value="group" className="text-xs h-7 gap-1.5 font-medium rounded-xs cursor-pointer">
-                <Users className="h-3.5 w-3.5" />
-                <span>Group-Wise</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {/* Preview Navigation Switcher (Active in Sheet Mode when Multiple Buckets or Pages) */}
-          {viewMode === 'sheet' && (
-            <div className="flex items-center gap-1.5 ml-auto">
-              {displayedRankings.length > 1 && (
-                <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-8">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 rounded-none cursor-pointer text-xs hover:bg-accent"
-                    onClick={() => {
-                      setPreviewBucketIndex((p) => Math.max(0, p - 1));
-                      setPreviewPageIndex(0);
-                    }}
-                    disabled={previewBucketIndex <= 0}
-                    title="Previous Group / Class"
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                    <span className="hidden md:inline ml-1 text-xs">Prev</span>
-                  </Button>
-                  <span className="text-xs font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap bg-muted/20">
-                    {rankingType === 'group' ? 'Group' : 'Class'} {previewBucketIndex + 1} of {displayedRankings.length}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 rounded-none cursor-pointer text-xs hover:bg-accent"
-                    onClick={() => {
-                      setPreviewBucketIndex((p) => Math.min(displayedRankings.length - 1, p + 1));
-                      setPreviewPageIndex(0);
-                    }}
-                    disabled={previewBucketIndex >= displayedRankings.length - 1}
-                    title="Next Group / Class"
-                  >
-                    <span className="hidden md:inline mr-1 text-xs">Next</span>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              )}
-
-              {totalPagesForActiveBucket > 1 && (
-                <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-8">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-1.5 rounded-none cursor-pointer text-xs hover:bg-accent"
-                    onClick={() => setPreviewPageIndex((p) => Math.max(0, p - 1))}
-                    disabled={previewPageIndex <= 0}
-                    title="Previous Page"
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" />
-                  </Button>
-                  <span className="text-xs font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap bg-muted/20">
-                    Page {previewPageIndex + 1} / {totalPagesForActiveBucket}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-1.5 rounded-none cursor-pointer text-xs hover:bg-accent"
-                    onClick={() => setPreviewPageIndex((p) => Math.min(totalPagesForActiveBucket - 1, p + 1))}
-                    disabled={previewPageIndex >= totalPagesForActiveBucket - 1}
-                    title="Next Page"
-                  >
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full justify-between">
+          {/* Search Input (flexible expanding) + Mobile Settings Button */}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <Input
+                ref={searchInputRef}
+                placeholder="Search student or ID... (Ctrl+F)"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPreviewPageIndex(0);
+                }}
+                className="pl-8 pr-7 text-xs h-8 w-full bg-card rounded-md shadow-2xs border"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer transition-colors"
+                  title="Clear search"
+                >
+                  <X className="h-3 w-3" />
+                </button>
               )}
             </div>
-          )}
+
+            {/* Mobile Standalone Settings Pop-up Menu (< sm only) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="sm:hidden h-8 w-8 shrink-0 rounded-md bg-card hover:bg-accent border shadow-2xs cursor-pointer relative"
+                  title="Settings & Filters"
+                  aria-label="Settings and Filters"
+                >
+                  <Settings className="h-4 w-4 text-foreground" />
+                  {hasActiveFilters && (
+                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={6}
+                className="w-72 max-w-[calc(100vw-24px)] max-h-[82vh] overflow-y-auto p-2 shadow-2xl border bg-popover text-popover-foreground z-50 rounded-xl space-y-2"
+              >
+                {/* 1. Header with Title & Reset Button */}
+                <div className="flex items-center justify-between px-1 py-1 border-b pb-2">
+                  <span className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                    <Settings className="h-4 w-4 text-muted-foreground" />
+                    Filters & Options
+                  </span>
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setSelectedFilterKey('all');
+                      }}
+                      className="text-[11px] font-semibold text-muted-foreground hover:text-destructive cursor-pointer transition-colors px-1.5 py-0.5 rounded hover:bg-muted/50"
+                    >
+                      Reset All
+                    </button>
+                  )}
+                </div>
+
+                {/* 2. View Mode (Single Tap Toggle Button) */}
+                <div className="space-y-1">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">
+                    View Mode
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleViewModeChange(viewMode === 'standard' ? 'sheet' : 'standard')}
+                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-card hover:bg-muted/50 border text-xs font-medium cursor-pointer transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      {viewMode === 'standard' ? (
+                        <LayoutList className="h-4 w-4 text-primary" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-primary" />
+                      )}
+                      <span className="font-semibold text-foreground">
+                        {viewMode === 'standard' ? 'Standard' : 'A4 Sheet'}
+                      </span>
+                    </span>
+                    <span className="text-[10px] font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
+                      Tap to toggle
+                    </span>
+                  </button>
+                </div>
+
+                {/* 3. Ranking Group (Single Tap Toggle Button) */}
+                <div className="space-y-1">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">
+                    Ranking Group
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRankingType(rankingType === 'class' ? 'group' : 'class');
+                      setSelectedFilterKey('all');
+                    }}
+                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-card hover:bg-muted/50 border text-xs font-medium cursor-pointer transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      {rankingType === 'class' ? (
+                        <GraduationCap className="h-4 w-4 text-primary" />
+                      ) : (
+                        <Users className="h-4 w-4 text-primary" />
+                      )}
+                      <span className="font-semibold text-foreground">
+                        {rankingType === 'class' ? 'Class-Wise' : 'Group-Wise'}
+                      </span>
+                    </span>
+                    <span className="text-[10px] font-semibold text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
+                      Tap to toggle
+                    </span>
+                  </button>
+                </div>
+
+                <DropdownMenuSeparator className="my-1" />
+
+                {/* 4. Academic Year Row (Accordion Dropdown) */}
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMobileExpandedSection(mobileExpandedSection === 'year' ? null : 'year')
+                    }
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-colors cursor-pointer border ${
+                      mobileExpandedSection === 'year'
+                        ? 'bg-muted/80 border-border'
+                        : 'bg-card hover:bg-muted/50 border-border/70'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 text-foreground font-medium">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>Academic Year</span>
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-foreground">
+                        {academicYear}
+                      </span>
+                      <ChevronRight
+                        className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                          mobileExpandedSection === 'year' ? 'rotate-90 text-primary' : ''
+                        }`}
+                      />
+                    </span>
+                  </button>
+                  {mobileExpandedSection === 'year' && (
+                    <div className="p-2 rounded-lg bg-muted/30 border space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="flex flex-wrap gap-1.5">
+                        {yearOptions.map((y) => {
+                          const isSelected = y === academicYear;
+                          return (
+                            <button
+                              key={y}
+                              type="button"
+                              onClick={() => {
+                                handleAcademicYearChange(y);
+                                setMobileExpandedSection(null);
+                              }}
+                              className={`flex-1 min-w-[70px] py-1.5 text-xs font-mono rounded-md border text-center cursor-pointer transition-all ${
+                                isSelected
+                                  ? 'bg-primary text-primary-foreground border-primary font-bold shadow-2xs'
+                                  : 'bg-card text-foreground hover:bg-muted border-border/70'
+                              }`}
+                            >
+                              {y}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 5. Month Row (Accordion Dropdown with 3-Letter Buttons in 3 Columns) */}
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMobileExpandedSection(mobileExpandedSection === 'month' ? null : 'month')
+                    }
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-colors cursor-pointer border ${
+                      mobileExpandedSection === 'month'
+                        ? 'bg-muted/80 border-border'
+                        : 'bg-card hover:bg-muted/50 border-border/70'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 text-foreground font-medium">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>Month</span>
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-foreground">
+                        {MONTH_NAMES[month] || month}
+                      </span>
+                      <ChevronRight
+                        className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                          mobileExpandedSection === 'month' ? 'rotate-90 text-primary' : ''
+                        }`}
+                      />
+                    </span>
+                  </button>
+                  {mobileExpandedSection === 'month' && (
+                    <div className="p-2 rounded-lg bg-muted/30 border space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="grid grid-cols-3 gap-1.5 max-h-[160px] overflow-y-auto p-0.5">
+                        {monthDropdownOptions.map((m) => {
+                          const isSelected = m.value === month;
+                          const countMatch = m.label.match(/\((\d+)\)/);
+                          const count = countMatch ? countMatch[1] : null;
+                          const shortCode = m.value.toUpperCase().slice(0, 3);
+                          return (
+                            <button
+                              key={m.value}
+                              type="button"
+                              onClick={() => {
+                                setMonth(m.value);
+                                setMobileExpandedSection(null);
+                              }}
+                              className={`py-1.5 px-1 text-xs rounded-md border text-center transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                                isSelected
+                                  ? 'bg-primary text-primary-foreground border-primary font-bold shadow-2xs'
+                                  : 'bg-card hover:bg-muted text-foreground border-border/70 font-medium'
+                              }`}
+                            >
+                              <span className="text-xs font-bold leading-none tracking-wide">{shortCode}</span>
+                              {count ? (
+                                <span
+                                  className={`text-[9px] leading-none font-semibold ${
+                                    isSelected ? 'text-primary-foreground/90' : 'text-primary font-bold'
+                                  }`}
+                                >
+                                  ({count})
+                                </span>
+                              ) : (
+                                <span
+                                  className={`text-[9px] leading-none ${
+                                    isSelected ? 'text-primary-foreground/75' : 'text-muted-foreground/60'
+                                  }`}
+                                >
+                                  {MONTH_NAMES[m.value]?.slice(0, 3)}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 6. Class / Group Filter Row (Accordion Dropdown) */}
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMobileExpandedSection(mobileExpandedSection === 'filter' ? null : 'filter')
+                    }
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-colors cursor-pointer border ${
+                      mobileExpandedSection === 'filter'
+                        ? 'bg-muted/80 border-border'
+                        : 'bg-card hover:bg-muted/50 border-border/70'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 text-foreground font-medium">
+                      {rankingType === 'class' ? (
+                        <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <span>{rankingType === 'class' ? 'Class Filter' : 'Group Filter'}</span>
+                    </span>
+                    <span className="flex items-center gap-2 truncate max-w-[140px]">
+                      <span className="text-xs font-semibold text-foreground truncate">
+                        {selectedFilterOptionLabel}
+                      </span>
+                      <ChevronRight
+                        className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
+                          mobileExpandedSection === 'filter' ? 'rotate-90 text-primary' : ''
+                        }`}
+                      />
+                    </span>
+                  </button>
+                  {mobileExpandedSection === 'filter' && (
+                    <div className="p-2 rounded-lg bg-muted/30 border space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                      <div className="flex flex-col gap-1 max-h-[150px] overflow-y-auto p-0.5">
+                        {filterDropdownOptions.map((f) => {
+                          const isSelected = f.value === selectedFilterKey;
+                          return (
+                            <button
+                              key={f.value}
+                              type="button"
+                              onClick={() => {
+                                setSelectedFilterKey(f.value);
+                                setMobileExpandedSection(null);
+                              }}
+                              className={`w-full text-left px-2.5 py-1.5 text-xs rounded-md border transition-all cursor-pointer flex items-center justify-between ${
+                                isSelected
+                                  ? 'bg-primary text-primary-foreground border-primary font-semibold shadow-2xs'
+                                  : 'bg-card hover:bg-muted text-foreground border-border/70'
+                              }`}
+                            >
+                              <span className="truncate">{f.label}</span>
+                              {isSelected && <Check className="h-3.5 w-3.5 shrink-0 ml-1" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Desktop Toolbar Elements (Hidden on mobile < sm, visible on >= sm) */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0 ml-auto">
+            {/* Academic Year Dropdown */}
+            <CustomDropdown
+              value={academicYear}
+              placeholder="Academic Year"
+              options={yearOptions.map((y) => ({ label: y, value: y }))}
+              onChange={handleAcademicYearChange}
+              width="w-[115px] shrink-0"
+            />
+
+            {/* Month Dropdown */}
+            <CustomDropdown
+              value={month}
+              placeholder="Month"
+              options={monthDropdownOptions}
+              onChange={setMonth}
+              width="w-[145px] shrink-0"
+            />
+
+            {/* Class / Group Filter Dropdown */}
+            <CustomDropdown
+              value={selectedFilterKey}
+              placeholder={rankingType === 'class' ? 'All Classes' : 'All Groups'}
+              options={filterDropdownOptions}
+              onChange={setSelectedFilterKey}
+              width="w-[160px] shrink-0"
+            />
+
+            {/* View Mode Toggle: Class-Wise vs Group-Wise */}
+            <div className="flex items-center border rounded-lg p-0.5 bg-muted/40 h-8 shrink-0">
+              <Button
+                variant={rankingType === 'class' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  setRankingType('class');
+                  setSelectedFilterKey('all');
+                }}
+                className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+              >
+                <GraduationCap className="h-3.5 w-3.5 mr-1" />
+                <span>Class-Wise</span>
+              </Button>
+              <Button
+                variant={rankingType === 'group' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  setRankingType('group');
+                  setSelectedFilterKey('all');
+                }}
+                className="h-7 px-2.5 text-xs font-medium cursor-pointer"
+              >
+                <Users className="h-3.5 w-3.5 mr-1" />
+                <span>Group-Wise</span>
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Active Filters Summary Bar */}
@@ -1172,7 +1457,85 @@ export default function RankingsPage() {
         /* ══════════════════════════════════════════════════════════════════════════
            MODE 2: A4 LANDSCAPE OFFLINE SHEET PREVIEW (Exact 1:1 Vector Print Preview)
            ══════════════════════════════════════════════════════════════════════════ */
-        <div className="w-full flex flex-col items-center">
+        <div className="w-full flex flex-col items-center gap-2.5">
+          {/* Dedicated A4 Sheet Navigation Bar */}
+          {(displayedRankings.length > 1 || totalPagesForActiveBucket > 1) && (
+            <div className="no-print flex flex-wrap items-center justify-between gap-2 w-full max-w-[1123px] px-1">
+              <div className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5 text-primary" />
+                <span>
+                  {activeBucket?.label || `${rankingType === 'group' ? 'Group' : 'Class'} ${previewBucketIndex + 1}`} ({displayedRankings.length} total)
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {displayedRankings.length > 1 && (
+                  <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-8">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2.5 rounded-none cursor-pointer text-xs hover:bg-accent"
+                      onClick={() => {
+                        setPreviewBucketIndex((p) => Math.max(0, p - 1));
+                        setPreviewPageIndex(0);
+                      }}
+                      disabled={previewBucketIndex <= 0}
+                      title="Previous Group / Class"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                      <span>Prev</span>
+                    </Button>
+                    <span className="text-xs font-semibold text-foreground px-2.5 border-x leading-8 whitespace-nowrap bg-muted/30">
+                      {rankingType === 'group' ? 'Group' : 'Class'} {previewBucketIndex + 1} of {displayedRankings.length}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2.5 rounded-none cursor-pointer text-xs hover:bg-accent"
+                      onClick={() => {
+                        setPreviewBucketIndex((p) => Math.min(displayedRankings.length - 1, p + 1));
+                        setPreviewPageIndex(0);
+                      }}
+                      disabled={previewBucketIndex >= displayedRankings.length - 1}
+                      title="Next Group / Class"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                    </Button>
+                  </div>
+                )}
+
+                {totalPagesForActiveBucket > 1 && (
+                  <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-8">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 rounded-none cursor-pointer text-xs hover:bg-accent"
+                      onClick={() => setPreviewPageIndex((p) => Math.max(0, p - 1))}
+                      disabled={previewPageIndex <= 0}
+                      title="Previous Page"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    <span className="text-xs font-semibold text-foreground px-2.5 border-x leading-8 whitespace-nowrap bg-muted/30">
+                      Page {previewPageIndex + 1} / {totalPagesForActiveBucket}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 rounded-none cursor-pointer text-xs hover:bg-accent"
+                      onClick={() => setPreviewPageIndex((p) => Math.min(totalPagesForActiveBucket - 1, p + 1))}
+                      disabled={previewPageIndex >= totalPagesForActiveBucket - 1}
+                      title="Next Page"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div
             ref={a4ContainerRef}
             className="w-full flex justify-center items-start overflow-hidden py-1 print:overflow-visible print:h-auto print:py-0 print:block"
