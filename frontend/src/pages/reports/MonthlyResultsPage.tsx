@@ -206,6 +206,21 @@ export default function MonthlyResultsPage() {
     }
   }, [formGroupId, availableGroupsForMonth]);
 
+  const formMonthOptions = useMemo(() => {
+    return availableMonths.map((m) => ({
+      label: MONTH_NAMES[m] || m,
+      value: m,
+    }));
+  }, [availableMonths]);
+
+  const formGroupOptions = useMemo(() => {
+    const list = formMonth ? availableGroupsForMonth : groups;
+    return list.map((g) => ({
+      label: `Group ${g.id}`,
+      value: g.id,
+    }));
+  }, [formMonth, availableGroupsForMonth, groups]);
+
   const existingPeriod = useMemo(() => {
     if (!formYear || !formMonth || !formGroupId) return null;
     return periods.find(p => p.academic_year === formYear && p.month === formMonth && p.group_id === formGroupId);
@@ -302,37 +317,58 @@ export default function MonthlyResultsPage() {
   });
 
   return (
-    <div className="page-enter p-4 sm:p-6 space-y-6 w-full">
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Monthly Results</h1>
-          <p className="text-sm text-muted-foreground mt-1">Create and manage monthly examination results</p>
+      <div className="border-b pb-3 sm:pb-3.5">
+        <div className="flex flex-row items-center justify-between gap-3 w-full">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+              Monthly Results
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
+              Create and manage monthly examination results
+            </p>
+          </div>
+          
+          {/* Mobile / Tablet Create Button (opens dialog) */}
+          <Button
+            size="sm"
+            className="md:hidden h-8 w-8 sm:h-9 sm:w-auto p-0 sm:px-3.5 font-medium gap-1.5 cursor-pointer bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 shrink-0"
+            onClick={() => setCreateOpen(true)}
+            title="Create Monthly Result"
+          >
+            <Plus className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline text-xs">Create Result</span>
+          </Button>
         </div>
-        
-        {/* Mobile Create Button (opens dialog) */}
-        <Button className="md:hidden" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Result
-        </Button>
       </div>
 
       {/* Desktop Search & Step-by-Step Creation Toolbar */}
       <div className="hidden md:flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-3">
-          {/* Search Box */}
-          <div className="relative w-64 lg:w-72 shrink-0">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <div className="flex items-center justify-between gap-3 w-full">
+          {/* Search Box (Expands flexibly to available space) */}
+          <div className="relative flex-1 min-w-[200px] max-w-sm lg:max-w-md">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Search month, group, class..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 text-xs h-9 bg-card"
+              className="pl-8 pr-7 text-xs h-9 bg-card rounded-md shadow-2xs border"
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer transition-colors"
+                title="Clear search"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
 
-          {/* Inline Step-by-Step Creation Bar */}
-          <div className="flex items-center gap-2 animate-in fade-in duration-200">
+          {/* Inline Step-by-Step Creation Bar (Always displayed with all slots) */}
+          <div className="flex items-center gap-2 shrink-0">
             <span className="text-xs font-semibold text-muted-foreground mr-0.5 flex items-center gap-1 shrink-0">
               <Plus className="h-3.5 w-3.5 text-primary" />
               <span>New Result:</span>
@@ -344,87 +380,77 @@ export default function MonthlyResultsPage() {
               placeholder="Academic Year"
               options={yearOptions.map(y => ({ label: y, value: y }))}
               onChange={handleYearChange}
-              width="w-[115px]"
+              width="w-[115px] shrink-0"
             />
 
-            {/* 2. Month (Appears after Year is selected) */}
-            {(formYear || academicYear) && (
-              availableMonths.length === 0 ? (
-                <div className="h-9 px-3 flex items-center text-xs text-muted-foreground bg-muted/40 border rounded-md">
-                  <span>All months complete</span>
-                </div>
-              ) : (
-                <CustomDropdown
-                  value={formMonth}
-                  placeholder="Select Month"
-                  options={availableMonths.map(m => ({
-                    label: MONTH_NAMES[m],
-                    value: m,
-                  }))}
-                  onChange={setFormMonth}
-                  width="w-[135px]"
-                />
-              )
+            {/* 2. Month */}
+            <CustomDropdown
+              value={formMonth}
+              placeholder={availableMonths.length === 0 ? "Months Done" : "Select Month"}
+              options={formMonthOptions}
+              onChange={setFormMonth}
+              disabled={availableMonths.length === 0}
+              width="w-[130px] shrink-0"
+            />
+
+            {/* 3. Group / Batch */}
+            <CustomDropdown
+              value={formGroupId}
+              placeholder={!formMonth ? "Select Group" : availableGroupsForMonth.length === 0 ? "Groups Done" : "Select Group"}
+              options={formGroupOptions}
+              onChange={setFormGroupId}
+              disabled={!formMonth || availableGroupsForMonth.length === 0}
+              width="w-[130px] shrink-0"
+            />
+
+            {/* 4. Action Button (Active or Inactive / Disabled state) */}
+            {!formGroupId || !formMonth ? (
+              <Button
+                size="sm"
+                disabled
+                className="h-9 text-xs px-3.5 gap-1.5 opacity-50 cursor-not-allowed bg-primary/40 text-primary-foreground shadow-xs shrink-0"
+                title="Select month and group to proceed"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Create & Enter Marks</span>
+              </Button>
+            ) : existingPeriod ? (
+              <Button
+                size="sm"
+                className="h-9 text-xs px-3.5 gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs shrink-0 active:scale-[0.98] transition-all"
+                onClick={() => navigate(`/reports/monthly/${existingPeriod.id}/marks`)}
+                title="Open existing marks sheet"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                <span>Open Marks Sheet</span>
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="h-9 text-xs px-3.5 gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs shrink-0 active:scale-[0.98] transition-all"
+                onClick={handleCreate}
+                disabled={creating}
+                title="Create new result period and enter marks"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>{creating ? 'Creating...' : 'Create & Enter Marks'}</span>
+              </Button>
             )}
 
-            {/* 3. Group (Appears after Month is selected) */}
-            {formMonth && (
-              availableGroupsForMonth.length === 0 ? (
-                <div className="h-9 px-3 flex items-center text-xs text-muted-foreground bg-muted/40 border rounded-md">
-                  <span>All groups created</span>
-                </div>
-              ) : (
-                <CustomDropdown
-                  value={formGroupId}
-                  placeholder="Select Group"
-                  options={availableGroupsForMonth.map(g => ({
-                    label: `Group ${g.id}`,
-                    value: g.id,
-                  }))}
-                  onChange={setFormGroupId}
-                  width="w-[130px]"
-                />
-              )
-            )}
-
-            {/* 4. Action Button (Appears in the same row once Group is selected) */}
-            {formGroupId && (
-              <div className="animate-in fade-in duration-150 flex items-center gap-1.5 shrink-0">
-                {existingPeriod ? (
-                  <Button
-                    size="sm"
-                    className="h-9 text-xs px-3.5 gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
-                    onClick={() => navigate(`/reports/monthly/${existingPeriod.id}/marks`)}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    <span>Open Marks Sheet</span>
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="h-9 text-xs px-3.5 gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
-                    onClick={handleCreate}
-                    disabled={creating}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>{creating ? 'Creating...' : 'Create & Enter Marks'}</span>
-                  </Button>
-                )}
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 text-muted-foreground hover:text-foreground cursor-pointer"
-                  onClick={() => {
-                    setFormMonth('');
-                    setFormGroupId('');
-                  }}
-                  title="Reset selection"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            )}
+            {/* 5. Reset / Refresh Button (With outline border) */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-md bg-card hover:bg-accent border shadow-2xs cursor-pointer shrink-0 transition-all"
+              onClick={() => {
+                setFormMonth('');
+                setFormGroupId('');
+              }}
+              disabled={!formMonth && !formGroupId}
+              title="Reset selection"
+            >
+              <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+            </Button>
           </div>
         </div>
 
@@ -530,31 +556,50 @@ export default function MonthlyResultsPage() {
       ) : (
         <div className="space-y-2">
           {filteredPeriods.map(period => (
-            <Card key={period.id} className="hover:bg-accent/30 transition-colors">
-              <CardContent className="p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <Card key={period.id} className="hover:bg-accent/30 transition-colors shadow-2xs border rounded-xl overflow-hidden">
+              <CardContent className="p-3 sm:p-3.5 flex flex-row items-center justify-between gap-2.5 sm:gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-sm">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <span className="font-bold text-sm text-foreground">
                       {MONTH_NAMES[period.month] || period.month} {period.academic_year}
                     </span>
-                    <Badge variant={period.status === 'Published' ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'} className="text-[10px]">
+                    <Badge variant={period.status === 'Published' ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'} className="text-[10px] px-1.5 py-0 font-semibold">
                       {period.status}
                     </Badge>
-                    <Badge variant="outline" className="text-[10px]">{period.category}</Badge>
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-medium">{period.category}</Badge>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Group {period.group_id}{period.group_class ? ` — ${period.group_class}` : ''}
-                    {period.group_timing ? ` · ${period.group_timing}` : ''}
-                    {' · '}{period.student_count || 0} students
-                    {Number(period.absent_count) > 0 ? ` · ${period.absent_count} absent` : ''}
+                  <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                    <span>Group {period.group_id}</span>
+                    <span className="hidden sm:inline">
+                      {period.group_class ? ` — ${period.group_class}` : ''}
+                      {period.group_timing ? ` · ${period.group_timing}` : ''}
+                    </span>
+                    <span> · {period.student_count || 0} students</span>
+                    {Number(period.absent_count) > 0 && (
+                      <span className="text-destructive font-medium"> · {period.absent_count} absent</span>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={() => navigate(`/reports/monthly/${period.id}/marks`)}>
-                    <Pencil className="h-3.5 w-3.5 mr-1" />
+
+                {/* Actions (Always on right side) */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 px-2 sm:px-3 text-xs gap-1 cursor-pointer bg-card hover:bg-accent shadow-2xs"
+                    onClick={() => navigate(`/reports/monthly/${period.id}/marks`)}
+                    title="Open Marks Entry"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-primary" />
                     <span className="hidden sm:inline">Marks</span>
                   </Button>
-                  <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(period)}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                    onClick={() => setDeleteTarget(period)}
+                    title="Delete Result Period"
+                  >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
