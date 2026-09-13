@@ -16,7 +16,13 @@ import {
   SettingsPageLoading,
   AboutPageLoading,
   GroupsPageLoading,
-  ReportsDashboardLoading
+  ReportsDashboardLoading,
+  MonthlyResultsPageLoading,
+  MarksEntryPageLoading,
+  RankingsPageLoading,
+  StudentReportsPageLoading,
+  BlankMarksSheetPageLoading,
+  ResultSettingsPageLoading,
 } from '@/components/loading-skeletons';
 import { getApiBase } from '@/lib/constants';
 
@@ -25,6 +31,24 @@ function DynamicSuspenseFallback() {
   
   if (path.includes('/reports/dashboard') || path.endsWith('/reports') || path.endsWith('/reports/')) {
     return <ReportsDashboardLoading />;
+  }
+  if (path.includes('/reports/') && path.includes('/marks')) {
+    return <MarksEntryPageLoading />;
+  }
+  if (path.includes('/reports/monthly')) {
+    return <MonthlyResultsPageLoading />;
+  }
+  if (path.includes('/reports/rankings')) {
+    return <RankingsPageLoading />;
+  }
+  if (path.includes('/reports/student-reports')) {
+    return <StudentReportsPageLoading />;
+  }
+  if (path.includes('/reports/blank-sheet')) {
+    return <BlankMarksSheetPageLoading />;
+  }
+  if (path.includes('/reports/settings')) {
+    return <ResultSettingsPageLoading />;
   }
   if (path.includes('/students')) {
     return <StudentsPageLoading />;
@@ -137,7 +161,7 @@ function ReportsLayout() {
           </div>
         </header>
         <div className="flex-1 min-w-0 overflow-auto">
-          <Suspense fallback={<PageLoading />}>
+          <Suspense fallback={<DynamicSuspenseFallback />}>
             <Outlet />
           </Suspense>
         </div>

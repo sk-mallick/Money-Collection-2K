@@ -35,6 +35,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MarksEntryPageLoading } from '@/components/loading-skeletons';
 import { toast } from 'sonner';
 import {
   fetchResultPeriod,
@@ -1927,15 +1928,7 @@ export default function MarksEntryPage() {
   }, [saving, handleSave, handleJumpToFirstOrLastFilled]);
 
   if (loading) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-9 w-24" />
-          <Skeleton className="h-9 w-48" />
-        </div>
-        <Skeleton className="h-96 w-full rounded-xl" />
-      </div>
-    );
+    return <MarksEntryPageLoading />;
   }
 
   if (!period) {

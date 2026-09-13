@@ -727,3 +727,554 @@ export function ReportsDashboardLoading() {
   );
 }
 
+// 9. Monthly Results Page loading state
+export function MonthlyResultsPageLoading() {
+  return (
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
+      {/* Header */}
+      <div className="border-b pb-3 sm:pb-3.5">
+        <div className="flex flex-row items-center justify-between gap-3 w-full">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+              Monthly Results
+            </h1>
+            <Skeleton className="mt-1 h-3.5 w-56 sm:w-72 rounded" />
+          </div>
+          <Skeleton className="md:hidden h-8 w-8 sm:h-9 sm:w-24 rounded-md shrink-0" />
+        </div>
+      </div>
+
+      {/* Desktop: Search & Creation Toolbar */}
+      <div className="hidden md:flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-3 w-full">
+          <Skeleton className="h-9 flex-1 min-w-[200px] max-w-sm lg:max-w-md rounded-md" />
+          <div className="flex items-center gap-2 shrink-0">
+            <Skeleton className="h-9 w-[125px] rounded-md" />
+            <Skeleton className="h-9 w-[135px] rounded-md" />
+            <Skeleton className="h-9 w-[135px] rounded-md" />
+            <Skeleton className="h-9 w-36 rounded-md" />
+            <Skeleton className="h-9 w-9 rounded-md" />
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile: Search & Year */}
+      <div className="flex md:hidden flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 flex-1 rounded-md" />
+          <Skeleton className="h-9 w-[125px] rounded-md shrink-0" />
+        </div>
+      </div>
+
+      {/* Results List Skeleton */}
+      <div className="space-y-3">
+        {[1, 2, 3, 4].map(i => (
+          <Card key={i} className="transition-colors">
+            <CardContent className="p-3 sm:p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-36 sm:w-44 rounded-md" />
+                    <Skeleton className="h-4.5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="h-3.5 w-48 sm:w-64 rounded" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-8 w-8 rounded-md hidden sm:block" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 10. Marks Entry Page loading state
+export function MarksEntryPageLoading() {
+  return (
+    <div className="page-enter p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* Top Nav Row */}
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-9 w-24 rounded-md" />
+        <Skeleton className="h-9 w-48 rounded-md" />
+      </div>
+
+      {/* Header Info Card */}
+      <Card className="shadow-sm">
+        <CardContent className="p-4 sm:p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-6 w-40 sm:w-56 rounded-md" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-3.5 w-60 sm:w-80 rounded" />
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Skeleton className="h-9 w-20 rounded-md" />
+              <Skeleton className="h-9 w-24 rounded-md" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Table Skeleton */}
+      <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+        <div className="p-3 sm:p-4 border-b flex items-center justify-between gap-3">
+          <Skeleton className="h-8 flex-1 max-w-sm rounded-md" />
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-24 rounded-md" />
+            <Skeleton className="h-8 w-8 rounded-md" />
+          </div>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/30">
+              <TableHead className="w-12"><Skeleton className="h-4 w-6" /></TableHead>
+              <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+              <TableHead><Skeleton className="h-4 w-32" /></TableHead>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <TableHead key={i}><Skeleton className="h-4 w-14" /></TableHead>
+              ))}
+              <TableHead><Skeleton className="h-4 w-14" /></TableHead>
+              <TableHead><Skeleton className="h-4 w-10" /></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-4 w-6" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                {Array.from({ length: 4 }).map((_, j) => (
+                  <TableCell key={j}><Skeleton className="h-8 w-14 rounded-md" /></TableCell>
+                ))}
+                <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-10" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+// 11. Rankings Page loading state
+export function RankingsPageLoading() {
+  return (
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
+      {/* Header */}
+      <div className="border-b pb-3.5 sm:pb-4">
+        <div className="flex items-center sm:items-end justify-between gap-3">
+          <div className="min-w-0 flex-1 flex flex-col justify-end">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+              Academic Rankings
+            </h1>
+            <div className="flex items-center gap-2 mt-0.5">
+              <Skeleton className="h-3.5 w-28 rounded" />
+              <Skeleton className="hidden sm:block h-3.5 w-72 rounded" />
+            </div>
+          </div>
+          {/* Mobile action buttons */}
+          <div className="sm:hidden flex items-center gap-1.5 shrink-0">
+            <Skeleton className="h-8 w-8 rounded-md" />
+            <Skeleton className="h-8 w-8 rounded-md" />
+          </div>
+          {/* Desktop action buttons */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <Skeleton className="h-8 w-[168px] rounded-lg" />
+            <Skeleton className="h-8 w-20 rounded-md" />
+            <Skeleton className="h-8 w-32 rounded-md" />
+            <Skeleton className="h-8 w-20 rounded-md" />
+          </div>
+        </div>
+      </div>
+
+      {/* Toolbar & Search */}
+      <div className="space-y-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full justify-between">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Skeleton className="h-8 flex-1 min-w-0 rounded-md" />
+            <Skeleton className="sm:hidden h-8 w-8 rounded-md" />
+          </div>
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <Skeleton className="h-8 w-[130px] rounded-md" />
+            <Skeleton className="h-8 w-[140px] rounded-md" />
+            <Skeleton className="h-8 w-[140px] rounded-md" />
+            <Skeleton className="h-8 w-[120px] rounded-md" />
+          </div>
+        </div>
+      </div>
+
+      {/* Content: Ranking Cards */}
+      <div className="space-y-6">
+        {[1, 2].map((i) => (
+          <Card key={i} className="overflow-hidden shadow-sm">
+            <CardHeader className="p-4 sm:p-5 border-b bg-muted/20">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-5 rounded" />
+                  <Skeleton className="h-5 w-28 rounded-md" />
+                  <Skeleton className="h-4.5 w-20 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-24 rounded" />
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/10">
+                    <TableHead className="w-16"><Skeleton className="h-4 w-10" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-28" /></TableHead>
+                    {Array.from({ length: 3 }).map((_, j) => (
+                      <TableHead key={j}><Skeleton className="h-4 w-12" /></TableHead>
+                    ))}
+                    <TableHead><Skeleton className="h-4 w-14" /></TableHead>
+                    <TableHead><Skeleton className="h-4 w-10" /></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <TableRow key={j}>
+                      <TableCell><Skeleton className="h-6 w-12 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-10" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      {Array.from({ length: 3 }).map((_, k) => (
+                        <TableCell key={k}><Skeleton className="h-4 w-10" /></TableCell>
+                      ))}
+                      <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-10" /></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 12. Student Reports Page loading state (Directory View)
+export function StudentReportsPageLoading() {
+  return (
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
+      {/* Header */}
+      <div className="border-b pb-3.5 sm:pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          <div>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+              Student Report Cards
+            </h1>
+            <Skeleton className="mt-1 h-3.5 w-52 sm:w-72 rounded" />
+          </div>
+        </div>
+      </div>
+
+      {/* Search & Filters */}
+      <div className="space-y-2.5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
+          <Skeleton className="h-9 flex-1 min-w-0 rounded-md" />
+          <div className="flex items-center gap-2 shrink-0">
+            <Skeleton className="h-9 w-full sm:w-[120px] rounded-md" />
+            <Skeleton className="h-9 w-full sm:w-[120px] rounded-md" />
+            <Skeleton className="h-9 w-full sm:w-[120px] rounded-md" />
+          </div>
+        </div>
+      </div>
+
+      {/* Student List Cards */}
+      <div className="space-y-2">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Card key={i} className="overflow-hidden border bg-card/60 py-0 gap-0 rounded-xl">
+            <CardContent className="p-2.5 sm:p-3 flex items-center justify-between gap-3 px-3 sm:px-3.5">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                <Skeleton className="h-5 w-10 rounded" />
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <Skeleton className="h-4 w-32 sm:w-44 rounded" />
+                    <Skeleton className="h-4 w-12 rounded-full" />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Skeleton className="h-3 w-3 rounded-sm" />
+                    <Skeleton className="h-3 w-24 sm:w-36 rounded" />
+                    <Skeleton className="hidden sm:block h-3 w-16 rounded" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <div className="hidden md:block text-right space-y-1">
+                  <Skeleton className="h-3.5 w-16 rounded ml-auto" />
+                  <Skeleton className="h-3 w-20 rounded ml-auto" />
+                </div>
+                <Skeleton className="h-4 w-4 rounded" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 13. Student Reports Detail loading state (when a student report card is loading)
+export function StudentReportsDetailLoading() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start w-full">
+      {/* Left Panel: KPIs & Contacts */}
+      <div className="lg:col-span-4 xl:col-span-4 space-y-4 w-full">
+        {/* Mobile Student Details */}
+        <Card className="lg:hidden">
+          <CardHeader className="p-3 sm:p-3.5 pb-2 border-b">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-10 rounded" />
+                <Skeleton className="h-4 w-28 rounded" />
+              </div>
+              <Skeleton className="h-5 w-14 rounded-full" />
+            </div>
+          </CardHeader>
+          <CardContent className="p-3 sm:p-3.5 pt-2.5">
+            <div className="grid grid-cols-2 gap-2">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="p-2 sm:p-2.5 rounded-lg bg-muted/40 border border-border/40 space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Skeleton className="h-3.5 w-3.5 rounded-sm" />
+                    <Skeleton className="h-3 w-12 rounded" />
+                  </div>
+                  <Skeleton className="h-4 w-20 rounded" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Performance KPIs */}
+        <Card className="bg-card/70 backdrop-blur-xs border shadow-xs">
+          <CardHeader className="p-3.5 pb-2 border-b border-border/50">
+            <Skeleton className="h-3.5 w-36 rounded" />
+          </CardHeader>
+          <CardContent className="p-3.5">
+            <div className="grid grid-cols-2 gap-2">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="p-2.5 rounded-lg bg-muted/40 border border-border/40 space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Skeleton className="h-3.5 w-3.5 rounded-sm" />
+                    <Skeleton className="h-3 w-16 rounded" />
+                  </div>
+                  <Skeleton className="h-5 w-12 rounded" />
+                  <Skeleton className="h-2.5 w-20 rounded" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Contacts */}
+        <Card className="bg-card/70 backdrop-blur-xs border shadow-xs">
+          <CardHeader className="p-3.5 pb-2 border-b border-border/50">
+            <Skeleton className="h-3.5 w-28 rounded" />
+          </CardHeader>
+          <CardContent className="p-3.5 space-y-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="flex items-center justify-between py-1 border-b border-border/30 last:border-b-0">
+                <Skeleton className="h-3.5 w-14 rounded" />
+                <Skeleton className="h-3.5 w-24 rounded" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Monthly Exam Records */}
+        <Card className="bg-card/70 backdrop-blur-xs border shadow-xs">
+          <CardHeader className="p-3.5 pb-2 border-b border-border/50">
+            <Skeleton className="h-3.5 w-44 rounded" />
+          </CardHeader>
+          <CardContent className="p-2 space-y-1.5">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="p-2.5 rounded-lg border bg-muted/20 flex items-center justify-between gap-2">
+                <div className="space-y-1">
+                  <Skeleton className="h-3.5 w-28 rounded" />
+                  <Skeleton className="h-3 w-20 rounded" />
+                </div>
+                <Skeleton className="h-5 w-14 rounded-full" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Right Panel: A4 Report Card Preview */}
+      <div className="lg:col-span-8 xl:col-span-8">
+        <Card className="overflow-hidden shadow-sm">
+          <CardContent className="p-4 sm:p-6 space-y-4">
+            {/* Report Card Header Skeleton */}
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-20 w-20 rounded-lg shrink-0" />
+              <div className="flex-1 space-y-2 text-center">
+                <Skeleton className="h-7 w-3/4 mx-auto rounded" />
+                <Skeleton className="h-3 w-1/2 mx-auto rounded" />
+                <Skeleton className="h-3 w-2/3 mx-auto rounded" />
+                <Skeleton className="h-3 w-1/2 mx-auto rounded" />
+              </div>
+            </div>
+            <Skeleton className="h-1 w-full rounded" />
+            {/* Session & Title */}
+            <div className="text-center space-y-1.5">
+              <Skeleton className="h-3.5 w-48 mx-auto rounded" />
+              <Skeleton className="h-3 w-36 mx-auto rounded" />
+              <Skeleton className="h-3 w-24 mx-auto rounded" />
+            </div>
+            {/* Student Profile Grid */}
+            <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 py-2 border-b">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Skeleton className="h-3 w-28 rounded shrink-0" />
+                  <Skeleton className="h-3 w-20 rounded" />
+                </div>
+              ))}
+            </div>
+            {/* Result Table */}
+            <Skeleton className="h-3.5 w-32 mx-auto rounded" />
+            <div className="rounded border overflow-hidden">
+              <div className="bg-muted/30 p-2 flex items-center gap-1">
+                <Skeleton className="h-4 w-16" />
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-4 w-12 flex-1" />
+                ))}
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-4 w-8" />
+              </div>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="p-2 flex items-center gap-1 border-t">
+                  <Skeleton className="h-3.5 w-16" />
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <Skeleton key={j} className="h-3.5 w-12 flex-1" />
+                  ))}
+                  <Skeleton className="h-3.5 w-12" />
+                  <Skeleton className="h-3.5 w-8" />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// 14. Blank Marks Sheet Page loading state
+export function BlankMarksSheetPageLoading() {
+  return (
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
+      {/* Header */}
+      <div className="border-b pb-3 sm:pb-3.5">
+        <div className="flex items-center sm:items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+              Offline Blank Marks Entry Sheet
+            </h1>
+            <Skeleton className="mt-1 h-3.5 w-60 sm:w-96 rounded" />
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Skeleton className="hidden sm:block h-9 w-20 rounded-md" />
+            <Skeleton className="h-8 w-8 sm:h-9 sm:w-28 rounded-md" />
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Filter Controls */}
+      <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-2.5">
+        <Skeleton className="h-9 w-[130px] rounded-md" />
+        <Skeleton className="h-9 w-[130px] rounded-md" />
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-9 w-20 rounded-md" />
+        ))}
+      </div>
+
+      {/* Mobile Filter Controls */}
+      <div className="sm:hidden space-y-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 flex-1 rounded-md" />
+          <Skeleton className="h-9 flex-1 rounded-md" />
+        </div>
+        <div className="flex items-center gap-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-9 flex-1 rounded-md" />
+          ))}
+        </div>
+      </div>
+
+      {/* Preview Area */}
+      <div className="space-y-4">
+        <Skeleton className="h-28 w-full rounded-xl" />
+        <Skeleton className="h-96 w-full rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
+// 15. Result Settings Page loading state
+export function ResultSettingsPageLoading() {
+  return (
+    <div className="page-enter p-4 sm:p-6 space-y-6 w-full">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Report Card & Subject Settings</h1>
+          <Skeleton className="mt-1.5 h-3.5 w-64 sm:w-80 rounded" />
+        </div>
+        <Skeleton className="h-10 w-32 rounded-md shrink-0" />
+      </div>
+
+      {/* Overview Cards: Junior vs Senior */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {['Junior', 'Senior'].map((cat) => (
+          <Card key={cat} className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-5 w-40 rounded" />
+                </div>
+                <Skeleton className="h-5 w-14 rounded-full" />
+              </div>
+              <Skeleton className="mt-1 h-3 w-52 rounded" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: cat === 'Junior' ? 5 : 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-7 w-16 sm:w-20 rounded-md" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Subjects Table */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4 rounded" />
+            <Skeleton className="h-5 w-44 rounded" />
+          </div>
+          <Skeleton className="mt-1 h-3 w-72 rounded" />
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="p-6 space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

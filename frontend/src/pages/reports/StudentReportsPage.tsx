@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StudentReportsDetailLoading } from '@/components/loading-skeletons';
 import { toast } from 'sonner';
 import { fetchStudentReport, type StudentReportResult } from '@/lib/reports-api';
 import { fetchStudents, fetchGroups } from '@/lib/api';
@@ -615,15 +616,7 @@ export default function StudentReportsPage() {
 
         {/* ─── LOADING STATE ─── */}
         {loading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-4 space-y-4">
-              <Skeleton className="h-48 w-full rounded-xl" />
-              <Skeleton className="h-48 w-full rounded-xl" />
-            </div>
-            <div className="lg:col-span-8">
-              <Skeleton className="h-[600px] w-full rounded-xl" />
-            </div>
-          </div>
+          <StudentReportsDetailLoading />
         ) : !reportData ? (
           <Card className="p-12 text-center text-muted-foreground max-w-md mx-auto">
             <UserRound className="h-12 w-12 mx-auto mb-3 opacity-40" />
