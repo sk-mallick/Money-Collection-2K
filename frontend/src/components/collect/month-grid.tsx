@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { MONTH_CODES, MONTH_SHORT } from '@/lib/constants';
 import type { Student, Payment } from '@/lib/constants';
 
@@ -33,52 +34,26 @@ export function MonthGrid({
 }: MonthGridProps) {
   return (
     <div className="space-y-3">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b pb-2">
-        <div className="flex items-center gap-3 justify-between w-full sm:w-auto">
-          <Label className="font-semibold text-sm">Select Months to Collect</Label>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="h-7 w-full sm:w-[155px] text-[11px] font-bold text-muted-foreground bg-background border-input shadow-xs select-none">
-              <SelectValue placeholder="Session" />
-            </SelectTrigger>
-            <SelectContent position="popper" align="end" className="w-[155px]">
-              {academicYearOptions.map(year => (
-                <SelectItem key={year} value={year} className="text-xs font-semibold">
-                  Session {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {/* Visual Legend */}
-        <div className="flex items-center gap-3 flex-wrap text-[10px] font-bold text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <span className="size-2 rounded-full bg-emerald-500 animate-pulse-soft" />
-            <span>Paid</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="size-2 rounded-full bg-amber-500" />
-            <span>N/A (Waiver)</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="size-2 rounded-full bg-amber-400/80 border border-amber-500/50" />
-            <span>Partial</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="size-2 rounded-full bg-muted border border-muted-foreground/30" />
-            <span>Not Joined</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="size-2 rounded-full bg-indigo-500" />
-            <span>Selected</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="size-2 rounded-full bg-border" />
-            <span>Pending</span>
-          </div>
-        </div>
+      {/* Header: Label on left, Session dropdown on right in a single line */}
+      <div className="flex items-center justify-between gap-2.5 w-full min-w-0">
+        <Label className="font-semibold text-xs sm:text-sm truncate select-none">
+          Select Months to Collect
+        </Label>
+        <Select value={selectedYear} onValueChange={setSelectedYear}>
+          <SelectTrigger className="h-7 w-[140px] sm:w-[155px] px-2.5 text-[11px] shrink-0 font-bold text-muted-foreground bg-background border-input shadow-xs select-none">
+            <SelectValue placeholder="Session" />
+          </SelectTrigger>
+          <SelectContent position="popper" align="end" className="w-[145px] sm:w-[155px]">
+            {academicYearOptions.map(year => (
+              <SelectItem key={year} value={year} className="text-xs font-semibold">
+                Session {year}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-6 w-full min-w-0">
         {MONTH_CODES.map(month => {
           const isSelected = selectedMonths.includes(month);
 
@@ -157,6 +132,38 @@ export function MonthGrid({
           );
         })}
       </div>
+
+      {/* Visual Legend below all months: In desktop UI/UX in a single line */}
+      <div className="flex items-center gap-x-3 sm:gap-x-4 md:gap-x-6 gap-y-1.5 flex-wrap sm:flex-nowrap text-[10px] sm:text-[11px] font-bold text-muted-foreground min-w-0 pt-0.5">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="size-2 rounded-full bg-emerald-500 animate-pulse-soft" />
+          <span>Paid</span>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="size-2 rounded-full bg-amber-500" />
+          <span className="sm:hidden">N/A</span>
+          <span className="hidden sm:inline">N/A (Waiver)</span>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="size-2 rounded-full bg-amber-400/80 border border-amber-500/50" />
+          <span>Partial</span>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="size-2 rounded-full bg-muted border border-muted-foreground/30" />
+          <span>Not Joined</span>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="size-2 rounded-full bg-indigo-500" />
+          <span>Selected</span>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="size-2 rounded-full bg-border border border-muted-foreground/20" />
+          <span>Pending</span>
+        </div>
+      </div>
+
+      {/* Horizontal divider line for professional UI/UX */}
+      <Separator className="bg-border/80" />
     </div>
   );
 }

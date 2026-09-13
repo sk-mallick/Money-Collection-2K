@@ -478,14 +478,14 @@ export default function CollectPage() {
   if (loading) return <CollectPageLoading />;
 
   return (
-    <div className="page-enter space-y-6 p-4 md:p-6 w-full">
-      <div className="border-b pb-4">
-        <h1 className="text-2xl font-bold tracking-tight">Collect Fee</h1>
-        <p className="text-sm text-muted-foreground">Record payment and generate receipt</p>
+    <div className="page-enter space-y-4 sm:space-y-6 p-3 sm:p-4 md:p-6 w-full max-w-full min-w-0 overflow-x-hidden">
+      <div className="border-b pb-3 sm:pb-4">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Collect Fee</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">Record payment and generate receipt</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 w-full min-w-0">
+        <div className="lg:col-span-2 w-full min-w-0">
           <StudentSelector
             search={search}
             setSearch={val => {
@@ -499,8 +499,8 @@ export default function CollectPage() {
       </div>
 
       {selected && (
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 w-full min-w-0">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 w-full min-w-0">
             <StudentInfoCard
               selected={selected}
               formatCurrency={formatCurrency}
@@ -543,21 +543,23 @@ export default function CollectPage() {
             />
           </div>
 
-          <PaymentHistoryTable
-            payments={payments}
-            formatCurrency={formatCurrency}
-            formatDate={formatDate}
-          />
+          <div className="w-full min-w-0">
+            <PaymentHistoryTable
+              payments={payments}
+              formatCurrency={formatCurrency}
+              formatDate={formatDate}
+            />
+          </div>
         </div>
       )}
 
       {!selected && (
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
-              <Wallet className="mb-4 size-12 text-muted-foreground/40" />
-              <p className="text-lg font-medium">Select a Student</p>
-              <p className="text-sm text-muted-foreground">Search and select a student above to collect fee</p>
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 w-full min-w-0">
+          <div className="lg:col-span-2 w-full min-w-0">
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 sm:py-16 text-center">
+              <Wallet className="mb-4 size-10 sm:size-12 text-muted-foreground/40" />
+              <p className="text-base sm:text-lg font-medium">Select a Student</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Search and select a student above to collect fee</p>
             </div>
           </div>
         </div>

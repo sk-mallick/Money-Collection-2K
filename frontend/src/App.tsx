@@ -135,7 +135,7 @@ function McmsLayout() {
   return (
     <SidebarProvider>
       <McmsSidebar />
-      <SidebarInset className="min-w-0 min-h-screen">
+      <SidebarInset className="min-w-0 min-h-screen max-w-full overflow-x-hidden">
         <header className="no-print sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b bg-background/80 backdrop-blur-md px-4 gap-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
@@ -148,7 +148,7 @@ function McmsLayout() {
             </div>
           </div>
         </header>
-        <div className="flex-1 min-w-0 overflow-auto">
+        <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
           <Suspense fallback={<DynamicSuspenseFallback />}>
             <Outlet />
           </Suspense>
@@ -163,7 +163,7 @@ function ReportsLayout() {
   return (
     <SidebarProvider>
       <ReportsSidebar />
-      <SidebarInset className="min-w-0 min-h-screen">
+      <SidebarInset className="min-w-0 min-h-screen max-w-full overflow-x-hidden">
         <header className="no-print sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b bg-background/80 backdrop-blur-md px-4 gap-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
@@ -176,7 +176,7 @@ function ReportsLayout() {
             </div>
           </div>
         </header>
-        <div className="flex-1 min-w-0 overflow-auto">
+        <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
           <Suspense fallback={<DynamicSuspenseFallback />}>
             <Outlet />
           </Suspense>
