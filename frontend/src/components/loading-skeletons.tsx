@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Users, CalendarDays, CheckCircle2, Clock, UserX, Trophy, UserRound, FileText } from 'lucide-react';
 
 
 // Backwards-compatible / Fallback loaders
@@ -632,12 +632,14 @@ export function ReportsDashboardLoading() {
       {/* Page Header */}
       <div className="border-b pb-3.5 sm:pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-          <div className="space-y-1.5">
-            <Skeleton className="h-6 sm:h-7 w-52 sm:w-64 rounded-md" />
-            <div className="flex items-center gap-1.5">
-              <Skeleton className="h-3.5 w-24 rounded-md" />
-              <Skeleton className="h-3.5 w-16 rounded-md font-semibold" />
-            </div>
+          <div>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+              Report Cards Dashboard
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 flex items-center gap-1.5">
+              <span>Academic Year:</span>
+              <Skeleton className="h-3.5 sm:h-4 w-16 rounded" />
+            </p>
           </div>
         </div>
       </div>
@@ -645,17 +647,17 @@ export function ReportsDashboardLoading() {
       {/* Stats Grid — 2 cols mobile, 3 cols tablet, 5 cols desktop */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {[
-          { labelW: 'w-20', valW: 'w-12 sm:w-16' },
-          { labelW: 'w-18', valW: 'w-20 sm:w-24' },
-          { labelW: 'w-16', valW: 'w-8 sm:w-12' },
-          { labelW: 'w-14', valW: 'w-8 sm:w-12' },
-          { labelW: 'w-20', valW: 'w-10 sm:w-14' },
+          { label: 'Total Students', icon: Users, color: 'text-blue-500', valW: 'w-12 sm:w-16' },
+          { label: 'Latest Result', icon: CalendarDays, color: 'text-emerald-500', valW: 'w-20 sm:w-24' },
+          { label: 'Completed', icon: CheckCircle2, color: 'text-green-500', valW: 'w-10 sm:w-12' },
+          { label: 'Pending', icon: Clock, color: 'text-amber-500', valW: 'w-10 sm:w-12' },
+          { label: 'Total Absent', icon: UserX, color: 'text-red-400', valW: 'w-12 sm:w-14' },
         ].map((stat, i) => (
-          <Card key={i} className="relative overflow-hidden border bg-card/60 shadow-xs">
-            <CardContent className="p-3.5 sm:p-4 space-y-2.5">
-              <div className="flex items-center gap-2">
-                <Skeleton className="size-4 rounded-md shrink-0" />
-                <Skeleton className={`h-3.5 ${stat.labelW} rounded-md`} />
+          <Card key={i} className="relative overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <stat.icon className={`h-4 w-4 ${stat.color} opacity-80`} />
+                <span className="text-xs text-muted-foreground font-medium">{stat.label}</span>
               </div>
               <Skeleton className={`h-7 sm:h-8 ${stat.valW} rounded-md`} />
             </CardContent>
@@ -665,21 +667,23 @@ export function ReportsDashboardLoading() {
 
       {/* Quick Actions — 1 col mobile, 2 cols tablet, 4 cols desktop */}
       <div>
-        <Skeleton className="h-3.5 w-28 rounded-md mb-3" />
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            'w-36',
-            'w-24',
-            'w-32',
-            'w-30',
-          ].map((w, i) => (
-            <div
+            { label: 'Create Monthly Result', icon: Plus, variant: 'default' as const },
+            { label: 'View Rankings', icon: Trophy, variant: 'outline' as const },
+            { label: 'Student Report Cards', icon: UserRound, variant: 'outline' as const },
+            { label: 'Blank Marks Sheet', icon: FileText, variant: 'outline' as const },
+          ].map((action, i) => (
+            <Button
               key={i}
-              className="h-[76px] sm:h-[80px] rounded-xl border border-border/50 bg-card/40 p-4 flex flex-col items-center justify-center gap-2 shadow-2xs"
+              variant={action.variant}
+              disabled
+              className="h-auto py-4 flex flex-col items-center gap-2 text-sm opacity-90 cursor-not-allowed"
             >
-              <Skeleton className="size-5 rounded-lg shrink-0" />
-              <Skeleton className={`h-3.5 ${w} rounded-md`} />
-            </div>
+              <action.icon className="h-5 w-5" />
+              <span>{action.label}</span>
+            </Button>
           ))}
         </div>
       </div>
@@ -687,24 +691,31 @@ export function ReportsDashboardLoading() {
       {/* Recent Result Periods */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <Skeleton className="h-3.5 w-40 sm:w-48 rounded-md" />
-          <Skeleton className="h-7 w-16 rounded-md" />
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Recent Result Periods</h2>
+          <Button variant="ghost" size="sm" className="text-xs" disabled>
+            View All
+          </Button>
         </div>
         <div className="space-y-2">
           {[
-            { titleW: 'w-36 sm:w-44', badgeW: 'w-18', subW: 'w-56 sm:w-72', statusW: 'w-18' },
-            { titleW: 'w-32 sm:w-40', badgeW: 'w-20', subW: 'w-48 sm:w-64', statusW: 'w-20' },
-            { titleW: 'w-36 sm:w-44', badgeW: 'w-18', subW: 'w-52 sm:w-68', statusW: 'w-16' },
-            { titleW: 'w-28 sm:w-36', badgeW: 'w-20', subW: 'w-44 sm:w-60', statusW: 'w-18' },
+            { monthW: 'w-32 sm:w-36', codeW: 'w-16', subW: 'w-48 sm:w-60', statusW: 'w-18' },
+            { monthW: 'w-28 sm:w-32', codeW: 'w-18', subW: 'w-44 sm:w-56', statusW: 'w-20' },
+            { monthW: 'w-36 sm:w-40', codeW: 'w-16', subW: 'w-52 sm:w-64', statusW: 'w-16' },
+            { monthW: 'w-30 sm:w-34', codeW: 'w-16', subW: 'w-40 sm:w-52', statusW: 'w-18' },
+            { monthW: 'w-28 sm:w-32', codeW: 'w-18', subW: 'w-48 sm:w-58', statusW: 'w-16' },
           ].map((item, i) => (
-            <Card key={i} className="border bg-card/50 shadow-xs">
-              <CardContent className="p-3 sm:p-3.5 flex items-center justify-between gap-3">
-                <div className="space-y-1.5 sm:space-y-2 flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Skeleton className={`h-4 ${item.titleW} rounded-md`} />
-                    <Skeleton className={`h-4.5 ${item.badgeW} rounded-md`} />
+            <Card key={i} className="transition-colors">
+              <CardContent className="p-3 sm:p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <div className="font-medium text-sm flex items-center gap-2">
+                      <Skeleton className={`h-4.5 sm:h-5 ${item.monthW} rounded-md`} />
+                      <Skeleton className={`h-4.5 ${item.codeW} rounded-full`} />
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      <Skeleton className={`h-3.5 ${item.subW} rounded-md`} />
+                    </div>
                   </div>
-                  <Skeleton className={`h-3 ${item.subW} rounded-md`} />
                 </div>
                 <Skeleton className={`h-5.5 sm:h-6 ${item.statusW} rounded-full shrink-0`} />
               </CardContent>
