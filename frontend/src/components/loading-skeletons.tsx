@@ -1284,31 +1284,37 @@ export function ModuleSelectionPageLoading() {
   return (
     <div className="page-enter min-h-svh flex flex-col items-center justify-center bg-background px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="mb-8 sm:mb-10 text-center flex flex-col items-center">
-        <Skeleton className="h-11 w-11 sm:h-13 sm:w-13 rounded-xl mb-3" />
+      <div className="mb-6 sm:mb-10 text-center flex flex-col items-center">
+        <Skeleton className="h-12 w-12 sm:h-13 sm:w-13 rounded-2xl mb-3" />
         <Skeleton className="h-7 sm:h-8 w-44 sm:w-56 mb-2" />
         <Skeleton className="h-4 w-36 sm:w-44" />
       </div>
 
       {/* Module Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 w-full max-w-2xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-6 w-full max-w-2xl">
         {/* Card 1 — MCMS */}
-        <div className="flex flex-col items-start text-left rounded-2xl border border-border/70 bg-card p-6 sm:p-7 min-h-[220px]">
-          <Skeleton className="h-12 w-12 sm:h-13 sm:w-13 rounded-xl mb-4 bg-blue-500/20" />
-          <Skeleton className="h-6 w-20 sm:w-24 mb-1.5" />
-          <Skeleton className="h-4 w-48 sm:w-56 mb-6" />
-          <div className="flex items-center gap-1.5 mt-auto pt-2">
+        <div className="flex flex-row md:flex-col items-center md:items-start text-left rounded-2xl border border-border/70 bg-card p-4 sm:p-5 md:p-7 gap-4 md:gap-0 md:min-h-[220px]">
+          <Skeleton className="h-15 w-15 sm:h-16 sm:w-16 md:h-13 md:w-13 rounded-2xl md:mb-4 bg-blue-500/20 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <Skeleton className="h-5 sm:h-6 w-20 sm:w-24 md:mb-1.5" />
+            <Skeleton className="hidden md:block h-4 w-48 sm:w-56 mb-6 mt-1" />
+          </div>
+          <Skeleton className="md:hidden h-9 w-9 rounded-full shrink-0" />
+          <div className="hidden md:flex items-center gap-1.5 mt-auto pt-2">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-3.5 w-3.5 rounded" />
           </div>
         </div>
 
         {/* Card 2 — Student Report Cards */}
-        <div className="flex flex-col items-start text-left rounded-2xl border border-border/70 bg-card p-6 sm:p-7 min-h-[220px]">
-          <Skeleton className="h-12 w-12 sm:h-13 sm:w-13 rounded-xl mb-4 bg-emerald-500/20" />
-          <Skeleton className="h-6 w-36 sm:w-44 mb-1.5" />
-          <Skeleton className="h-4 w-52 sm:w-60 mb-6" />
-          <div className="flex items-center gap-1.5 mt-auto pt-2">
+        <div className="flex flex-row md:flex-col items-center md:items-start text-left rounded-2xl border border-border/70 bg-card p-4 sm:p-5 md:p-7 gap-4 md:gap-0 md:min-h-[220px]">
+          <Skeleton className="h-15 w-15 sm:h-16 sm:w-16 md:h-13 md:w-13 rounded-2xl md:mb-4 bg-emerald-500/20 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <Skeleton className="h-5 sm:h-6 w-36 sm:w-44 md:mb-1.5" />
+            <Skeleton className="hidden md:block h-4 w-52 sm:w-60 mb-6 mt-1" />
+          </div>
+          <Skeleton className="md:hidden h-9 w-9 rounded-full shrink-0" />
+          <div className="hidden md:flex items-center gap-1.5 mt-auto pt-2">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-3.5 w-3.5 rounded" />
           </div>
