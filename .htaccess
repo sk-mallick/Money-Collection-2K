@@ -83,6 +83,8 @@ RewriteRule ^api/result-marks$ backend/api/result_marks.php [L,QSA]
 RewriteRule ^api/result-rankings$ backend/api/result_rankings.php [L,QSA]
 RewriteRule ^api/result-reports$ backend/api/result_reports.php [L,QSA]
 RewriteRule ^api/result-blank-sheet$ backend/api/result_blank_sheet.php [L,QSA]
+RewriteRule ^api/setup$ backend/api/setup.php [L,QSA]
+RewriteRule ^setup$ backend/api/setup.php [L,QSA]
 
 # ─── SPA Fallback ────────────────────────────────────
 # If the request is not a file or directory, serve the app index.php
