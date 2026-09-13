@@ -282,10 +282,12 @@ ON DUPLICATE KEY UPDATE
 
 -- Default Admin Accounts (Subham Sir and Chirinjibi Sir)
 INSERT INTO `admins` (`username`, `password_hash`, `name`) VALUES
-  ('18102024', '$2y$10$xinMjTkvwA551wxEzJhOHufqTAdcsfVKHAcWatOm80q44LNVFr/3m', 'Chirinjibi Sir'),
-  ('454', '$2y$10$jwtDmmF2kLlfXQHVwEUlD.pBdgee8IvIyV8K7u4DF9IfJQUM37f2e', 'Subham Sir')
+  ('18102024', '$2y$10$a0Wne4bNgeeQlc1yloEDDOn10j7IRM5Pcywjn536NEpFaFPZaFtvy', 'Chirinjibi Sir'),
+  ('454', '$2y$10$NdzYCWXLrqPzuSggjBmURufZ5jLU9K57zNO8jIuG5pX6ky9UU6B2.', 'Subham Sir')
 ON DUPLICATE KEY UPDATE
-  `name` = VALUES(`name`);
+  `name` = VALUES(`name`),
+  `password_hash` = VALUES(`password_hash`);
 
 SET FOREIGN_KEY_CHECKS = 1;
+
 
