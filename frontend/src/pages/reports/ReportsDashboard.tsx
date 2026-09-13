@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ReportsDashboardLoading } from '@/components/loading-skeletons';
-import { fetchResultPeriods, fetchSubjects, type ResultPeriod } from '@/lib/reports-api';
+import { Skeleton } from '@/components/ui/skeleton';
+import { fetchResultPeriods, type ResultPeriod } from '@/lib/reports-api';
 import { fetchSettings, fetchStudents } from '@/lib/api';
-import { MONTH_NAMES, MONTH_CODES } from '@/lib/constants';
+import { MONTH_NAMES } from '@/lib/constants';
 import { ClipboardList, Trophy, UserRound, FileText, Plus, Users, CalendarDays, CheckCircle2, Clock, UserX } from 'lucide-react';
 
 export default function ReportsDashboard() {
@@ -45,11 +44,11 @@ export default function ReportsDashboard() {
   const latestPeriod = periods.find(p => (Number(p.ranked_count) > 0) || p.status === 'Completed' || p.status === 'Published') || (periods.length > 0 ? periods[0] : null);
 
   const stats = [
-    { label: 'Total Students', value: totalStudents, icon: Users, color: 'text-blue-500' },
-    { label: 'Latest Result', value: latestPeriod ? `${MONTH_NAMES[latestPeriod.month] || latestPeriod.month}` : '—', icon: CalendarDays, color: 'text-emerald-500' },
-    { label: 'Completed', value: completedCount, icon: CheckCircle2, color: 'text-green-500' },
-    { label: 'Pending', value: draftCount, icon: Clock, color: 'text-amber-500' },
-    { label: 'Total Absent', value: absentTotal, icon: UserX, color: 'text-red-400' },
+    { label: 'Total Students', value: totalStudents, icon: Users, color: 'text-blue-500', skeletonW: 'w-12 sm:w-16' },
+    { label: 'Latest Result', value: latestPeriod ? `${MONTH_NAMES[latestPeriod.month] || latestPeriod.month}` : '—', icon: CalendarDays, color: 'text-emerald-500', skeletonW: 'w-20 sm:w-24' },
+    { label: 'Completed', value: completedCount, icon: CheckCircle2, color: 'text-green-500', skeletonW: 'w-10 sm:w-12' },
+    { label: 'Pending', value: draftCount, icon: Clock, color: 'text-amber-500', skeletonW: 'w-10 sm:w-12' },
+    { label: 'Total Absent', value: absentTotal, icon: UserX, color: 'text-red-400', skeletonW: 'w-12 sm:w-14' },
   ];
 
   const quickActions = [
@@ -59,12 +58,8 @@ export default function ReportsDashboard() {
     { label: 'Blank Marks Sheet', icon: FileText, action: () => navigate('/reports/blank-sheet'), variant: 'outline' as const },
   ];
 
-  if (loading) {
-    return <ReportsDashboardLoading />;
-  }
-
   return (
-    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
+    <div className="p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
       {/* Page Header */}
       <div className="border-b pb-3.5 sm:pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
@@ -72,8 +67,13 @@ export default function ReportsDashboard() {
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
               Report Cards Dashboard
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              Academic Year: <span className="font-semibold text-foreground">{academicYear || '—'}</span>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 flex items-center gap-1.5">
+              <span>Academic Year:</span>
+              {loading ? (
+                <Skeleton className="h-3.5 sm:h-4 w-16 rounded" />
+              ) : (
+                <span className="font-semibold text-foreground animate-in fade-in duration-200">{academicYear || '—'}</span>
+              )}
             </p>
           </div>
         </div>
@@ -85,10 +85,14 @@ export default function ReportsDashboard() {
           <Card key={stat.label} className="relative overflow-hidden">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                <stat.icon className={`h-4 w-4 ${stat.color} ${loading ? 'opacity-80' : ''}`} />
                 <span className="text-xs text-muted-foreground font-medium">{stat.label}</span>
               </div>
-              <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
+              {loading ? (
+                <Skeleton className={`h-7 sm:h-8 ${stat.skeletonW} rounded-md`} />
+              ) : (
+                <div className="text-xl sm:text-2xl font-bold animate-in fade-in duration-200">{stat.value}</div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -116,12 +120,39 @@ export default function ReportsDashboard() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Recent Result Periods</h2>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/reports/monthly')} className="text-xs">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/reports/monthly')} className="text-xs" disabled={loading}>
             View All
           </Button>
         </div>
-        {periods.length === 0 ? (
-          <Card>
+        {loading ? (
+          <div className="space-y-2">
+            {[
+              { monthW: 'w-32 sm:w-36', codeW: 'w-16', subW: 'w-48 sm:w-60', statusW: 'w-18' },
+              { monthW: 'w-28 sm:w-32', codeW: 'w-18', subW: 'w-44 sm:w-56', statusW: 'w-20' },
+              { monthW: 'w-36 sm:w-40', codeW: 'w-16', subW: 'w-52 sm:w-64', statusW: 'w-16' },
+              { monthW: 'w-30 sm:w-34', codeW: 'w-16', subW: 'w-40 sm:w-52', statusW: 'w-18' },
+              { monthW: 'w-28 sm:w-32', codeW: 'w-18', subW: 'w-48 sm:w-58', statusW: 'w-16' },
+            ].map((item, i) => (
+              <Card key={i} className="transition-colors">
+                <CardContent className="p-3 sm:p-3.5 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <div className="font-medium text-sm flex items-center gap-2">
+                        <Skeleton className={`h-4.5 sm:h-5 ${item.monthW} rounded-md`} />
+                        <Skeleton className={`h-4.5 ${item.codeW} rounded-full`} />
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        <Skeleton className={`h-3.5 ${item.subW} rounded-md`} />
+                      </div>
+                    </div>
+                  </div>
+                  <Skeleton className={`h-5.5 sm:h-6 ${item.statusW} rounded-full shrink-0`} />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : periods.length === 0 ? (
+          <Card className="animate-in fade-in duration-200">
             <CardContent className="p-8 text-center">
               <ClipboardList className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
               <p className="text-sm text-muted-foreground">No result periods created yet</p>
@@ -132,7 +163,7 @@ export default function ReportsDashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2 animate-in fade-in duration-200">
             {periods.slice(0, 5).map(period => (
               <Card key={period.id} className="hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => navigate(`/reports/monthly/${period.period_code || period.id}/marks`)}>
                 <CardContent className="p-3 sm:p-3.5 flex items-center justify-between">
