@@ -333,18 +333,23 @@ export default function BlankMarksSheetPage() {
   return (
     <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-6 w-full">
       {/* ─── TOP STREAMLINED RESPONSIVE TOOLBAR ─── */}
-      <div className="no-print space-y-3.5 border-b pb-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground">
+      <div className="no-print space-y-3.5 border-b pb-3.5 sm:pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
               Offline Blank Marks Entry Sheet
             </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-              A4 Landscape printable sheets with 25 fixed rows per page for classroom marks entry
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
+              <span className="hidden sm:inline">
+                A4 Landscape printable sheets with 25 fixed rows per page for classroom marks entry
+              </span>
+              <span className="sm:hidden">
+                A4 Landscape printable blank sheets with 25 fixed rows
+              </span>
             </p>
           </div>
 
-          {/* Action Buttons (Print & Download) */}
+          {/* Action Buttons (Print & Download - Bottom-aligned on desktop) */}
           <div className="flex items-center gap-2 shrink-0">
             {/* Direct Print Button (Hidden on phone screens, visible on sm and up) */}
             <Button
@@ -352,7 +357,7 @@ export default function BlankMarksSheetPage() {
               size="sm"
               onClick={handleDirectPrint}
               disabled={selectedGroupIds.length === 0 || loading || isPrinting}
-              className="hidden sm:inline-flex h-8 gap-1.5 px-2.5 sm:px-3 text-xs font-semibold shadow-2xs cursor-pointer hover:bg-muted rounded-md"
+              className="hidden sm:inline-flex h-9 gap-1.5 px-3 text-xs sm:text-sm font-semibold shadow-2xs cursor-pointer hover:bg-muted rounded-md"
               title="Print exact A4 Landscape marks sheet"
             >
               {isPrinting ? (
@@ -368,7 +373,7 @@ export default function BlankMarksSheetPage() {
               size="sm"
               onClick={handleDownloadPDF}
               disabled={selectedGroupIds.length === 0 || loading || isDownloading}
-              className="h-8 gap-1.5 px-2.5 sm:px-3.5 text-xs bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer rounded-md"
+              className="h-9 gap-1.5 px-3 sm:px-3.5 text-xs sm:text-sm bg-primary text-primary-foreground font-semibold shadow-xs cursor-pointer rounded-md"
               title="Download A4 Landscape PDF for selected groups"
             >
               {isDownloading ? (
@@ -381,22 +386,22 @@ export default function BlankMarksSheetPage() {
                   ? 'Downloading...'
                   : selectedGroupIds.length > 1
                   ? `Download (${selectedGroupIds.length} Groups)`
-                  : 'Download'}
+                  : 'Download PDF'}
               </span>
             </Button>
           </div>
         </div>
 
         {/* Filter Controls Row */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           {/* Academic Year */}
           <Select value={academicYear} onValueChange={setAcademicYear}>
-            <SelectTrigger className="w-[125px] sm:w-[135px] text-xs h-8 bg-card shadow-2xs">
+            <SelectTrigger className="w-[125px] sm:w-[135px] text-xs sm:text-sm h-9 bg-card shadow-2xs">
               <SelectValue placeholder="Academic Year" />
             </SelectTrigger>
             <SelectContent>
               {yearOptions.map((y) => (
-                <SelectItem key={y} value={y} className="text-xs">
+                <SelectItem key={y} value={y} className="text-xs sm:text-sm">
                   {y}
                 </SelectItem>
               ))}
@@ -405,12 +410,12 @@ export default function BlankMarksSheetPage() {
 
           {/* Month */}
           <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="w-[120px] sm:w-[130px] text-xs h-8 bg-card shadow-2xs">
+            <SelectTrigger className="w-[125px] sm:w-[135px] text-xs sm:text-sm h-9 bg-card shadow-2xs">
               <SelectValue placeholder="Month" />
             </SelectTrigger>
             <SelectContent>
               {MONTH_CODES.map((m) => (
-                <SelectItem key={m} value={m} className="text-xs">
+                <SelectItem key={m} value={m} className="text-xs sm:text-sm">
                   {MONTH_NAMES[m]}
                 </SelectItem>
               ))}
@@ -419,7 +424,7 @@ export default function BlankMarksSheetPage() {
 
           {/* Group Selector */}
           <Select value={dropdownValue} onValueChange={handleGroupSelectChange}>
-            <SelectTrigger className="w-[180px] sm:w-[230px] text-xs h-8 bg-card shadow-2xs">
+            <SelectTrigger className="w-[180px] sm:w-[230px] text-xs sm:text-sm h-9 bg-card shadow-2xs">
               <SelectValue placeholder="Select Group">
                 {isAllGroupsSelected
                   ? `All Groups (${groups.length})`
@@ -431,11 +436,11 @@ export default function BlankMarksSheetPage() {
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-xs font-semibold">
+              <SelectItem value="all" className="text-xs sm:text-sm font-semibold">
                 All Groups ({groups.length} Groups)
               </SelectItem>
               {groups.map((g) => (
-                <SelectItem key={g.id} value={g.id} className="text-xs">
+                <SelectItem key={g.id} value={g.id} className="text-xs sm:text-sm">
                   Group {g.id} — {g.class} ({g.category})
                 </SelectItem>
               ))}
@@ -447,11 +452,12 @@ export default function BlankMarksSheetPage() {
             variant="outline"
             size="sm"
             onClick={openMultiSelectDialog}
-            className="h-8 px-2 sm:px-2.5 gap-1.5 text-xs shadow-2xs cursor-pointer hover:bg-muted"
+            className="h-9 px-2.5 sm:px-3 gap-1.5 text-xs sm:text-sm shadow-2xs cursor-pointer hover:bg-muted font-medium"
             title="Choose specific groups"
           >
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="hidden sm:inline">Select Specific Groups</span>
+            <span className="sm:hidden">Specific</span>
             {selectedGroupIds.length > 0 && !isAllGroupsSelected && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-bold">
                 {selectedGroupIds.length}
@@ -462,11 +468,11 @@ export default function BlankMarksSheetPage() {
           {/* Preview Navigation Switcher (When Multiple Groups or Multiple Pages) */}
           <div className="ml-auto flex items-center gap-2">
             {selectedGroupIds.length > 1 && (
-              <div className="flex items-center border rounded-md overflow-hidden bg-background shadow-2xs h-8">
+              <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-9">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                  className="h-9 px-2.5 rounded-none cursor-pointer text-xs font-semibold"
                   onClick={() => {
                     setPreviewGroupIndex((p) => Math.max(0, p - 1));
                     setPreviewPageIndex(0);
@@ -475,15 +481,15 @@ export default function BlankMarksSheetPage() {
                   title="Previous Group"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
-                  <span className="hidden md:inline ml-0.5">Prev Group</span>
+                  <span className="hidden md:inline ml-0.5">Prev</span>
                 </Button>
-                <span className="text-[11px] font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap">
-                  Group {activeGroupId} ({previewGroupIndex + 1} / {selectedGroupIds.length})
+                <span className="text-[11px] sm:text-xs font-bold text-foreground px-2.5 border-x leading-9 whitespace-nowrap bg-muted/20">
+                  Group {activeGroupId} ({previewGroupIndex + 1}/{selectedGroupIds.length})
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                  className="h-9 px-2.5 rounded-none cursor-pointer text-xs font-semibold"
                   onClick={() => {
                     setPreviewGroupIndex((p) => Math.min(selectedGroupIds.length - 1, p + 1));
                     setPreviewPageIndex(0);
@@ -491,31 +497,31 @@ export default function BlankMarksSheetPage() {
                   disabled={previewGroupIndex >= selectedGroupIds.length - 1}
                   title="Next Group"
                 >
-                  <span className="hidden md:inline mr-0.5">Next Group</span>
+                  <span className="hidden md:inline mr-0.5">Next</span>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
             )}
 
             {totalPagesForActiveGroup > 1 && (
-              <div className="flex items-center border rounded-md overflow-hidden bg-background shadow-2xs h-8">
+              <div className="flex items-center border rounded-md overflow-hidden bg-card shadow-2xs h-9">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                  className="h-9 px-2 rounded-none cursor-pointer text-xs"
                   onClick={() => setPreviewPageIndex((p) => Math.max(0, p - 1))}
                   disabled={previewPageIndex <= 0}
                   title="Previous Page"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
                 </Button>
-                <span className="text-[11px] font-semibold text-muted-foreground px-2 border-x leading-8 whitespace-nowrap">
-                  Page {previewPageIndex + 1} / {totalPagesForActiveGroup}
+                <span className="text-[11px] sm:text-xs font-bold text-foreground px-2.5 border-x leading-9 whitespace-nowrap bg-muted/20">
+                  Page {previewPageIndex + 1}/{totalPagesForActiveGroup}
                 </span>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 rounded-none cursor-pointer text-xs"
+                  className="h-9 px-2 rounded-none cursor-pointer text-xs"
                   onClick={() => setPreviewPageIndex((p) => Math.min(totalPagesForActiveGroup - 1, p + 1))}
                   disabled={previewPageIndex >= totalPagesForActiveGroup - 1}
                   title="Next Page"
@@ -540,7 +546,21 @@ export default function BlankMarksSheetPage() {
           <p className="text-sm">Please select a group to generate the offline marks sheet.</p>
         </Card>
       ) : (
-        <div className="w-full flex flex-col items-center">
+        <div className="w-full flex flex-col items-center space-y-2">
+          {/* Document Preview Info Strip (Desktop & Tablet) */}
+          <div className="w-full flex items-center justify-between text-xs text-muted-foreground px-1">
+            <span className="flex items-center gap-1.5 font-medium">
+              <FileText className="h-3.5 w-3.5 text-primary" />
+              <span>
+                A4 Landscape Preview — Group {activeSheetData.group?.id}
+                {activeSheetData.group?.class ? ` (${activeSheetData.group?.class})` : ''}
+              </span>
+            </span>
+            <span className="font-mono text-[11px] bg-muted/40 px-2 py-0.5 rounded-md border text-muted-foreground">
+              {Math.round(a4Scale * 100)}% Preview Scale
+            </span>
+          </div>
+
           <div
             ref={a4ContainerRef}
             className="w-full flex justify-center items-start overflow-hidden py-1 print:overflow-visible print:h-auto print:py-0 print:block"
@@ -558,7 +578,7 @@ export default function BlankMarksSheetPage() {
                 transformOrigin: 'top center',
                 backgroundColor: '#ffffff',
               }}
-              className="printable-sheet bg-white text-black font-sans border-[2.5px] border-black rounded-none pt-8 pb-5 px-5 sm:pt-9 sm:pb-6 sm:px-6 shadow-md flex flex-col justify-start shrink-0 box-border print:transform-none print:w-full print:border-[2px] print:shadow-none print:p-4"
+              className="printable-sheet bg-white text-black font-sans border-[2.5px] border-black rounded-none pt-8 pb-5 px-5 sm:pt-9 sm:pb-6 sm:px-6 shadow-xl ring-1 ring-black/5 flex flex-col justify-start shrink-0 box-border print:transform-none print:w-full print:border-[2px] print:shadow-none print:p-4"
             >
               <div className="space-y-1.5">
                 {/* ─── 1. Header & Title Banner (Compact, Less Area) ─── */}

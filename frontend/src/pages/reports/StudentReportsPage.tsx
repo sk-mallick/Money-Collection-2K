@@ -1188,78 +1188,139 @@ export default function StudentReportsPage() {
 
   // ─── DIRECTORY VIEW: LIST OF ALL EXISTING STUDENTS ───
   return (
-    <div className="page-enter p-4 sm:p-6 space-y-6 w-full">
-      {/* Page Title & Subtitle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight">Student Reports & Results</h1>
-            <Badge variant="secondary" className="font-mono text-xs px-2 py-0.5 rounded-full font-bold">
-              {studentsList.length} Students
-            </Badge>
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
+      {/* Page Header */}
+      <div className="border-b pb-3 sm:pb-3.5">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full">
+          {/* Left: Title & Subtitle */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+                Student Reports & Results
+              </h1>
+              <Badge variant="secondary" className="hidden sm:inline-flex font-mono text-xs px-2 py-0.5 rounded-full font-bold">
+                {studentsList.length} Students
+              </Badge>
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
+              <span className="hidden sm:inline">Browse all students to view comprehensive monthly marks history and generate official report cards</span>
+              <span className="sm:hidden">Browse students & generate report cards</span>
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Browse all existing students to view comprehensive monthly marks history and generate official report cards
-          </p>
+
+          {/* Desktop Right: 4 Compact Mini Stat Cards (>= lg only) */}
+          <div className="hidden lg:grid grid-cols-4 gap-2 shrink-0">
+            {/* 1. Total Students */}
+            <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
+              <div className="h-7 w-7 rounded-md bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <Users className="h-3.5 w-3.5 stroke-[2.2]" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+                  Total
+                </div>
+                <div className="text-xs sm:text-sm font-extrabold text-foreground leading-none mt-1">
+                  {studentsList.length}
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Junior Section */}
+            <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
+              <div className="h-7 w-7 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <GraduationCap className="h-3.5 w-3.5 stroke-[2.2]" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+                  Junior
+                </div>
+                <div className="text-xs sm:text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none mt-1">
+                  {studentsList.filter(s => s.category === 'Junior').length}
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Senior Section */}
+            <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
+              <div className="h-7 w-7 rounded-md bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                <Award className="h-3.5 w-3.5 stroke-[2.2]" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+                  Senior
+                </div>
+                <div className="text-xs sm:text-sm font-extrabold text-purple-600 dark:text-purple-400 leading-none mt-1">
+                  {studentsList.filter(s => s.category === 'Senior').length}
+                </div>
+              </div>
+            </div>
+
+            {/* 4. Active Groups */}
+            <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
+              <div className="h-7 w-7 rounded-md bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <School className="h-3.5 w-3.5 stroke-[2.2]" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+                  Groups
+                </div>
+                <div className="text-xs sm:text-sm font-extrabold text-amber-600 dark:text-amber-400 leading-none mt-1">
+                  {groups.length}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Overview Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="bg-card/60 backdrop-blur-xs">
-          <CardContent className="p-3.5 sm:p-4">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Users className="h-4 w-4 text-blue-500" />
-              <span className="text-xs text-muted-foreground font-medium">Total Students</span>
-            </div>
-            <div className="text-xl sm:text-2xl font-bold">{studentsList.length}</div>
-            <div className="text-[11px] text-muted-foreground mt-0.5">Enrolled candidates</div>
-          </CardContent>
-        </Card>
+      {/* Mobile/Tablet Overview Stat Cards: Single-line 4-column strip without icons (< lg) */}
+      <div className="grid lg:hidden grid-cols-4 gap-1.5 sm:gap-2">
+        {/* Total */}
+        <div className="flex flex-col items-center justify-center py-1.5 px-1 rounded-lg bg-card/90 border border-border/80 shadow-2xs text-center">
+          <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+            Total
+          </div>
+          <div className="text-xs sm:text-sm font-extrabold text-foreground leading-none mt-1">
+            {studentsList.length}
+          </div>
+        </div>
 
-        <Card className="bg-card/60 backdrop-blur-xs">
-          <CardContent className="p-3.5 sm:p-4">
-            <div className="flex items-center gap-2 mb-1.5">
-              <GraduationCap className="h-4 w-4 text-emerald-500" />
-              <span className="text-xs text-muted-foreground font-medium">Junior Section</span>
-            </div>
-            <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              {studentsList.filter(s => s.category === 'Junior').length}
-            </div>
-            <div className="text-[11px] text-muted-foreground mt-0.5">Olympiad & Foundation</div>
-          </CardContent>
-        </Card>
+        {/* Junior */}
+        <div className="flex flex-col items-center justify-center py-1.5 px-1 rounded-lg bg-card/90 border border-border/80 shadow-2xs text-center">
+          <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+            Junior
+          </div>
+          <div className="text-xs sm:text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none mt-1">
+            {studentsList.filter(s => s.category === 'Junior').length}
+          </div>
+        </div>
 
-        <Card className="bg-card/60 backdrop-blur-xs">
-          <CardContent className="p-3.5 sm:p-4">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Award className="h-4 w-4 text-purple-500" />
-              <span className="text-xs text-muted-foreground font-medium">Senior Section</span>
-            </div>
-            <div className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">
-              {studentsList.filter(s => s.category === 'Senior').length}
-            </div>
-            <div className="text-[11px] text-muted-foreground mt-0.5">Literature & Advanced</div>
-          </CardContent>
-        </Card>
+        {/* Senior */}
+        <div className="flex flex-col items-center justify-center py-1.5 px-1 rounded-lg bg-card/90 border border-border/80 shadow-2xs text-center">
+          <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+            Senior
+          </div>
+          <div className="text-xs sm:text-sm font-extrabold text-purple-600 dark:text-purple-400 leading-none mt-1">
+            {studentsList.filter(s => s.category === 'Senior').length}
+          </div>
+        </div>
 
-        <Card className="bg-card/60 backdrop-blur-xs">
-          <CardContent className="p-3.5 sm:p-4">
-            <div className="flex items-center gap-2 mb-1.5">
-              <School className="h-4 w-4 text-amber-500" />
-              <span className="text-xs text-muted-foreground font-medium">Active Groups</span>
-            </div>
-            <div className="text-xl sm:text-2xl font-bold">{groups.length}</div>
-            <div className="text-[11px] text-muted-foreground mt-0.5">Classroom batches</div>
-          </CardContent>
-        </Card>
+        {/* Groups */}
+        <div className="flex flex-col items-center justify-center py-1.5 px-1 rounded-lg bg-card/90 border border-border/80 shadow-2xs text-center">
+          <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+            Groups
+          </div>
+          <div className="text-xs sm:text-sm font-extrabold text-amber-600 dark:text-amber-400 leading-none mt-1">
+            {groups.length}
+          </div>
+        </div>
       </div>
 
       {/* Search & Filter Toolbar & Active Filters */}
       <div className="space-y-2">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3 justify-between">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 sm:gap-2.5 justify-between">
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1 min-w-[180px]">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search name, ID, school, class..."
@@ -1269,14 +1330,18 @@ export default function StudentReportsPage() {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          {/* 3 Filters in a single line on phone screens (grid-cols-3) */}
+          <div className="grid grid-cols-3 sm:flex sm:items-center gap-1.5 sm:gap-2">
             {/* Group Filter */}
             <Select value={filterGroup} onValueChange={handleGroupChange}>
-              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card">
-                <SelectValue placeholder="All Groups" />
+              <SelectTrigger className="w-full sm:w-[125px] text-xs sm:text-sm h-9 px-2 sm:px-3 bg-card truncate">
+                <SelectValue placeholder="Groups" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Groups</SelectItem>
+                <SelectItem value="all">
+                  <span className="hidden sm:inline">All Groups</span>
+                  <span className="sm:hidden">Groups</span>
+                </SelectItem>
                 {availableGroups.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
                     Group {g.id}
@@ -1287,14 +1352,17 @@ export default function StudentReportsPage() {
 
             {/* Class Filter */}
             <Select value={filterClass} onValueChange={handleClassChange}>
-              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[125px] text-xs sm:text-sm h-9 bg-card">
-                <SelectValue placeholder="All Classes" />
+              <SelectTrigger className="w-full sm:w-[115px] text-xs sm:text-sm h-9 px-2 sm:px-3 bg-card truncate">
+                <SelectValue placeholder="Classes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Classes</SelectItem>
+                <SelectItem value="all">
+                  <span className="hidden sm:inline">All Classes</span>
+                  <span className="sm:hidden">Classes</span>
+                </SelectItem>
                 {availableClasses.map((c) => (
                   <SelectItem key={c} value={c}>
-                    Class {c}
+                    {c}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1302,13 +1370,16 @@ export default function StudentReportsPage() {
 
             {/* Category Filter */}
             <Select value={filterCategory} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card">
-                <SelectValue placeholder="All Categories" />
+              <SelectTrigger className="w-full sm:w-[120px] text-xs sm:text-sm h-9 px-2 sm:px-3 bg-card truncate">
+                <SelectValue placeholder="Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="Junior">Junior Section</SelectItem>
-                <SelectItem value="Senior">Senior Section</SelectItem>
+                <SelectItem value="all">
+                  <span className="hidden sm:inline">All Categories</span>
+                  <span className="sm:hidden">Categories</span>
+                </SelectItem>
+                <SelectItem value="Junior">Junior</SelectItem>
+                <SelectItem value="Senior">Senior</SelectItem>
               </SelectContent>
             </Select>
           </div>
