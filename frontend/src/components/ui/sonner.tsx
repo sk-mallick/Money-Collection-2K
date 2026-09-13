@@ -15,29 +15,26 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
+      duration={3000}
       gap={8}
-      mobileOffset={{ bottom: 16, left: 12, right: 12 }}
+      mobileOffset={{ bottom: 16, left: 16, right: 16 }}
       icons={{
-        success: <CircleCheckIcon className="size-4 sm:size-4.5 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />,
-        info: <InfoIcon className="size-4 sm:size-4.5 text-sky-500 dark:text-sky-400 shrink-0 mt-0.5" />,
-        warning: <TriangleAlertIcon className="size-4 sm:size-4.5 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" />,
-        error: <OctagonXIcon className="size-4 sm:size-4.5 text-rose-500 dark:text-rose-400 shrink-0 mt-0.5" />,
-        loading: <Loader2Icon className="size-4 sm:size-4.5 animate-spin text-muted-foreground shrink-0 mt-0.5" />,
+        success: <CircleCheckIcon className="size-4 text-emerald-500 shrink-0" />,
+        info: <InfoIcon className="size-4 text-sky-500 shrink-0" />,
+        warning: <TriangleAlertIcon className="size-4 text-amber-500 shrink-0" />,
+        error: <OctagonXIcon className="size-4 text-rose-500 shrink-0" />,
+        loading: <Loader2Icon className="size-4 animate-spin text-muted-foreground shrink-0" />,
       }}
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-card/95 group-[.toaster]:text-card-foreground group-[.toaster]:border-border/80 group-[.toaster]:shadow-2xl group-[.toaster]:shadow-black/30 group-[.toaster]:backdrop-blur-xl group-[.toaster]:rounded-xl sm:group-[.toaster]:rounded-2xl group-[.toaster]:p-3 sm:group-[.toaster]:py-3 sm:group-[.toaster]:px-4 group-[.toaster]:gap-2.5 sm:group-[.toaster]:gap-3 group-[.toaster]:items-start group-[.toaster]:min-h-[44px] group-[.toaster]:w-[calc(100vw-24px)] group-[.toaster]:max-w-[calc(100vw-24px)] sm:group-[.toaster]:w-[380px] sm:group-[.toaster]:max-w-[380px]",
+            "group toast group-[.toaster]:bg-card/95 group-[.toaster]:text-card-foreground group-[.toaster]:border-border/80 group-[.toaster]:shadow-lg group-[.toaster]:shadow-black/25 group-[.toaster]:backdrop-blur-md group-[.toaster]:rounded-lg group-[.toaster]:px-3.5 group-[.toaster]:py-2.5 group-[.toaster]:gap-2.5 group-[.toaster]:items-center group-[.toaster]:min-h-[38px] group-[.toaster]:w-auto group-[.toaster]:min-w-[180px] group-[.toaster]:max-w-[calc(100vw-32px)] sm:group-[.toaster]:max-w-[340px]",
           title:
-            "group-[.toast]:text-[13px] sm:group-[.toast]:text-[13.5px] group-[.toast]:font-medium group-[.toast]:text-foreground leading-snug tracking-tight break-words text-left flex-1 min-w-0 line-clamp-2",
+            "group-[.toast]:text-xs sm:group-[.toast]:text-[13px] group-[.toast]:font-medium group-[.toast]:text-foreground leading-snug break-words text-left flex-1 min-w-0",
           description:
-            "group-[.toast]:text-[11.5px] group-[.toast]:text-muted-foreground leading-relaxed mt-0.5 break-words text-left line-clamp-2",
-          actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:text-xs group-[.toast]:font-medium group-[.toast]:px-2.5 group-[.toast]:py-1.5 group-[.toast]:rounded-lg",
-          cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground group-[.toast]:text-xs group-[.toast]:font-medium group-[.toast]:px-2.5 group-[.toast]:py-1.5 group-[.toast]:rounded-lg",
+            "group-[.toast]:text-[11.5px] group-[.toast]:text-muted-foreground leading-normal mt-0.5 break-words text-left",
           closeButton:
-            "!bg-transparent hover:!bg-accent/80 !text-muted-foreground hover:!text-foreground !border-none !rounded-lg !size-6 !static !transform-none !ml-auto !mr-0 !transition-all !opacity-70 hover:!opacity-100 flex items-center justify-center shrink-0 cursor-pointer mt-0.5",
+            "!bg-transparent hover:!bg-accent/80 !text-muted-foreground hover:!text-foreground !border-none !rounded-md !size-5 !static !transform-none !ml-2 !mr-0 !transition-all !opacity-60 hover:!opacity-100 flex items-center justify-center shrink-0 cursor-pointer",
         },
       }}
       style={
