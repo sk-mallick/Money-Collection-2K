@@ -5,3 +5,6 @@
 {"timestamp":"2026-09-13 10:14:27","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/backend\/auth\/login.php"}
 {"timestamp":"2026-09-13 10:14:27","level":"INFO","message":"Auto-hashed plain text password for admin","context":{"username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/backend\/auth\/login.php"}
 {"timestamp":"2026-09-13 10:14:27","level":"INFO","message":"Successful login","context":{"username":"18102024"},"ip":"::1","uri":"\/Money%20Collection%202K\/backend\/auth\/login.php"}
+{"timestamp":"2026-09-13 12:54:53","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/backend\/auth\/login.php"}
+{"timestamp":"2026-09-13 12:55:06","level":"INFO","message":"Auto-hashed plain text password for admin","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/backend\/auth\/login.php"}
+{"timestamp":"2026-09-13 12:55:06","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/backend\/auth\/login.php"}

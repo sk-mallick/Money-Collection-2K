@@ -1025,25 +1025,6 @@ $syncPercentage = $totalTablesCount > 0 ? round(($existingTablesCount / $totalTa
                             </a>
                         <?php endif; ?>
                     </div>
-
-                    <?php if ($pdo && !$isLocked): ?>
-                        <div style="display:grid;grid-template-columns:1fr;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
-                            <form method="POST" onsubmit="return confirm('Reset admin credentials to 454 (password: 454) and 18102024 (password: 2024) and unblock all IPs?');">
-                                <input type="hidden" name="action" value="reset_admin_credentials">
-                                <button type="submit" class="btn btn-secondary btn-block" style="border-color:#38bdf8;color:#38bdf8;">
-                                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                                    Reset Passwords (454 &amp; 2024)
-                                </button>
-                            </form>
-                            <form method="POST">
-                                <input type="hidden" name="action" value="clear_rate_limits">
-                                <button type="submit" class="btn btn-outline btn-block" style="color:#a1a1aa;">
-                                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-                                    Unblock IPs (Clear Rate Limits)
-                                </button>
-                            </form>
-                        </div>
-                    <?php endif; ?>
                 </div>
             </div>
 
