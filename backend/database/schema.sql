@@ -191,16 +191,45 @@ CREATE TABLE `students` (
   `notes` text DEFAULT NULL,
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT current_timestamp(),
-  `deleted_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_student_group` (`group_id`),
-  KEY `idx_students_deleted` (`deleted_at`),
   CONSTRAINT `fk_student_group` FOREIGN KEY (`group_id`) REFERENCES `groups` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `students` cleared
+
+--
+-- Table structure for table `old_students`
+--
+
+DROP TABLE IF EXISTS `old_students`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `old_students` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `original_id` varchar(10) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `category` enum('Junior','Senior') NOT NULL,
+  `last_group_id` varchar(10) DEFAULT NULL,
+  `last_class` varchar(50) DEFAULT '',
+  `school` varchar(100) DEFAULT '',
+  `contact_no` varchar(15) DEFAULT '',
+  `father_no` varchar(15) DEFAULT '',
+  `mother_no` varchar(15) DEFAULT '',
+  `adm_date` date DEFAULT NULL,
+  `dob` date DEFAULT NULL,
+  `fee_per_month` int(11) NOT NULL DEFAULT 700,
+  `notes` text DEFAULT NULL,
+  `archived_date` date NOT NULL,
+  `archived_reason` varchar(255) DEFAULT 'Left Institute',
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_old_students_original_id` (`original_id`),
+  KEY `idx_old_students_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

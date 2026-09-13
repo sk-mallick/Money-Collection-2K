@@ -24,7 +24,7 @@ if (empty($studentId)) {
 }
 
 // Get student info
-$studentStmt = $pdo->prepare('SELECT id, name, category, class, school, group_id, adm_date, dob, contact_no, father_no, mother_no FROM students WHERE id = ? AND deleted_at IS NULL');
+$studentStmt = $pdo->prepare('SELECT id, name, category, class, school, group_id, adm_date, dob, contact_no, father_no, mother_no FROM students WHERE id = ?');
 $studentStmt->execute([$studentId]);
 $student = $studentStmt->fetch();
 

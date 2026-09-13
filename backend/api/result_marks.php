@@ -59,13 +59,8 @@ function ensurePeriodMarks(PDO $pdo, int $periodId): void {
         $subjects = $subStmt->fetchAll();
         if (empty($subjects)) return;
         
-        // 3. Get default max marks for this period (if any were explicitly provided)
-        $dmmStmt = $pdo->prepare('SELECT subject_id, max_marks FROM rc_default_max_marks WHERE result_period_id = ?');
-        $dmmStmt->execute([$periodId]);
+        // Default max marks no longer stored in separate table; use 0 as default for new rows
         $defaultMaxMarks = [];
-        while ($row = $dmmStmt->fetch()) {
-            $defaultMaxMarks[(int)$row['subject_id']] = (int)$row['max_marks'];
-        }
         
         // 4. Get student results for this period
         $srStmt = $pdo->prepare('SELECT id FROM rc_student_results WHERE result_period_id = ?');
@@ -73,7 +68,7 @@ function ensurePeriodMarks(PDO $pdo, int $periodId): void {
         $studentResultIds = $srStmt->fetchAll(PDO::FETCH_COLUMN);
         
         if (empty($studentResultIds) && !empty($period['group_id'])) {
-            $stStmt = $pdo->prepare('SELECT id, name, category, class, group_id, school FROM students WHERE group_id = ? AND deleted_at IS NULL ORDER BY name ASC');
+            $stStmt = $pdo->prepare('SELECT id, name, category, class, group_id, school FROM students WHERE group_id = ? ORDER BY name ASC');
             $stStmt->execute([$period['group_id']]);
             $stList = $stStmt->fetchAll();
             $insSrStmt = $pdo->prepare('INSERT INTO rc_student_results (result_period_id, student_id, snapshot_name, snapshot_class, snapshot_group_id, snapshot_school, snapshot_category) VALUES (?, ?, ?, ?, ?, ?, ?)');

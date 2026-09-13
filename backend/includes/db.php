@@ -224,6 +224,107 @@ function get_db(): PDO {
         }
     }
 
+    // Self-healing: create old_students table + migrate soft-deleted students + drop deleted_at
+    try {
+        $osCheck = $pdo->query("SHOW TABLES LIKE 'old_students'");
+        if ($osCheck->rowCount() === 0) {
+            $osMigrationPath = __DIR__ . '/../database/migration_old_students.sql';
+            if (file_exists($osMigrationPath)) {
+                $osSql = file_get_contents($osMigrationPath);
+                $pdo->exec($osSql);
+            }
+        }
+
+        // Migrate any existing soft-deleted students to old_students, then hard-delete them
+        $delAtCheck = $pdo->query("SHOW COLUMNS FROM `students` LIKE 'deleted_at'");
+        if ($delAtCheck->rowCount() > 0) {
+            // Move soft-deleted students to old_students
+            $softDeleted = $pdo->query("SELECT * FROM `students` WHERE `deleted_at` IS NOT NULL");
+            $softDeletedRows = $softDeleted->fetchAll();
+            if (!empty($softDeletedRows)) {
+                $archiveStmt = $pdo->prepare('INSERT INTO `old_students` (`original_id`, `name`, `category`, `last_group_id`, `last_class`, `school`, `contact_no`, `father_no`, `mother_no`, `adm_date`, `dob`, `fee_per_month`, `notes`, `archived_date`, `archived_reason`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                foreach ($softDeletedRows as $row) {
+                    // Extract original ID from DEL-prefixed ID if possible
+                    $originalId = $row['id'];
+                    if (strpos($originalId, 'DEL') === 0) {
+                        $originalId = 'DEL'; // Mark as unknown original
+                    }
+                    $archiveStmt->execute([
+                        $originalId,
+                        $row['name'],
+                        $row['category'],
+                        $row['group_id'],
+                        $row['class'],
+                        $row['school'],
+                        $row['contact_no'],
+                        $row['father_no'],
+                        $row['mother_no'],
+                        $row['adm_date'],
+                        $row['dob'] ?? null,
+                        $row['fee_per_month'],
+                        $row['notes'],
+                        date('Y-m-d', strtotime($row['deleted_at'])),
+                        'Migrated from soft-delete'
+                    ]);
+                }
+                // Hard-delete the migrated soft-deleted records
+                $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+                $pdo->exec("DELETE FROM `students` WHERE `deleted_at` IS NOT NULL");
+                $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+            }
+            // Drop deleted_at column and index
+            try {
+                $pdo->exec("ALTER TABLE `students` DROP INDEX `idx_students_deleted`");
+            } catch (Exception $idxEx) {
+                // Index may not exist
+            }
+            $pdo->exec("ALTER TABLE `students` DROP COLUMN `deleted_at`");
+        }
+    } catch (Exception $osEx) {
+        if (function_exists('write_log')) {
+            write_log('warning', 'Failed to run old_students migration', ['error' => $osEx->getMessage()]);
+        }
+    }
+
+    // Self-healing: drop rc_default_max_marks table if it exists (no longer needed)
+    try {
+        $dmmCheck = $pdo->query("SHOW TABLES LIKE 'rc_default_max_marks'");
+        if ($dmmCheck->rowCount() > 0) {
+            $pdo->exec("DROP TABLE `rc_default_max_marks`");
+        }
+    } catch (Exception $dmmEx) {
+        if (function_exists('write_log')) {
+            write_log('warning', 'Failed to drop rc_default_max_marks table', ['error' => $dmmEx->getMessage()]);
+        }
+    }
+
+    // Self-healing: change rc_student_results FK from CASCADE to SET NULL on delete
+    // This preserves result history when a student is archived and deleted
+    try {
+        $rcSrCheck = $pdo->query("SHOW TABLES LIKE 'rc_student_results'");
+        if ($rcSrCheck->rowCount() > 0) {
+            // Check current FK delete rule
+            $fkInfo = $pdo->query("
+                SELECT DELETE_RULE FROM information_schema.REFERENTIAL_CONSTRAINTS
+                WHERE CONSTRAINT_SCHEMA = DATABASE()
+                AND CONSTRAINT_NAME = 'fk_sr_student'
+                AND TABLE_NAME = 'rc_student_results'
+            ");
+            $fkRow = $fkInfo->fetch();
+            if ($fkRow && $fkRow['DELETE_RULE'] === 'CASCADE') {
+                // Allow student_id to be NULL
+                $pdo->exec("ALTER TABLE `rc_student_results` MODIFY COLUMN `student_id` VARCHAR(10) DEFAULT NULL");
+                // Drop and recreate FK with SET NULL
+                $pdo->exec("ALTER TABLE `rc_student_results` DROP FOREIGN KEY `fk_sr_student`");
+                $pdo->exec("ALTER TABLE `rc_student_results` ADD CONSTRAINT `fk_sr_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE SET NULL ON UPDATE CASCADE");
+            }
+        }
+    } catch (Exception $fkEx) {
+        if (function_exists('write_log')) {
+            write_log('warning', 'Failed to update rc_student_results FK', ['error' => $fkEx->getMessage()]);
+        }
+    }
+
     return $pdo;
 }
 

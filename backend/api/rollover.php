@@ -35,7 +35,7 @@ try {
     }
 
     // 2. Promote non-deleted student classes
-    $studentsStmt = $pdo->query("SELECT id, class FROM students WHERE deleted_at IS NULL");
+    $studentsStmt = $pdo->query("SELECT id, class FROM students");
     $students = $studentsStmt->fetchAll();
 
     $updateStudentStmt = $pdo->prepare("UPDATE students SET class = ? WHERE id = ?");

@@ -93,14 +93,9 @@ function getResultPeriod(PDO $pdo, int $id): void {
         json_response(['success' => false, 'error' => 'Result period not found'], 404);
     }
     
-    // Get default max marks
-    $maxStmt = $pdo->prepare("SELECT dmm.*, s.name as subject_name, s.category as subject_category
-                               FROM rc_default_max_marks dmm
-                               JOIN rc_subjects s ON dmm.subject_id = s.id
-                               WHERE dmm.result_period_id = ?
-                               ORDER BY s.display_order ASC");
-    $maxStmt->execute([$id]);
-    $period['default_max_marks'] = $maxStmt->fetchAll();
+    // Default max marks — no longer stored in a separate table
+    // Return empty array for backward compatibility with frontend
+    $period['default_max_marks'] = [];
     
     // Get student results
     $srStmt = $pdo->prepare("SELECT sr.* FROM rc_student_results sr WHERE sr.result_period_id = ? ORDER BY sr.snapshot_name ASC");
@@ -160,28 +155,20 @@ function createResultPeriod(PDO $pdo): void {
         $stmt->execute([$academicYear, $month, $groupId, $category, $adminId]);
         $periodId = (int)$pdo->lastInsertId();
         
-        // Insert default max marks
+        // Build default max marks map from input (used directly, not stored in separate table)
+        $defaultMaxMarks = [];
         if (isset($input['defaultMaxMarks']) && is_array($input['defaultMaxMarks'])) {
-            $maxStmt = $pdo->prepare('INSERT INTO rc_default_max_marks (result_period_id, subject_id, max_marks) VALUES (?, ?, ?)');
             foreach ($input['defaultMaxMarks'] as $mm) {
                 if (isset($mm['subjectId']) && isset($mm['maxMarks']) && (int)$mm['maxMarks'] > 0) {
-                    $maxStmt->execute([$periodId, (int)$mm['subjectId'], (int)$mm['maxMarks']]);
+                    $defaultMaxMarks[(int)$mm['subjectId']] = (int)$mm['maxMarks'];
                 }
             }
         }
         
         // Load students from the group
-        $studentStmt = $pdo->prepare('SELECT id, name, category, class, group_id, school FROM students WHERE group_id = ? AND deleted_at IS NULL ORDER BY name ASC');
+        $studentStmt = $pdo->prepare('SELECT id, name, category, class, group_id, school FROM students WHERE group_id = ? ORDER BY name ASC');
         $studentStmt->execute([$groupId]);
         $students = $studentStmt->fetchAll();
-        
-        // Get default max marks for creating student marks
-        $defaultMaxMarks = [];
-        $dmmStmt = $pdo->prepare('SELECT subject_id, max_marks FROM rc_default_max_marks WHERE result_period_id = ?');
-        $dmmStmt->execute([$periodId]);
-        while ($row = $dmmStmt->fetch()) {
-            $defaultMaxMarks[$row['subject_id']] = (int)$row['max_marks'];
-        }
         
         // Get applicable subjects for this category
         $subjectStmt = $pdo->prepare("SELECT id FROM rc_subjects WHERE (category = ? OR category = 'Both') AND is_active = 1 ORDER BY display_order ASC");
@@ -258,12 +245,21 @@ function updateResultPeriod(PDO $pdo): void {
         $stmt->execute($values);
     }
     
-    // Update default max marks if provided
+    // Update default max marks: propagate to rc_student_marks directly
     if (isset($input['defaultMaxMarks']) && is_array($input['defaultMaxMarks'])) {
-        foreach ($input['defaultMaxMarks'] as $mm) {
-            if (isset($mm['subjectId']) && isset($mm['maxMarks'])) {
-                $upsertStmt = $pdo->prepare('INSERT INTO rc_default_max_marks (result_period_id, subject_id, max_marks) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE max_marks = VALUES(max_marks)');
-                $upsertStmt->execute([$id, (int)$mm['subjectId'], (int)$mm['maxMarks']]);
+        // Get all student_result_ids for this period
+        $srIdStmt = $pdo->prepare('SELECT id FROM rc_student_results WHERE result_period_id = ?');
+        $srIdStmt->execute([$id]);
+        $srIds = $srIdStmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        if (!empty($srIds)) {
+            $updateMaxStmt = $pdo->prepare('UPDATE rc_student_marks SET max_marks = ? WHERE student_result_id = ? AND subject_id = ? AND is_default_max = 1');
+            foreach ($input['defaultMaxMarks'] as $mm) {
+                if (isset($mm['subjectId']) && isset($mm['maxMarks'])) {
+                    foreach ($srIds as $srId) {
+                        $updateMaxStmt->execute([(int)$mm['maxMarks'], (int)$srId, (int)$mm['subjectId']]);
+                    }
+                }
             }
         }
     }

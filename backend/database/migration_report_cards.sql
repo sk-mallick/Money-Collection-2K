@@ -38,23 +38,13 @@ CREATE TABLE IF NOT EXISTS `rc_result_periods` (
   CONSTRAINT `fk_rp_group` FOREIGN KEY (`group_id`) REFERENCES `groups`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- 4. Default max marks per result period per subject
-CREATE TABLE IF NOT EXISTS `rc_default_max_marks` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `result_period_id` INT(11) NOT NULL,
-  `subject_id` INT(11) NOT NULL,
-  `max_marks` INT(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_period_subject` (`result_period_id`, `subject_id`),
-  CONSTRAINT `fk_dmm_period` FOREIGN KEY (`result_period_id`) REFERENCES `rc_result_periods`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_dmm_subject` FOREIGN KEY (`subject_id`) REFERENCES `rc_subjects`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+-- 4. (rc_default_max_marks removed — max marks stored directly in rc_student_marks per student)
 
 -- 5. Student results (one row per student per result period)
 CREATE TABLE IF NOT EXISTS `rc_student_results` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `result_period_id` INT(11) NOT NULL,
-  `student_id` VARCHAR(10) NOT NULL,
+  `student_id` VARCHAR(10) DEFAULT NULL,
   `snapshot_name` VARCHAR(100) NOT NULL,
   `snapshot_class` VARCHAR(50) DEFAULT '',
   `snapshot_group_id` VARCHAR(10) DEFAULT NULL,
@@ -73,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `rc_student_results` (
   KEY `idx_sr_student` (`student_id`),
   KEY `idx_sr_percentage` (`percentage`),
   CONSTRAINT `fk_sr_period` FOREIGN KEY (`result_period_id`) REFERENCES `rc_result_periods`(`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_sr_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_sr_student` FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 6. Individual marks (one row per student per subject per result period)

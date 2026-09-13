@@ -33,7 +33,7 @@ switch ($method) {
 
 function getStudents(PDO $pdo): void {
     // 1. Fetch all students (explicit columns, excluding soft-deleted ones)
-    $stmt = $pdo->query('SELECT id, name, category, class, school, contact_no, father_no, mother_no, adm_date, dob, fee_per_month, admission_fee_paid, notes, group_id, created_at, updated_at FROM students WHERE deleted_at IS NULL ORDER BY name ASC');
+    $stmt = $pdo->query('SELECT id, name, category, class, school, contact_no, father_no, mother_no, adm_date, dob, fee_per_month, admission_fee_paid, notes, group_id, created_at, updated_at FROM students ORDER BY name ASC');
     $students = $stmt->fetchAll();
 
     // 2. Fetch active academic year from settings
@@ -49,7 +49,7 @@ function getStudents(PDO $pdo): void {
         SELECT r.student_id, r.amt_paid, r.prev_due, r.months, r.generated_on, r.academic_year 
         FROM receipts r
         INNER JOIN students s ON r.student_id = s.id
-        WHERE r.academic_year = ? AND s.deleted_at IS NULL
+        WHERE r.academic_year = ?
         ORDER BY r.generated_on ASC
     ');
     $receiptsStmt->execute([$filterYear]);
@@ -246,22 +246,40 @@ function deleteStudent(PDO $pdo): void {
 
     $pdo->beginTransaction();
     try {
-        // Generate a unique 10-character ID to free the original ID for reuse
-        $deletedId = '';
-        do {
-            $deletedId = 'DEL' . substr(md5(uniqid(mt_rand(), true)), 0, 7);
-            $check = $pdo->prepare('SELECT id FROM students WHERE id = ?');
-            $check->execute([$deletedId]);
-        } while ($check->fetch());
+        // Fetch student data before deletion to archive
+        $fetchStmt = $pdo->prepare('SELECT * FROM students WHERE id = ?');
+        $fetchStmt->execute([$id]);
+        $student = $fetchStmt->fetch();
 
-        // Soft delete and rename ID. ON UPDATE CASCADE automatically updates associated payments and receipts.
-        $stmt = $pdo->prepare('UPDATE students SET id = ?, deleted_at = NOW(), updated_at = NOW() WHERE id = ? AND deleted_at IS NULL');
-        $stmt->execute([$deletedId, $id]);
-
-        if ($stmt->rowCount() === 0) {
+        if (!$student) {
             $pdo->rollBack();
-            json_response(['success' => false, 'error' => 'Student not found or already deleted'], 404);
+            json_response(['success' => false, 'error' => 'Student not found'], 404);
         }
+
+        // Archive student to old_students table
+        $archiveStmt = $pdo->prepare('INSERT INTO old_students (original_id, name, category, last_group_id, last_class, school, contact_no, father_no, mother_no, adm_date, dob, fee_per_month, notes, archived_date, archived_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), ?)');
+        $archiveStmt->execute([
+            $student['id'],
+            $student['name'],
+            $student['category'],
+            $student['group_id'],
+            $student['class'],
+            $student['school'],
+            $student['contact_no'],
+            $student['father_no'],
+            $student['mother_no'],
+            $student['adm_date'],
+            $student['dob'] ?? null,
+            $student['fee_per_month'],
+            $student['notes'],
+            'Left Institute'
+        ]);
+
+        // Hard delete from students table
+        // receipts FK has ON DELETE SET NULL — receipt history is preserved with student_id = NULL
+        // rc_student_results FK has ON DELETE SET NULL — result card snapshots are preserved with student_id = NULL
+        $deleteStmt = $pdo->prepare('DELETE FROM students WHERE id = ?');
+        $deleteStmt->execute([$id]);
 
         // Add entry to audit_logs
         $adminId = $user['sub'] ?? null;
@@ -270,15 +288,15 @@ function deleteStudent(PDO $pdo): void {
             $adminId,
             'DELETE',
             'student',
-            $deletedId,
-            "Soft deleted and renamed student: $id -> $deletedId"
+            $id,
+            "Archived and deleted student: $id (" . $student['name'] . ")"
         ]);
 
         $pdo->commit();
         json_response(['success' => true]);
     } catch (Exception $e) {
         $pdo->rollBack();
-        write_log('error', 'Failed to soft delete student', ['id' => $id, 'error' => $e->getMessage()]);
+        write_log('error', 'Failed to delete student', ['id' => $id, 'error' => $e->getMessage()]);
         json_response(['success' => false, 'error' => 'Server error during deletion'], 500);
     }
 }

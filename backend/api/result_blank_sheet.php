@@ -31,7 +31,7 @@ if (empty($category) || !in_array($category, ['Junior', 'Senior'])) {
 }
 
 // Get students in the group
-$studentStmt = $pdo->prepare('SELECT id, name, class, school FROM students WHERE group_id = ? AND deleted_at IS NULL ORDER BY name ASC');
+$studentStmt = $pdo->prepare('SELECT id, name, class, school FROM students WHERE group_id = ? ORDER BY name ASC');
 $studentStmt->execute([$groupId]);
 $students = $studentStmt->fetchAll();
 

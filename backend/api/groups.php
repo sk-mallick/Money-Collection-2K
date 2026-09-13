@@ -133,7 +133,7 @@ function deleteGroup(PDO $pdo): void {
     $id = strtoupper(sanitize_string($id, 10));
 
     // First check if any non-deleted student is assigned to this group
-    $check = $pdo->prepare('SELECT COUNT(*) FROM students WHERE group_id = ? AND deleted_at IS NULL');
+    $check = $pdo->prepare('SELECT COUNT(*) FROM students WHERE group_id = ?');
     $check->execute([$id]);
     $count = (int)$check->fetchColumn();
 

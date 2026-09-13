@@ -37,7 +37,7 @@ function getPayments(PDO $pdo): void {
         $receipts = $receiptsStmt->fetchAll();
 
         // Get all active students
-        $studentsStmt = $pdo->query('SELECT id, fee_per_month FROM students WHERE deleted_at IS NULL');
+        $studentsStmt = $pdo->query('SELECT id, fee_per_month FROM students');
         $studentFees = [];
         while ($row = $studentsStmt->fetch()) {
             $studentFees[$row['id']] = (int)$row['fee_per_month'];
