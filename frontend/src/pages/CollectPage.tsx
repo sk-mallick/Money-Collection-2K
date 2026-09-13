@@ -461,15 +461,19 @@ export default function CollectPage() {
         <p className="text-sm text-muted-foreground">Record payment and generate receipt</p>
       </div>
 
-      <StudentSelector
-        search={search}
-        setSearch={val => {
-          setSearch(val);
-          if (!val) setSelected(null);
-        }}
-        filteredStudents={filteredStudents}
-        selectStudent={selectStudent}
-      />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <StudentSelector
+            search={search}
+            setSearch={val => {
+              setSearch(val);
+              if (!val) setSelected(null);
+            }}
+            filteredStudents={filteredStudents}
+            selectStudent={selectStudent}
+          />
+        </div>
+      </div>
 
       {selected && (
         <div className="grid gap-6 lg:grid-cols-3">
@@ -525,10 +529,14 @@ export default function CollectPage() {
       )}
 
       {!selected && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
-          <Wallet className="mb-4 size-12 text-muted-foreground/40" />
-          <p className="text-lg font-medium">Select a Student</p>
-          <p className="text-sm text-muted-foreground">Search and select a student above to collect fee</p>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
+              <Wallet className="mb-4 size-12 text-muted-foreground/40" />
+              <p className="text-lg font-medium">Select a Student</p>
+              <p className="text-sm text-muted-foreground">Search and select a student above to collect fee</p>
+            </div>
+          </div>
         </div>
       )}
     </div>

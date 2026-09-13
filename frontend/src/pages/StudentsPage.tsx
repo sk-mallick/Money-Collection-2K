@@ -302,91 +302,108 @@ export default function StudentsPage() {
       </div>
 
       {/* Search & Filter Toolbar & Active Filters */}
-      <div className="space-y-2">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3 justify-between">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="space-y-2.5">
+        <div className="flex flex-col 2xl:flex-row 2xl:items-center gap-2.5 sm:gap-3 justify-between">
+          {/* Search Input (Line 1 on responsive screens) */}
+          <div className="relative flex-1 w-full 2xl:min-w-[280px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Search name, ID, school, class..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 text-xs sm:text-sm h-9 bg-card"
+              className="pl-8 text-xs sm:text-sm h-9 bg-card w-full"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full cursor-pointer"
+                title="Clear search"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-            {/* Group Filter */}
-            <Select value={groupFilter} onValueChange={handleGroupFilterChange}>
-              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card">
-                <SelectValue placeholder="All Groups" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Groups</SelectItem>
-                {availableGroups.map((g) => (
-                  <SelectItem key={g.id} value={g.id}>
-                    Group {g.id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Filters & Sort Controls (Line 2 on responsive screens) */}
+          <div className="flex flex-wrap items-center justify-between sm:justify-start 2xl:justify-end gap-2 sm:gap-2.5 w-full 2xl:w-auto">
+            {/* Filter Dropdowns Group */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 flex-1 sm:flex-initial">
+              {/* Group Filter */}
+              <Select value={groupFilter} onValueChange={handleGroupFilterChange}>
+                <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[130px] text-xs sm:text-sm h-9 bg-card">
+                  <SelectValue placeholder="All Groups" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Groups</SelectItem>
+                  {availableGroups.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      Group {g.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            {/* Class Filter */}
-            <Select value={classFilter} onValueChange={handleClassChange}>
-              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[125px] text-xs sm:text-sm h-9 bg-card">
-                <SelectValue placeholder="All Classes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Classes</SelectItem>
-                {availableClasses.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    Class {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {/* Class Filter */}
+              <Select value={classFilter} onValueChange={handleClassChange}>
+                <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[120px] text-xs sm:text-sm h-9 bg-card">
+                  <SelectValue placeholder="All Classes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Classes</SelectItem>
+                  {availableClasses.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      Class {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            {/* Category Filter */}
-            <Select value={categoryFilter} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[135px] text-xs sm:text-sm h-9 bg-card">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="Junior">Junior Section</SelectItem>
-                <SelectItem value="Senior">Senior Section</SelectItem>
-              </SelectContent>
-            </Select>
+              {/* Category Filter */}
+              <Select value={categoryFilter} onValueChange={handleCategoryChange}>
+                <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[130px] text-xs sm:text-sm h-9 bg-card">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="Junior">Junior Section</SelectItem>
+                  <SelectItem value="Senior">Senior Section</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            {/* Sort Field */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[190px] text-xs sm:text-sm h-9 bg-card px-2.5 sm:px-3">
-                <span className="flex items-center gap-1.5 min-w-0 text-left">
-                  <span className="text-muted-foreground/70 shrink-0 font-medium">Sort:</span>
-                  <span className="truncate">
-                    <SelectValue />
+            {/* Sort Controls Group */}
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 ml-auto sm:ml-0">
+              {/* Sort Field */}
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-auto sm:w-[180px] text-xs sm:text-sm h-9 bg-card px-2.5 sm:px-3">
+                  <span className="flex items-center gap-1.5 min-w-0 text-left">
+                    <span className="text-muted-foreground/70 shrink-0 font-medium">Sort:</span>
+                    <span className="truncate">
+                      <SelectValue />
+                    </span>
                   </span>
-                </span>
-              </SelectTrigger>
-              <SelectContent position="popper" align="start">
-                <SelectItem value="name">Name</SelectItem>
-                <SelectItem value="group">Group</SelectItem>
-                <SelectItem value="class">Class</SelectItem>
-                <SelectItem value="admDate">Adm. Date</SelectItem>
-                <SelectItem value="feePerMonth">Monthly Fee</SelectItem>
-              </SelectContent>
-            </Select>
+                </SelectTrigger>
+                <SelectContent position="popper" align="end">
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="group">Group</SelectItem>
+                  <SelectItem value="class">Class</SelectItem>
+                  <SelectItem value="admDate">Adm. Date</SelectItem>
+                  <SelectItem value="feePerMonth">Monthly Fee</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {/* Sort Order Toggle Button */}
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 shrink-0 cursor-pointer active:scale-95 transition-all text-xs bg-card"
-              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              title={sortOrder === 'asc' ? 'Change to Descending' : 'Change to Ascending'}
-            >
-              <ArrowUpDown className={`h-3.5 w-3.5 transition-transform duration-200 ${sortOrder === 'desc' ? 'rotate-180 text-primary' : ''}`} />
-            </Button>
+              {/* Sort Order Toggle Button */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0 cursor-pointer active:scale-95 transition-all text-xs bg-card"
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                title={sortOrder === 'asc' ? 'Change to Descending' : 'Change to Ascending'}
+              >
+                <ArrowUpDown className={`h-3.5 w-3.5 transition-transform duration-200 ${sortOrder === 'desc' ? 'rotate-180 text-primary' : ''}`} />
+              </Button>
+            </div>
           </div>
         </div>
 

@@ -104,9 +104,10 @@ export function CollectPageLoading() {
       </div>
 
       {/* Student Selector */}
-      <div className="max-w-md space-y-1.5">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-10 w-full rounded-md" />
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Skeleton className="h-9 w-full rounded-md" />
+        </div>
       </div>
 
       {/* Main Grid Content */}
