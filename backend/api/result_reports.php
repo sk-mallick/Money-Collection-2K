@@ -17,7 +17,7 @@ if ($method !== 'GET') {
 }
 
 $studentId = query_param('student_id', '', 10);
-$periodId = query_param('period_id', '', 10);
+$periodParam = query_param('period_id', '', 20);
 
 if (empty($studentId)) {
     json_response(['success' => false, 'error' => 'student_id required'], 400);
@@ -32,9 +32,14 @@ if (!$student) {
     json_response(['success' => false, 'error' => 'Student not found'], 404);
 }
 
-if ($periodId) {
+if ($periodParam) {
+    $period = resolve_period($pdo, $periodParam);
+    if (!$period) {
+        json_response(['success' => false, 'error' => 'Result period not found'], 404);
+    }
+    $periodId = (int)$period['id'];
     // Single period report
-    getSingleReport($pdo, $studentId, (int)$periodId, $student);
+    getSingleReport($pdo, $studentId, $periodId, $student);
 } else {
     // Full history
     getFullHistory($pdo, $studentId, $student);
@@ -42,7 +47,7 @@ if ($periodId) {
 
 function getSingleReport(PDO $pdo, string $studentId, int $periodId, array $student): void {
     $srStmt = $pdo->prepare("
-        SELECT sr.*, rp.academic_year, rp.month, rp.group_id, rp.category as period_category, rp.status as period_status,
+        SELECT sr.*, rp.period_code, rp.academic_year, rp.month, rp.group_id, rp.category as period_category, rp.status as period_status,
                g.class as group_class
         FROM rc_student_results sr
         JOIN rc_result_periods rp ON sr.result_period_id = rp.id
@@ -83,7 +88,7 @@ function getFullHistory(PDO $pdo, string $studentId, array $student): void {
     
     // Get all results for this student, ordered chronologically
     $sql = "
-        SELECT sr.*, rp.academic_year, rp.month, rp.group_id, rp.category as period_category, rp.status as period_status,
+        SELECT sr.*, rp.period_code, rp.academic_year, rp.month, rp.group_id, rp.category as period_category, rp.status as period_status,
                g.class as group_class
         FROM rc_student_results sr
         JOIN rc_result_periods rp ON sr.result_period_id = rp.id

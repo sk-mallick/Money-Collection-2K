@@ -24,6 +24,7 @@ INSERT IGNORE INTO `rc_subjects` (`name`, `category`, `display_order`) VALUES
 -- 3. Result periods (one per academic_year + month + group combination)
 CREATE TABLE IF NOT EXISTS `rc_result_periods` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `period_code` VARCHAR(20) NOT NULL,
   `academic_year` VARCHAR(10) NOT NULL,
   `month` VARCHAR(3) NOT NULL,
   `group_id` VARCHAR(10) DEFAULT NULL,
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS `rc_result_periods` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_period_code` (`period_code`),
   UNIQUE KEY `uk_period` (`academic_year`, `month`, `group_id`),
   KEY `idx_period_status` (`status`),
   CONSTRAINT `fk_rp_group` FOREIGN KEY (`group_id`) REFERENCES `groups`(`id`) ON DELETE SET NULL ON UPDATE CASCADE

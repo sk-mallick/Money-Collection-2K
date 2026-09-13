@@ -16,13 +16,13 @@ if ($method !== 'GET') {
     json_response(['success' => false, 'error' => 'Method not allowed'], 405);
 }
 
-$periodId = query_param('period_id');
+$periodParam = query_param('period_id');
 $type = query_param('type', 'class', 10);
 $academicYear = query_param('academic_year', '', 10);
 $month = query_param('month', '', 3);
 
 // Support filtering by academic_year + month for aggregate rankings
-if (!$periodId && $academicYear && $month) {
+if (!$periodParam && $academicYear && $month) {
     // Get all period IDs for this academic year + month
     $pStmt = $pdo->prepare('SELECT id FROM rc_result_periods WHERE academic_year = ? AND month = ?');
     $pStmt->execute([$academicYear, $month]);
@@ -55,9 +55,15 @@ if (!$periodId && $academicYear && $month) {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($periodIds);
 } else {
-    if (empty($periodId)) {
+    if (empty($periodParam)) {
         json_response(['success' => false, 'error' => 'period_id or academic_year + month required'], 400);
     }
+    
+    $period = resolve_period($pdo, $periodParam);
+    if (!$period) {
+        json_response(['success' => false, 'error' => 'Result period not found'], 404);
+    }
+    $periodId = (int)$period['id'];
     
     if ($type === 'group') {
         $sql = "SELECT sr.*, rp.group_id, rp.academic_year, rp.month, rp.category as period_category,
@@ -78,7 +84,7 @@ if (!$periodId && $academicYear && $month) {
     }
     
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([(int)$periodId]);
+    $stmt->execute([$periodId]);
 }
 
 function normalizeRankClass(?string $cls): string {

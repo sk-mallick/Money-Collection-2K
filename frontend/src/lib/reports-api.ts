@@ -13,6 +13,7 @@ export interface Subject {
 
 export interface ResultPeriod {
   id: number;
+  period_code?: string;
   academic_year: string;
   month: string;
   group_id: string | null;
@@ -97,6 +98,7 @@ export interface RankingGroup {
 
 export interface StudentReportResult {
   id: number;
+  period_code?: string;
   result_period_id: number;
   student_id: string;
   snapshot_name: string;
@@ -204,7 +206,7 @@ export async function fetchResultPeriods(filters?: {
   return res.success ? res.periods : [];
 }
 
-export async function fetchResultPeriod(id: number): Promise<ResultPeriod & { default_max_marks: unknown[]; student_results: unknown[] }> {
+export async function fetchResultPeriod(id: number | string): Promise<ResultPeriod & { default_max_marks: unknown[]; student_results: unknown[] }> {
   const res = await apiRequest<{ success: boolean; period: ResultPeriod & { default_max_marks: unknown[]; student_results: unknown[] } }>(`/api/result-periods?id=${id}`);
   return res.period;
 }
@@ -215,29 +217,29 @@ export async function createResultPeriod(data: {
   groupId: string;
   category: string;
   defaultMaxMarks: { subjectId: number; maxMarks: number }[];
-}): Promise<{ id: number; studentCount: number }> {
+}): Promise<{ id: number; period_code?: string; studentCount: number }> {
   return apiRequest('/api/result-periods', { method: 'POST', body: JSON.stringify(data) });
 }
 
-export async function updateResultPeriod(id: number, data: {
+export async function updateResultPeriod(id: number | string, data: {
   status?: string;
   defaultMaxMarks?: { subjectId: number; maxMarks: number }[];
 }): Promise<void> {
   await apiRequest(`/api/result-periods?id=${id}`, { method: 'PUT', body: JSON.stringify(data) });
 }
 
-export async function deleteResultPeriod(id: number): Promise<void> {
+export async function deleteResultPeriod(id: number | string): Promise<void> {
   await apiRequest(`/api/result-periods?id=${id}`, { method: 'DELETE' });
 }
 
 // ─── Marks API ──────────────────────────────────────
 
-export async function fetchMarks(periodId: number): Promise<StudentResult[]> {
+export async function fetchMarks(periodId: number | string): Promise<StudentResult[]> {
   const res = await apiRequest<{ success: boolean; students: StudentResult[] }>(`/api/result-marks?period_id=${periodId}`);
   return res.success ? res.students : [];
 }
 
-export async function saveMarks(periodId: number, students: {
+export async function saveMarks(periodId: number | string, students: {
   studentResultId: number;
   status?: string;
   marks?: { markId: number; obtainedMarks: number | null; isAbsent?: boolean; maxMarks: number; isDefaultMax: boolean }[];
@@ -245,14 +247,14 @@ export async function saveMarks(periodId: number, students: {
   await apiRequest('/api/result-marks', { method: 'POST', body: JSON.stringify({ periodId, students }) });
 }
 
-export async function recalculateResults(periodId: number): Promise<void> {
+export async function recalculateResults(periodId: number | string): Promise<void> {
   await apiRequest(`/api/result-marks?period_id=${periodId}&action=recalculate`, { method: 'PUT' });
 }
 
 // ─── Rankings API ───────────────────────────────────
 
 export async function fetchRankings(params: {
-  period_id?: number;
+  period_id?: number | string;
   academic_year?: string;
   month?: string;
   type: 'class' | 'group';

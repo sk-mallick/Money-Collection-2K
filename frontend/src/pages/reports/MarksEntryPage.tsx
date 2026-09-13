@@ -1091,10 +1091,9 @@ export default function MarksEntryPage() {
       setLoading(true);
     }
     try {
-      const pId = Number(periodId);
       const [periodData, marksData] = await Promise.all([
-        fetchResultPeriod(pId),
-        fetchMarks(pId),
+        fetchResultPeriod(periodId),
+        fetchMarks(periodId),
       ]);
       setPeriod(periodData);
       setStudents(marksData);
@@ -1460,7 +1459,7 @@ export default function MarksEntryPage() {
         })),
       }));
 
-      await saveMarks(Number(periodId), payload);
+      await saveMarks(periodId, payload);
       toast.success('Marks saved successfully');
       await loadData(true);
     } catch (err: unknown) {
@@ -1474,7 +1473,7 @@ export default function MarksEntryPage() {
   const handlePublish = async () => {
     if (!periodId) return;
     try {
-      await updateResultPeriod(Number(periodId), { status: 'Published' });
+      await updateResultPeriod(periodId, { status: 'Published' });
       toast.success('Result published and finalized');
       setPublishDialogOpen(false);
       await loadData(true);
@@ -1487,7 +1486,7 @@ export default function MarksEntryPage() {
   const handleRevertToDraft = async () => {
     if (!periodId) return;
     try {
-      await updateResultPeriod(Number(periodId), { status: 'Draft' });
+      await updateResultPeriod(periodId, { status: 'Draft' });
       toast.success('Result reverted to Draft');
       await loadData(true);
     } catch (err: unknown) {
@@ -2031,6 +2030,11 @@ export default function MarksEntryPage() {
               <Badge variant="outline" className="text-[10px] font-semibold px-1.5 py-0.5">
                 {period.category}
               </Badge>
+              {period.period_code && (
+                <Badge variant="secondary" className="font-mono text-[10px] px-1.5 py-0.5 font-bold border border-border/60 bg-muted/70 text-foreground">
+                  {period.period_code}
+                </Badge>
+              )}
             </div>
           </div>
 
@@ -2132,6 +2136,11 @@ export default function MarksEntryPage() {
               <Badge variant="outline" className="text-xs font-semibold">
                 {period.category}
               </Badge>
+              {period.period_code && (
+                <Badge variant="secondary" className="font-mono text-xs px-2.5 py-0.5 border border-border/60 bg-muted/70 text-foreground font-bold tracking-wide">
+                  {period.period_code}
+                </Badge>
+              )}
             </div>
 
             {/* Bottom Row: Action Buttons */}

@@ -97,12 +97,18 @@ function ensurePeriodMarks(PDO $pdo, int $periodId): void {
 
 function getMarks(PDO $pdo): void {
     ensureIsAbsentColumn($pdo);
-    $periodId = query_param('period_id');
-    if (empty($periodId)) {
+    $periodParam = query_param('period_id');
+    if (empty($periodParam)) {
         json_response(['success' => false, 'error' => 'period_id required'], 400);
     }
     
-    ensurePeriodMarks($pdo, (int)$periodId);
+    $period = resolve_period($pdo, $periodParam);
+    if (!$period) {
+        json_response(['success' => false, 'error' => 'Result period not found'], 404);
+    }
+    $periodId = (int)$period['id'];
+    
+    ensurePeriodMarks($pdo, $periodId);
     
     $stmt = $pdo->prepare("
         SELECT sr.id as student_result_id, sr.student_id, sr.snapshot_name, sr.snapshot_class,
@@ -116,7 +122,7 @@ function getMarks(PDO $pdo): void {
         WHERE sr.result_period_id = ?
         ORDER BY sr.snapshot_name ASC, s.display_order ASC
     ");
-    $stmt->execute([(int)$periodId]);
+    $stmt->execute([$periodId]);
     $rows = $stmt->fetchAll();
     
     // Group by student
@@ -170,15 +176,11 @@ function saveMarks(PDO $pdo): void {
         json_response(['success' => false, 'error' => 'students array required'], 400);
     }
     
-    $periodId = (int)$input['periodId'];
-    
-    // Verify period exists
-    $check = $pdo->prepare('SELECT id, status FROM rc_result_periods WHERE id = ?');
-    $check->execute([$periodId]);
-    $period = $check->fetch();
+    $period = resolve_period($pdo, $input['periodId']);
     if (!$period) {
         json_response(['success' => false, 'error' => 'Result period not found'], 404);
     }
+    $periodId = (int)$period['id'];
     
     $pdo->beginTransaction();
     try {
@@ -260,14 +262,20 @@ function saveMarks(PDO $pdo): void {
 
 function recalculate(PDO $pdo): void {
     ensureIsAbsentColumn($pdo);
-    $periodId = query_param('period_id');
-    if (empty($periodId)) {
+    $periodParam = query_param('period_id');
+    if (empty($periodParam)) {
         json_response(['success' => false, 'error' => 'period_id required'], 400);
     }
     
+    $period = resolve_period($pdo, $periodParam);
+    if (!$period) {
+        json_response(['success' => false, 'error' => 'Result period not found'], 404);
+    }
+    $periodId = (int)$period['id'];
+    
     $pdo->beginTransaction();
     try {
-        recalculateForPeriod($pdo, (int)$periodId);
+        recalculateForPeriod($pdo, $periodId);
         $pdo->commit();
         json_response(['success' => true]);
     } catch (Exception $e) {

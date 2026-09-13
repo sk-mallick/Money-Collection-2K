@@ -19,7 +19,7 @@ switch ($method) {
     case 'GET':
         $id = query_param('id');
         if ($id) {
-            getResultPeriod($pdo, (int)$id);
+            getResultPeriod($pdo, $id);
         } else {
             listResultPeriods($pdo);
         }
@@ -81,17 +81,14 @@ function listResultPeriods(PDO $pdo): void {
     json_response(['success' => true, 'periods' => $periods]);
 }
 
-function getResultPeriod(PDO $pdo, int $id): void {
-    $stmt = $pdo->prepare("SELECT rp.*, g.class as group_class, g.timing as group_timing
-                           FROM rc_result_periods rp 
-                           LEFT JOIN `groups` g ON rp.group_id = g.id 
-                           WHERE rp.id = ?");
-    $stmt->execute([$id]);
-    $period = $stmt->fetch();
+function getResultPeriod(PDO $pdo, $identifier): void {
+    $period = resolve_period($pdo, $identifier);
     
     if (!$period) {
         json_response(['success' => false, 'error' => 'Result period not found'], 404);
     }
+    
+    $id = (int)$period['id'];
     
     // Default max marks — no longer stored in a separate table
     // Return empty array for backward compatibility with frontend
@@ -138,11 +135,14 @@ function createResultPeriod(PDO $pdo): void {
         json_response(['success' => false, 'error' => 'Invalid month code'], 400);
     }
     
-    // Check for duplicate
-    $check = $pdo->prepare('SELECT id FROM rc_result_periods WHERE academic_year = ? AND month = ? AND group_id = ?');
-    $check->execute([$academicYear, $month, $groupId]);
+    // Generate semantic period code
+    $periodCode = generate_period_code($academicYear, $month, $groupId);
+    
+    // Check for duplicate by compound attributes or period code
+    $check = $pdo->prepare('SELECT id FROM rc_result_periods WHERE (academic_year = ? AND month = ? AND group_id = ?) OR period_code = ?');
+    $check->execute([$academicYear, $month, $groupId, $periodCode]);
     if ($check->fetch()) {
-        json_response(['success' => false, 'error' => 'A result period already exists for this academic year, month, and group'], 409);
+        json_response(['success' => false, 'error' => "A result period already exists for this session ($periodCode)"], 409);
     }
     
     $pdo->beginTransaction();
@@ -150,9 +150,9 @@ function createResultPeriod(PDO $pdo): void {
         global $user;
         $adminId = $user['sub'] ?? null;
         
-        // Create result period
-        $stmt = $pdo->prepare('INSERT INTO rc_result_periods (academic_year, month, group_id, category, created_by) VALUES (?, ?, ?, ?, ?)');
-        $stmt->execute([$academicYear, $month, $groupId, $category, $adminId]);
+        // Create result period with period_code
+        $stmt = $pdo->prepare('INSERT INTO rc_result_periods (period_code, academic_year, month, group_id, category, created_by) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$periodCode, $academicYear, $month, $groupId, $category, $adminId]);
         $periodId = (int)$pdo->lastInsertId();
         
         // Build default max marks map from input (used directly, not stored in separate table)
@@ -199,10 +199,10 @@ function createResultPeriod(PDO $pdo): void {
         
         // Audit log
         $auditStmt = $pdo->prepare('INSERT INTO audit_logs (admin_id, action, target_entity, target_id, description) VALUES (?, ?, ?, ?, ?)');
-        $auditStmt->execute([$adminId, 'CREATE', 'rc_result_period', $periodId, "Created result period: $academicYear $month Group $groupId ($category) with " . count($students) . " students"]);
+        $auditStmt->execute([$adminId, 'CREATE', 'rc_result_period', $periodId, "Created result period: $periodCode ($academicYear $month Group $groupId, $category) with " . count($students) . " students"]);
         
         $pdo->commit();
-        json_response(['success' => true, 'id' => $periodId, 'studentCount' => count($students)], 201);
+        json_response(['success' => true, 'id' => $periodId, 'period_code' => $periodCode, 'studentCount' => count($students)], 201);
     } catch (Exception $e) {
         $pdo->rollBack();
         write_log('error', 'Failed to create result period', ['error' => $e->getMessage()]);
@@ -213,19 +213,17 @@ function createResultPeriod(PDO $pdo): void {
 function updateResultPeriod(PDO $pdo): void {
     $id = query_param('id');
     if (empty($id)) {
-        json_response(['success' => false, 'error' => 'Result period ID required'], 400);
+        json_response(['success' => false, 'error' => 'Result period ID or code required'], 400);
     }
-    $id = (int)$id;
     
-    $input = get_input();
-    
-    // Check if period exists
-    $check = $pdo->prepare('SELECT status FROM rc_result_periods WHERE id = ?');
-    $check->execute([$id]);
-    $existing = $check->fetch();
-    if (!$existing) {
+    // Resolve period by id or code
+    $period = resolve_period($pdo, $id);
+    if (!$period) {
         json_response(['success' => false, 'error' => 'Result period not found'], 404);
     }
+    $realId = (int)$period['id'];
+    
+    $input = get_input();
     
     $fields = [];
     $values = [];
@@ -239,7 +237,7 @@ function updateResultPeriod(PDO $pdo): void {
     }
     
     if (!empty($fields)) {
-        $values[] = $id;
+        $values[] = $realId;
         $sql = 'UPDATE rc_result_periods SET ' . implode(', ', $fields) . ' WHERE id = ?';
         $stmt = $pdo->prepare($sql);
         $stmt->execute($values);
@@ -249,7 +247,7 @@ function updateResultPeriod(PDO $pdo): void {
     if (isset($input['defaultMaxMarks']) && is_array($input['defaultMaxMarks'])) {
         // Get all student_result_ids for this period
         $srIdStmt = $pdo->prepare('SELECT id FROM rc_student_results WHERE result_period_id = ?');
-        $srIdStmt->execute([$id]);
+        $srIdStmt->execute([$realId]);
         $srIds = $srIdStmt->fetchAll(PDO::FETCH_COLUMN);
         
         if (!empty($srIds)) {
@@ -268,7 +266,7 @@ function updateResultPeriod(PDO $pdo): void {
     global $user;
     $adminId = $user['sub'] ?? null;
     $auditStmt = $pdo->prepare('INSERT INTO audit_logs (admin_id, action, target_entity, target_id, description) VALUES (?, ?, ?, ?, ?)');
-    $auditStmt->execute([$adminId, 'UPDATE', 'rc_result_period', $id, "Updated result period ID: $id"]);
+    $auditStmt->execute([$adminId, 'UPDATE', 'rc_result_period', $realId, "Updated result period: {$period['period_code']} (ID: $realId)"]);
     
     json_response(['success' => true]);
 }
@@ -276,27 +274,26 @@ function updateResultPeriod(PDO $pdo): void {
 function deleteResultPeriod(PDO $pdo): void {
     $id = query_param('id');
     if (empty($id)) {
-        json_response(['success' => false, 'error' => 'Result period ID required'], 400);
+        json_response(['success' => false, 'error' => 'Result period ID or code required'], 400);
     }
-    $id = (int)$id;
     
-    // Check exists
-    $check = $pdo->prepare('SELECT id, academic_year, month, group_id FROM rc_result_periods WHERE id = ?');
-    $check->execute([$id]);
-    $period = $check->fetch();
+    // Resolve period by id or code
+    $period = resolve_period($pdo, $id);
     if (!$period) {
         json_response(['success' => false, 'error' => 'Result period not found'], 404);
     }
+    $realId = (int)$period['id'];
     
     // Cascade delete (handled by FK constraints, but let's be explicit)
     $stmt = $pdo->prepare('DELETE FROM rc_result_periods WHERE id = ?');
-    $stmt->execute([$id]);
+    $stmt->execute([$realId]);
     
     // Audit log
     global $user;
     $adminId = $user['sub'] ?? null;
     $auditStmt = $pdo->prepare('INSERT INTO audit_logs (admin_id, action, target_entity, target_id, description) VALUES (?, ?, ?, ?, ?)');
-    $auditStmt->execute([$adminId, 'DELETE', 'rc_result_period', $id, "Deleted result period: {$period['academic_year']} {$period['month']} Group {$period['group_id']}"]);
+    $auditStmt->execute([$adminId, 'DELETE', 'rc_result_period', $realId, "Deleted result period: {$period['period_code']} ({$period['academic_year']} {$period['month']} Group {$period['group_id']})"]);
     
     json_response(['success' => true]);
 }
+

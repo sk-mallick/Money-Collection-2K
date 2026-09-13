@@ -844,8 +844,13 @@ export default function StudentReportsPage() {
                           className="p-2.5 rounded-lg border bg-muted/20 hover:bg-muted/40 transition-colors flex items-center justify-between gap-2 text-xs"
                         >
                           <div>
-                            <div className="font-bold text-foreground">
-                              {monthName} {res.academic_year}
+                            <div className="font-bold text-foreground flex items-center gap-1.5">
+                              <span>{monthName} {res.academic_year}</span>
+                              {res.period_code && (
+                                <Badge variant="secondary" className="font-mono text-[9px] px-1 py-0 font-bold border border-border/60 bg-muted/70 text-foreground">
+                                  {res.period_code}
+                                </Badge>
+                              )}
                             </div>
                             <div className="text-[11px] text-muted-foreground">
                               {isAbsent ? (
@@ -870,7 +875,7 @@ export default function StudentReportsPage() {
                               size="xs"
                               variant="ghost"
                               className="h-7 px-2 text-[11px] text-primary hover:bg-primary/10 cursor-pointer"
-                              onClick={() => navigate(`/reports/monthly/${res.result_period_id}/marks`)}
+                              onClick={() => navigate(`/reports/monthly/${res.period_code || res.result_period_id}/marks`)}
                               title="Edit Marks"
                             >
                               <Pencil className="h-3 w-3 mr-1" />

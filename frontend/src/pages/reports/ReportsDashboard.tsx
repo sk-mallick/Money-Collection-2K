@@ -145,12 +145,17 @@ export default function ReportsDashboard() {
         ) : (
           <div className="space-y-2">
             {periods.slice(0, 5).map(period => (
-              <Card key={period.id} className="hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => navigate(`/reports/monthly/${period.id}/marks`)}>
+              <Card key={period.id} className="hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => navigate(`/reports/monthly/${period.period_code || period.id}/marks`)}>
                 <CardContent className="p-3 sm:p-3.5 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div>
-                      <div className="font-medium text-sm">
-                        {MONTH_NAMES[period.month] || period.month} {period.academic_year}
+                      <div className="font-medium text-sm flex items-center gap-2">
+                        <span>{MONTH_NAMES[period.month] || period.month} {period.academic_year}</span>
+                        {period.period_code && (
+                          <Badge variant="secondary" className="font-mono text-[10px] px-1.5 py-0 font-bold border border-border/60 bg-muted/70 text-foreground">
+                            {period.period_code}
+                          </Badge>
+                        )}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         Group {period.group_id}{period.group_class ? ` (${period.group_class})` : ''} · {period.category} · {period.student_count || 0} students

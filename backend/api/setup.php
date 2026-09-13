@@ -90,6 +90,34 @@ if ($pdo && $actionTriggered && !$isLocked) {
                     }
                 } catch (Throwable $ignoreIdx) {}
 
+                // Auto-ensure period_code exists on rc_result_periods
+                try {
+                    $colCheck = $pdo->query("SHOW COLUMNS FROM `rc_result_periods` LIKE 'period_code'");
+                    if ($colCheck->rowCount() === 0) {
+                        $pdo->exec("ALTER TABLE `rc_result_periods` ADD COLUMN `period_code` VARCHAR(20) NOT NULL AFTER `id`");
+                        // Backfill existing rows
+                        $rows = $pdo->query("SELECT id, academic_year, month, group_id FROM `rc_result_periods`")->fetchAll();
+                        foreach ($rows as $r) {
+                            $m = strtoupper(trim($r['month']));
+                            $g = strtoupper(trim($r['group_id'] ?: 'GEN'));
+                            $ay = trim($r['academic_year']);
+                            $yr = '26';
+                            if (preg_match('/^(\d{4})-(\d{2,4})$/', $ay, $matches)) {
+                                $startYr = substr($matches[1], -2);
+                                $endYr = substr($matches[2], -2);
+                                $yr = in_array($m, ['JAN', 'FEB']) ? $endYr : $startYr;
+                            }
+                            $code = "{$m}{$yr}-{$g}";
+                            $upd = $pdo->prepare("UPDATE `rc_result_periods` SET period_code = ? WHERE id = ?");
+                            $upd->execute([$code, $r['id']]);
+                        }
+                    }
+                    $pIdxCheck = $pdo->query("SHOW INDEX FROM `rc_result_periods` WHERE Key_name = 'uk_period_code'");
+                    if ($pIdxCheck->rowCount() === 0) {
+                        $pdo->exec("ALTER TABLE `rc_result_periods` ADD UNIQUE KEY `uk_period_code` (`period_code`)");
+                    }
+                } catch (Throwable $ignorePeriod) {}
+
                 $migrationSuccess = true;
                 $migrationMessage = "Schema migration completed successfully! All 12 tables and default seed records (groups A–K, system settings, subjects, and admin credentials) are fully synchronized.";
             } catch (Exception $ex) {

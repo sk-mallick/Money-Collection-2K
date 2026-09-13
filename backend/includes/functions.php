@@ -315,3 +315,45 @@ function allocate_receipts_to_months(array $receipts, int $feePerMonth, string $
     }
     return $result;
 }
+
+/**
+ * Generate semantic period code for report cards (e.g. SEP26-A, MAY26-B, JAN27-K)
+ */
+function generate_period_code(string $academicYear, string $month, string $groupId): string {
+    $m = strtoupper(trim($month));
+    $g = strtoupper(trim($groupId ?: 'GEN'));
+    $ay = trim($academicYear);
+    $yr = '26';
+    if (preg_match('/^(\d{4})-(\d{2,4})$/', $ay, $matches)) {
+        $startYr = substr($matches[1], -2);
+        $endYr = substr($matches[2], -2);
+        // Academic year begins in March: MAR-DEC uses start year, JAN-FEB uses end year
+        $yr = in_array($m, ['JAN', 'FEB'], true) ? $endYr : $startYr;
+    }
+    return "{$m}{$yr}-{$g}";
+}
+
+/**
+ * Resolve result period by either numeric primary key ID or period_code slug (e.g. 2 or 'SEP26-A')
+ */
+function resolve_period(PDO $pdo, $identifier): ?array {
+    if ($identifier === null || $identifier === '') {
+        return null;
+    }
+    $identStr = trim((string)$identifier);
+    if (is_numeric($identStr)) {
+        $stmt = $pdo->prepare("SELECT rp.*, g.class as group_class, g.timing as group_timing 
+                               FROM rc_result_periods rp 
+                               LEFT JOIN `groups` g ON rp.group_id = g.id 
+                               WHERE rp.id = ? OR rp.period_code = ?");
+        $stmt->execute([(int)$identStr, $identStr]);
+    } else {
+        $stmt = $pdo->prepare("SELECT rp.*, g.class as group_class, g.timing as group_timing 
+                               FROM rc_result_periods rp 
+                               LEFT JOIN `groups` g ON rp.group_id = g.id 
+                               WHERE rp.period_code = ?");
+        $stmt->execute([$identStr]);
+    }
+    $row = $stmt->fetch();
+    return $row ?: null;
+}

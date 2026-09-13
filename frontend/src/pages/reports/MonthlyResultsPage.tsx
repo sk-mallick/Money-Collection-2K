@@ -261,7 +261,7 @@ export default function MonthlyResultsPage() {
     }
 
     if (existingPeriod) {
-      navigate(`/reports/monthly/${existingPeriod.id}/marks`);
+      navigate(`/reports/monthly/${existingPeriod.period_code || existingPeriod.id}/marks`);
       return;
     }
 
@@ -287,7 +287,7 @@ export default function MonthlyResultsPage() {
       load();
 
       // Navigate to marks entry
-      navigate(`/reports/monthly/${result.id}/marks`);
+      navigate(`/reports/monthly/${result.period_code || result.id}/marks`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create';
       toast.error(message);
@@ -418,7 +418,7 @@ export default function MonthlyResultsPage() {
               <Button
                 size="sm"
                 className="h-9 text-xs px-3.5 gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs shrink-0 active:scale-[0.98] transition-all"
-                onClick={() => navigate(`/reports/monthly/${existingPeriod.id}/marks`)}
+                onClick={() => navigate(`/reports/monthly/${existingPeriod.period_code || existingPeriod.id}/marks`)}
                 title="Open existing marks sheet"
               >
                 <Pencil className="h-3.5 w-3.5" />
@@ -563,6 +563,11 @@ export default function MonthlyResultsPage() {
                     <span className="font-bold text-sm text-foreground">
                       {MONTH_NAMES[period.month] || period.month} {period.academic_year}
                     </span>
+                    {period.period_code && (
+                      <Badge variant="secondary" className="font-mono text-[10px] px-1.5 py-0 font-bold border border-border/60 bg-muted/70 text-foreground">
+                        {period.period_code}
+                      </Badge>
+                    )}
                     <Badge variant={period.status === 'Published' ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'} className="text-[10px] px-1.5 py-0 font-semibold">
                       {period.status}
                     </Badge>
@@ -587,7 +592,7 @@ export default function MonthlyResultsPage() {
                     size="sm"
                     variant="outline"
                     className="h-8 px-2 sm:px-3 text-xs gap-1 cursor-pointer bg-card hover:bg-accent shadow-2xs"
-                    onClick={() => navigate(`/reports/monthly/${period.id}/marks`)}
+                    onClick={() => navigate(`/reports/monthly/${period.period_code || period.id}/marks`)}
                     title="Open Marks Entry"
                   >
                     <Pencil className="h-3.5 w-3.5 text-primary" />
