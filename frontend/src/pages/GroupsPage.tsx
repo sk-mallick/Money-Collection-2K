@@ -413,14 +413,14 @@ export default function GroupsPage() {
                     </span>
                   </div>
                   <div
-                    onClick={() => navigate(`/students?group=${group.id}`)}
+                    onClick={() => navigate(`/mcms/students?group=${group.id}`)}
                     className="text-xs text-muted-foreground flex items-center justify-between p-2 rounded-lg border border-border/50 bg-muted/40 cursor-pointer hover:bg-muted/70 hover:border-primary/20 transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
                     tabIndex={0}
                     role="button"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        navigate(`/students?group=${group.id}`);
+                        navigate(`/mcms/students?group=${group.id}`);
                       }
                     }}
                   >

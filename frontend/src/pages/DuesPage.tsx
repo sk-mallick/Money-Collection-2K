@@ -109,7 +109,7 @@ export default function DuesPage() {
                             variant="outline" 
                             size="icon" 
                             className="size-9 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 active:scale-95 transition-transform" 
-                            onClick={() => navigate(`/collect?studentId=${student.id}`)}
+                            onClick={() => navigate(`/mcms/collect?studentId=${student.id}`)}
                           >
                             <IndianRupee className="size-4" />
                           </Button>
@@ -172,7 +172,7 @@ export default function DuesPage() {
                                   variant="outline" 
                                   size="icon" 
                                   className="size-8 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20" 
-                                  onClick={() => navigate(`/collect?studentId=${student.id}`)}
+                                  onClick={() => navigate(`/mcms/collect?studentId=${student.id}`)}
                                 >
                                   <IndianRupee className="size-3.5" />
                                 </Button>

@@ -18,7 +18,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isLoggedIn && !authLoading) {
-      navigate('/students', { replace: true });
+      navigate('/', { replace: true });
     }
   }, [isLoggedIn, authLoading, navigate]);
 
@@ -35,7 +35,7 @@ export default function LoginPage() {
 
     if (result.success) {
       toast.success('Welcome back!');
-      navigate('/students', { replace: true });
+      navigate('/', { replace: true });
     } else {
       toast.error(result.error || 'Login failed');
     }

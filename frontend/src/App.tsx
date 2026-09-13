@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
@@ -186,6 +186,12 @@ function ReportsLayout() {
   );
 }
 
+/** Helper to preserve search params and hash when redirecting legacy routes */
+function LegacyRedirect({ to }: { to: string }) {
+  const location = useLocation();
+  return <Navigate to={`${to}${location.search}${location.hash}`} replace />;
+}
+
 export default function App() {
   return (
     <TooltipProvider delayDuration={0}>
@@ -224,6 +230,15 @@ export default function App() {
               <Route path="settings" element={<SettingsPage />} />
               <Route path="about" element={<AboutPage />} />
             </Route>
+
+            {/* Legacy route redirects (backward compatibility) */}
+            <Route path="/students" element={<LegacyRedirect to="/mcms/students" />} />
+            <Route path="/groups" element={<LegacyRedirect to="/mcms/groups" />} />
+            <Route path="/collect" element={<LegacyRedirect to="/mcms/collect" />} />
+            <Route path="/receipts" element={<LegacyRedirect to="/mcms/receipts" />} />
+            <Route path="/dues" element={<LegacyRedirect to="/mcms/dues" />} />
+            <Route path="/settings" element={<LegacyRedirect to="/mcms/settings" />} />
+            <Route path="/about" element={<LegacyRedirect to="/mcms/about" />} />
 
             {/* Reports Module */}
             <Route path="/reports" element={<ReportsLayout />}>

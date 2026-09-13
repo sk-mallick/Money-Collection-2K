@@ -58,6 +58,7 @@ import {
   ArrowLeft,
   Settings,
   Calendar,
+  ClipboardList,
 } from 'lucide-react';
 import {
   generateRankingsPDF,
@@ -298,6 +299,22 @@ export default function RankingsPage() {
   const totalFilteredStudents = useMemo(() => {
     return displayedRankings.reduce((sum, b) => sum + b.students.length, 0);
   }, [displayedRankings]);
+
+  const totalStudentsMatchingSearch = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return totalFilteredStudents;
+    return displayedRankings.reduce((sum, b) => {
+      return (
+        sum +
+        b.students.filter(
+          (s) =>
+            s.name.toLowerCase().includes(q) ||
+            s.studentId.toLowerCase().includes(q) ||
+            (s.school && s.school.toLowerCase().includes(q))
+        ).length
+      );
+    }, 0);
+  }, [displayedRankings, searchTerm, totalFilteredStudents]);
 
   const hasActiveFilters = searchTerm.trim() !== '' || selectedFilterKey !== 'all';
 
@@ -1154,7 +1171,7 @@ export default function RankingsPage() {
             </Button>
 
             <span className="text-[11px] text-muted-foreground ml-auto hidden sm:inline">
-              Showing <strong className="text-foreground font-bold">{totalFilteredStudents}</strong> of{' '}
+              Showing <strong className="text-foreground font-bold">{totalStudentsMatchingSearch}</strong> of{' '}
               {totalStudents} students
             </span>
           </div>
@@ -1169,21 +1186,50 @@ export default function RankingsPage() {
           ))}
         </div>
       ) : displayedRankings.length === 0 ? (
-        <Card className="p-8 sm:p-12 text-center text-muted-foreground max-w-lg mx-auto border-dashed shadow-xs">
-          <div className="mx-auto w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mb-3">
-            <Trophy className="h-6 w-6 text-muted-foreground opacity-50" />
+        <Card className="w-full rounded-2xl border border-dashed border-border/80 bg-card/45 backdrop-blur-xs text-center flex flex-col items-center justify-center py-8 sm:py-12 px-4 sm:px-6 shadow-xs transition-all">
+          <div className="mx-auto w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-muted/60 dark:bg-muted/40 border border-border/60 flex items-center justify-center mb-3.5 shadow-xs">
+            <Trophy className="h-6 w-6 sm:h-7 sm:w-7 text-muted-foreground/60 dark:text-muted-foreground/50" />
           </div>
-          <h3 className="text-base font-semibold text-foreground">No Rankings Found</h3>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
-            There are no completed or evaluated results for{' '}
-            <span className="font-semibold text-foreground">
-              {MONTH_NAMES[month] || month} {academicYear}
-            </span>.
+          <h3 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
+            {selectedFilterKey !== 'all' && rankings.length > 0
+              ? `No Rankings for ${selectedFilterOptionLabel}`
+              : 'No Rankings Found'}
+          </h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-md mx-auto leading-relaxed">
+            {selectedFilterKey !== 'all' && rankings.length > 0 ? (
+              <>
+                There are no evaluated students in this {rankingType === 'class' ? 'class' : 'group'} for{' '}
+                <span className="font-semibold text-foreground">
+                  {MONTH_NAMES[month] || month} {academicYear}
+                </span>.
+              </>
+            ) : (
+              <>
+                There are no completed or evaluated results for{' '}
+                <span className="font-semibold text-foreground">
+                  {MONTH_NAMES[month] || month} {academicYear}
+                </span>.
+              </>
+            )}
           </p>
 
+          {selectedFilterKey !== 'all' && rankings.length > 0 && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedFilterKey('all')}
+                className="h-8 px-3.5 text-xs font-semibold gap-1.5 rounded-lg border-primary/30 text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>Show All {rankingType === 'class' ? 'Classes' : 'Groups'}</span>
+              </Button>
+            </div>
+          )}
+
           {availableMonthsWithRankings.length > 0 && (
-            <div className="mt-5 pt-4 border-t space-y-2.5">
-              <p className="text-xs font-medium text-muted-foreground">
+            <div className="mt-6 pt-5 border-t border-border/50 w-full max-w-xl space-y-2.5">
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">
                 Switch to an available month with completed rankings:
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2">
@@ -1193,7 +1239,7 @@ export default function RankingsPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => setMonth(am.month)}
-                    className="h-7 text-xs gap-1.5 cursor-pointer bg-card hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-colors"
+                    className="h-7.5 px-3 text-xs gap-1.5 cursor-pointer bg-card hover:bg-primary/10 hover:text-primary hover:border-primary/40 transition-all font-medium rounded-lg shadow-2xs"
                   >
                     <span>{am.name}</span>
                     {am.count > 0 && (
@@ -1206,6 +1252,39 @@ export default function RankingsPage() {
               </div>
             </div>
           )}
+
+          {availableMonthsWithRankings.length === 0 && (
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => navigate('/reports/monthly')}
+                className="gap-2 h-8.5 px-3.5 text-xs font-semibold rounded-lg shadow-xs cursor-pointer"
+              >
+                <ClipboardList className="h-4 w-4" />
+                <span>Go to Monthly Results</span>
+              </Button>
+            </div>
+          )}
+        </Card>
+      ) : totalStudentsMatchingSearch === 0 ? (
+        <Card className="w-full rounded-2xl border border-dashed border-border/80 bg-card/45 backdrop-blur-xs text-center flex flex-col items-center justify-center py-8 sm:py-12 px-4 sm:px-6 shadow-xs transition-all">
+          <div className="mx-auto w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-muted/60 dark:bg-muted/40 border border-border/60 flex items-center justify-center mb-3.5 shadow-xs">
+            <Search className="h-6 w-6 sm:h-7 sm:w-7 text-muted-foreground/60 dark:text-muted-foreground/50" />
+          </div>
+          <h3 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">No Matching Students</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm mx-auto leading-relaxed">
+            No students found matching <span className="font-semibold text-foreground">"{searchTerm}"</span>.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSearchTerm('')}
+            className="mt-4 h-8 px-3.5 text-xs font-semibold gap-1.5 rounded-lg border-primary/30 text-primary hover:bg-primary/10 transition-colors cursor-pointer"
+          >
+            <X className="h-3.5 w-3.5" />
+            <span>Clear Search</span>
+          </Button>
         </Card>
       ) : viewMode === 'standard' ? (
         /* ══════════════════════════════════════════════════════════════════════════

@@ -109,3 +109,6 @@
 {"timestamp":"2026-09-13 14:13:02","level":"WARNING","message":"Brute-force login attempt blocked","context":{"ip":"::1","username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
 {"timestamp":"2026-09-13 14:13:04","level":"WARNING","message":"Brute-force login attempt blocked","context":{"ip":"::1","username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
 {"timestamp":"2026-09-13 14:23:26","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/backend\/auth\/login.php"}
+{"timestamp":"2026-09-13 19:40:06","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"admin"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-13 19:40:11","level":"WARNING","message":"Failed login attempt","context":{"ip":"::1","username":"admin"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}
+{"timestamp":"2026-09-13 19:40:21","level":"INFO","message":"Successful login","context":{"username":"454"},"ip":"::1","uri":"\/Money%20Collection%202K\/auth\/login"}

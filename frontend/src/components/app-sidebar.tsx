@@ -12,13 +12,13 @@ import { useTheme } from '@/components/theme-provider';
 import logoUrl from '@/assets/favicon.png';
 
 const navItems = [
-  { title: 'Students', icon: Users, path: '/students' },
-  { title: 'Groups', icon: Layers, path: '/groups' },
-  { title: 'Collect Fee', icon: Wallet, path: '/collect' },
-  { title: 'Receipts', icon: IndianRupee, path: '/receipts' },
-  { title: 'Dues List', icon: AlertTriangle, path: '/dues' },
-  { title: 'Settings', icon: Settings, path: '/settings' },
-  { title: 'About System', icon: Info, path: '/about' },
+  { title: 'Students', icon: Users, path: '/mcms/students' },
+  { title: 'Groups', icon: Layers, path: '/mcms/groups' },
+  { title: 'Collect Fee', icon: Wallet, path: '/mcms/collect' },
+  { title: 'Receipts', icon: IndianRupee, path: '/mcms/receipts' },
+  { title: 'Dues List', icon: AlertTriangle, path: '/mcms/dues' },
+  { title: 'Settings', icon: Settings, path: '/mcms/settings' },
+  { title: 'About System', icon: Info, path: '/mcms/about' },
 ];
 
 export function AppSidebar() {
