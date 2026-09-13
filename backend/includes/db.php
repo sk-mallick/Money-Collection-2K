@@ -279,6 +279,28 @@ function get_db(): PDO {
             write_log('warning', 'Failed to update rc_student_results FK', ['error' => $fkEx->getMessage()]);
         }
     }
+    // Self-healing: ensure admission_fee_paid column has DEFAULT 0 for new students
+    try {
+        $stCheck = $pdo->query("SHOW TABLES LIKE 'students'");
+        if ($stCheck->rowCount() > 0) {
+            $pdo->exec("ALTER TABLE `students` ALTER COLUMN `admission_fee_paid` SET DEFAULT 0");
+        }
+    } catch (Throwable $afEx) {
+        // Suppress if table not initialized yet
+    }
+
+    // Self-healing: ensure admission_fee column exists in receipts
+    try {
+        $rcCheck = $pdo->query("SHOW TABLES LIKE 'receipts'");
+        if ($rcCheck->rowCount() > 0) {
+            $colCheck = $pdo->query("SHOW COLUMNS FROM `receipts` LIKE 'admission_fee'");
+            if ($colCheck->rowCount() === 0) {
+                $pdo->exec("ALTER TABLE `receipts` ADD COLUMN `admission_fee` INT(11) NOT NULL DEFAULT 0 AFTER `remaining_months`");
+            }
+        }
+    } catch (Throwable $rcEx) {
+        // Suppress
+    }
 
     return $pdo;
 }

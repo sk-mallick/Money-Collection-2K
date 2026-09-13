@@ -112,8 +112,8 @@ function createStudent(PDO $pdo): void {
     }
 
     $stmt = $pdo->prepare('
-        INSERT INTO students (id, name, category, class, school, contact_no, father_no, mother_no, adm_date, dob, fee_per_month, notes, group_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO students (id, name, category, class, school, contact_no, father_no, mother_no, adm_date, dob, fee_per_month, notes, group_id, admission_fee_paid)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ');
 
     $stmt->execute([
@@ -130,6 +130,7 @@ function createStudent(PDO $pdo): void {
         (int)$input['feePerMonth'],
         sanitize_string($input['notes'] ?? '', 500),
         !empty($input['group']) ? sanitize_string($input['group'], 10) : null,
+        isset($input['admissionFeePaid']) ? ($input['admissionFeePaid'] ? 1 : 0) : 0,
     ]);
 
     // Add entry to audit_logs
@@ -211,6 +212,10 @@ function updateStudent(PDO $pdo): void {
     if (isset($input['feePerMonth'])) {
         $fields[] = '`fee_per_month` = ?';
         $values[] = (int)$input['feePerMonth'];
+    }
+    if (isset($input['admissionFeePaid'])) {
+        $fields[] = '`admission_fee_paid` = ?';
+        $values[] = $input['admissionFeePaid'] ? 1 : 0;
     }
 
     if (empty($fields)) {

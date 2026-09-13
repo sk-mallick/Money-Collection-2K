@@ -176,6 +176,7 @@ export function StudentForm({ open, onOpenChange, student, onSaved }: StudentFor
         feePerMonth: Number(form.feePerMonth) || 1000,
         notes: form.notes.trim(),
         group: form.group || undefined,
+        admissionFeePaid: isEdit ? (student?.admissionFeePaid ?? false) : false,
       };
 
       if (isEdit) {
