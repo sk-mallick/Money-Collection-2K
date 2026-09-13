@@ -74,10 +74,10 @@ export function PricingCard({
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500/15 to-teal-500/15 dark:from-emerald-400/20 dark:to-teal-400/20">
               <IndianRupee className="size-4 text-emerald-600 dark:text-emerald-400" />
             </div>
-            Default Monthly Fee Pricing
+            Default Fee Pricing
           </CardTitle>
           <CardDescription className="text-xs leading-relaxed">
-            Set default monthly fees for Junior and Senior categories. Changing a default will update all students of that category (you can still override this individually when adding or editing a student).
+            Set default fees for Junior, Senior, and Admission categories. Changing defaults will update student profiles accordingly (you can still override this individually when adding or editing a student).
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col justify-between gap-4">
@@ -85,13 +85,13 @@ export function PricingCard({
           <div className="grid grid-cols-1 gap-4">
             {/* Junior Fee Card */}
             <div className="relative rounded-xl border bg-gradient-to-br from-blue-500/5 to-indigo-500/5 dark:from-blue-500/10 dark:to-indigo-500/10 p-3 flex items-center justify-between gap-4 transition-all">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-blue-600 text-white border-none">
+                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-blue-600 text-white border-none shrink-0 whitespace-nowrap">
                     Junior
                   </span>
                   {hasJuniorFeeChanged && (
-                    <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                    <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0 whitespace-nowrap">
                       <ShieldAlert className="size-2.5" />
                       Changed
                     </span>
@@ -112,7 +112,7 @@ export function PricingCard({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <Label htmlFor="feeJunior" className="text-[11px] font-bold text-muted-foreground">
+                <Label htmlFor="feeJunior" className="text-[11px] font-bold text-muted-foreground shrink-0 whitespace-nowrap">
                   Monthly Fee
                 </Label>
                 <div className="relative w-28">
@@ -132,13 +132,13 @@ export function PricingCard({
 
             {/* Senior Fee Card */}
             <div className="relative rounded-xl border bg-gradient-to-br from-rose-500/5 to-orange-500/5 dark:from-rose-500/10 dark:to-orange-500/10 p-3 flex items-center justify-between gap-4 transition-all">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-red-600 text-white border-none">
+                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-red-600 text-white border-none shrink-0 whitespace-nowrap">
                     Senior
                   </span>
                   {hasSeniorFeeChanged && (
-                    <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                    <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0 whitespace-nowrap">
                       <ShieldAlert className="size-2.5" />
                       Changed
                     </span>
@@ -159,7 +159,7 @@ export function PricingCard({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <Label htmlFor="feeSenior" className="text-[11px] font-bold text-muted-foreground">
+                <Label htmlFor="feeSenior" className="text-[11px] font-bold text-muted-foreground shrink-0 whitespace-nowrap">
                   Monthly Fee
                 </Label>
                 <div className="relative w-28">
@@ -179,13 +179,13 @@ export function PricingCard({
 
             {/* Admission Fee Card */}
             <div className="relative rounded-xl border bg-gradient-to-br from-emerald-500/5 to-teal-500/5 dark:from-emerald-500/10 dark:to-teal-500/10 p-3 flex items-center justify-between gap-4 transition-all">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-emerald-600 text-white border-none">
-                    Admission Fee
+                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-emerald-600 text-white border-none shrink-0 whitespace-nowrap">
+                    Admission
                   </span>
                   {hasAdmissionFeeChanged && (
-                    <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                    <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0 whitespace-nowrap">
                       <ShieldAlert className="size-2.5" />
                       Changed
                     </span>
@@ -206,8 +206,8 @@ export function PricingCard({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <Label htmlFor="admissionFee" className="text-[11px] font-bold text-muted-foreground">
-                  One-Time Fee
+                <Label htmlFor="admissionFee" className="text-[11px] font-bold text-muted-foreground shrink-0 whitespace-nowrap">
+                  One-Time
                 </Label>
                 <div className="relative w-28">
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground/60">₹</span>
