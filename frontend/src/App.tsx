@@ -4,6 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { McmsSidebar } from '@/components/mcms-sidebar';
 import { ReportsSidebar } from '@/components/reports-sidebar';
+import { HomeworkSidebar } from '@/components/homework-sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import { Suspense, lazy } from 'react';
@@ -25,6 +26,9 @@ import {
   StudentReportsPageLoading,
   BlankMarksSheetPageLoading,
   ResultSettingsPageLoading,
+  HomeworkDashboardLoading,
+  HomeworkRecordLoading,
+  HomeworkReportsLoading,
 } from '@/components/loading-skeletons';
 import { getApiBase } from '@/lib/constants';
 
@@ -54,6 +58,15 @@ function DynamicSuspenseFallback() {
   }
   if (path.includes('/reports/settings')) {
     return <ResultSettingsPageLoading />;
+  }
+  if (path.includes('/homework/dashboard') || path.endsWith('/homework') || path.endsWith('/homework/')) {
+    return <HomeworkDashboardLoading />;
+  }
+  if (path.includes('/homework/record')) {
+    return <HomeworkRecordLoading />;
+  }
+  if (path.includes('/homework/reports')) {
+    return <HomeworkReportsLoading />;
   }
   if (path.includes('/students')) {
     return <StudentsPageLoading />;
@@ -110,6 +123,11 @@ const RankingsPage = lazy(() => import('@/pages/reports/RankingsPage'));
 const StudentReportsPage = lazy(() => import('@/pages/reports/StudentReportsPage'));
 const BlankMarksSheetPage = lazy(() => import('@/pages/reports/BlankMarksSheetPage'));
 const ResultSettingsPage = lazy(() => import('@/pages/reports/ResultSettingsPage'));
+
+// Lazy load Homework pages
+const HomeworkDashboard = lazy(() => import('@/pages/homework/HomeworkDashboard'));
+const HomeworkRecordPage = lazy(() => import('@/pages/homework/HomeworkRecordPage'));
+const HomeworkReportsPage = lazy(() => import('@/pages/homework/HomeworkReportsPage'));
 
 /** Auth guard — only renders children if logged in */
 function AuthGuard() {
@@ -173,6 +191,34 @@ function ReportsLayout() {
             </div>
             <div className="text-sm font-medium text-muted-foreground block sm:hidden">
               Report Cards
+            </div>
+          </div>
+        </header>
+        <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
+          <Suspense fallback={<DynamicSuspenseFallback />}>
+            <Outlet />
+          </Suspense>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
+
+/** Homework module layout with sidebar */
+function HomeworkLayout() {
+  return (
+    <SidebarProvider>
+      <HomeworkSidebar />
+      <SidebarInset className="min-w-0 min-h-screen max-w-full overflow-x-hidden">
+        <header className="no-print sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b bg-background/80 backdrop-blur-md px-4 gap-4">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 !h-4" />
+            <div className="text-sm font-medium text-muted-foreground hidden sm:block">
+              Home Work Report Management
+            </div>
+            <div className="text-sm font-medium text-muted-foreground block sm:hidden">
+              Home Work Report
             </div>
           </div>
         </header>
@@ -250,6 +296,14 @@ export default function App() {
               <Route path="student-reports" element={<StudentReportsPage />} />
               <Route path="blank-sheet" element={<BlankMarksSheetPage />} />
               <Route path="settings" element={<ResultSettingsPage />} />
+            </Route>
+
+            {/* Homework Module */}
+            <Route path="/homework" element={<HomeworkLayout />}>
+              <Route index element={<Navigate to="/homework/dashboard" replace />} />
+              <Route path="dashboard" element={<HomeworkDashboard />} />
+              <Route path="record" element={<HomeworkRecordPage />} />
+              <Route path="reports" element={<HomeworkReportsPage />} />
             </Route>
           </Route>
 

@@ -1646,6 +1646,417 @@ export async function printBlankMarksSheetPDF(
   }
 }
 
+// ─── Homework & Evaluation Reports PDF Generator (A4 Landscape Vector Exact Offline Layout) ───
+
+export type HWReportTrack = 'homework' | 'test_prep' | 'practice';
+
+export interface HWClassColumn {
+  date: string;         // e.g. "2026-09-02"
+  label: string;        // e.g. "02 Sep"
+  subLabel: string;     // e.g. "Wed"
+  sessionCode?: string; // e.g. "SEP26-A-01"
+}
+
+export interface HomeworkReportStudent {
+  id: string;
+  name: string;
+  class?: string;
+  school?: string;
+  evaluations: Record<string, string | null>; // date -> status
+  totalCompleted?: number;
+  totalSessions?: number;
+}
+
+export interface HomeworkReportGroupItem {
+  group: {
+    id: string;
+    class: string;
+    timing?: string;
+    category?: string;
+  };
+  dates: HWClassColumn[];
+  students: HomeworkReportStudent[];
+}
+
+export interface HomeworkReportPDFOptions {
+  groupsData: HomeworkReportGroupItem[];
+  month: string;           // 'SEP' or 'September'
+  academicYear: string;    // '2026-27'
+  track: HWReportTrack | 'all';
+  settings?: Record<string, string>;
+}
+
+/**
+ * Builds a vector A4 Landscape jsPDF document for Homework & Evaluation Reports.
+ */
+async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promise<jsPDF> {
+  const { groupsData, month, academicYear, track } = options;
+
+  const monthName = MONTH_NAMES[month] || month;
+  const tracksToRender: HWReportTrack[] = track === 'all'
+    ? ['homework', 'test_prep', 'practice']
+    : [track];
+
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pageWidth = 297;
+  const pageHeight = 210;
+  const marginX = 7;
+  const marginTop = 5.5;
+  const contentWidth = pageWidth - marginX * 2; // 283mm
+  const contentHeight = pageHeight - marginTop * 2; // 199mm
+
+  const blackColor = [0, 0, 0] as const;
+  const redColor = [220, 38, 38] as const;
+
+  let isFirstPage = true;
+
+  for (const groupItem of groupsData) {
+    const { group, dates, students } = groupItem;
+    const prefix = (group.id || 'A').trim().toUpperCase();
+
+    // Map students by formatted ID and number
+    const studentMapById = new Map<string, HomeworkReportStudent>();
+    const studentMapByNumber = new Map<number, HomeworkReportStudent>();
+    let maxStudentNum = 25;
+
+    students.forEach((s) => {
+      studentMapById.set(s.id.toUpperCase(), s);
+      const match = s.id.match(/\d+/);
+      if (match) {
+        const num = parseInt(match[0], 10);
+        if (!isNaN(num)) {
+          studentMapByNumber.set(num, s);
+          if (num > maxStudentNum) maxStudentNum = num;
+        }
+      }
+    });
+
+    const totalPagesForGroup = Math.max(1, Math.ceil(maxStudentNum / 25));
+
+    for (const currentTrack of tracksToRender) {
+      let trackTitle = 'HOMEWORK';
+      let trackBadge = 'TRACK: HOMEWORK';
+      if (currentTrack === 'test_prep') {
+        trackTitle = 'TEST PREPARATION';
+        trackBadge = 'TRACK: TEST PREPARATION';
+      } else if (currentTrack === 'practice') {
+        trackTitle = 'HOME PRACTICE';
+        trackBadge = 'TRACK: HOME PRACTICE';
+      }
+
+      for (let pageIdx = 0; pageIdx < totalPagesForGroup; pageIdx++) {
+        if (!isFirstPage) {
+          doc.addPage('a4', 'landscape');
+        }
+        isFirstPage = false;
+
+        // 1. Outer Border
+        doc.setDrawColor(...blackColor);
+        doc.setLineWidth(0.65);
+        doc.rect(marginX, marginTop, contentWidth, contentHeight, 'S');
+
+        // 2. Header Section
+        const headerCenterX = pageWidth / 2;
+
+        // Title: "ENGLISH JIBI CLASSES"
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14.5);
+        const part1 = 'ENGLISH';
+        const part2 = 'JIBI';
+        const part3 = ' CLASSES';
+        const w1 = doc.getTextWidth(part1);
+        const w2 = doc.getTextWidth(part2);
+        const w3 = doc.getTextWidth(part3);
+        const totalW = w1 + w2 + w3;
+        const titleX = headerCenterX - totalW / 2;
+
+        doc.setTextColor(...blackColor);
+        doc.text(part1, titleX, marginTop + 4.8);
+        doc.setTextColor(...redColor);
+        doc.text(part2, titleX + w1, marginTop + 4.8);
+        doc.setTextColor(...blackColor);
+        doc.text(part3, titleX + w1 + w2, marginTop + 4.8);
+
+        // Title Banner
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8.0);
+        doc.setTextColor(0, 0, 0);
+        const sheetTitle = `MONTHLY ${trackTitle} TRACKING SHEET — ${monthName.toUpperCase()} ${academicYear}`;
+        doc.text(sheetTitle, headerCenterX, marginTop + 8.4, { align: 'center' });
+
+        // Red Divider
+        doc.setFillColor(220, 38, 38);
+        doc.rect(marginX + 1.5, marginTop + 10.3, contentWidth - 3, 0.7, 'F');
+
+        // Group & Batch Meta Banner
+        const metaY = marginTop + 12.3;
+        const metaH = 5.0;
+        const tableLeftX = marginX + 1.5;
+        const tableWidth = contentWidth - 3; // 280mm
+        doc.setFillColor(245, 246, 248);
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.3);
+        doc.rect(tableLeftX, metaY, tableWidth, metaH, 'FD');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(0, 0, 0);
+        const colSpacing = tableWidth / 6;
+        doc.text(`BATCH: Group ${group.id} (${group.class || '—'})`, tableLeftX + 3, metaY + 3.5);
+        doc.text(`CATEGORY: ${group.category || '—'}`, tableLeftX + colSpacing + 2, metaY + 3.5);
+        doc.text(`TIMING: ${group.timing || '—'}`, tableLeftX + colSpacing * 2 + 2, metaY + 3.5);
+        doc.text(trackBadge, tableLeftX + colSpacing * 3 + 2, metaY + 3.5);
+        doc.text(`ENROLLED: ${students.length} Students`, tableLeftX + colSpacing * 4 + 2, metaY + 3.5);
+        doc.text(`PAGE: ${pageIdx + 1} OF ${totalPagesForGroup}`, tableLeftX + colSpacing * 5 + 2, metaY + 3.5);
+
+        // 3. Table Column Setup
+        const tableTopY = marginTop + 18.5; // Y = 24.0mm
+        const headerH = 7.0;
+        const rowH = 6.65; // 25 * 6.65 = 166.25mm
+
+        const colIdW = 14;
+        const colNameW = 46;
+        const colClassW = 12;
+        const colSchoolW = 18;
+
+        const fixedWidths = colIdW + colNameW + colClassW + colSchoolW; // 90mm
+        const remainingForDates = tableWidth - fixedWidths; // 190mm
+
+        // Use dates if available, fallback to 8 blank columns if none
+        const displayDates: HWClassColumn[] = dates.length > 0
+          ? dates
+          : Array.from({ length: 8 }, (_, i) => ({
+              date: `dummy-${i + 1}`,
+              label: `Class ${i + 1}`,
+              subLabel: '—',
+            }));
+
+        const numDates = displayDates.length;
+        const dateColW = remainingForDates / numDates;
+
+        interface HWColDef {
+          title: string;
+          subTitle?: string;
+          width: number;
+          align: 'left' | 'center' | 'right';
+          isDate?: boolean;
+          dateKey?: string;
+        }
+
+        const columns: HWColDef[] = [
+          { title: 'ID', width: colIdW, align: 'center' },
+          { title: 'Student Name', width: colNameW, align: 'left' },
+          { title: 'Class', width: colClassW, align: 'center' },
+          { title: 'School', width: colSchoolW, align: 'left' },
+        ];
+
+        for (const d of displayDates) {
+          columns.push({
+            title: d.label,
+            subTitle: d.subLabel,
+            width: dateColW,
+            align: 'center',
+            isDate: true,
+            dateKey: d.date,
+          });
+        }
+
+        // Draw Header Background
+        doc.setFillColor(235, 237, 240);
+        doc.rect(tableLeftX, tableTopY, tableWidth, headerH, 'F');
+
+        // Draw Header Titles
+        let curColX = tableLeftX;
+        for (const col of columns) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(col.isDate ? 6.5 : 7.5);
+          doc.setTextColor(0, 0, 0);
+
+          const textX = col.align === 'center'
+            ? curColX + col.width / 2
+            : curColX + 2;
+
+          if (col.isDate && col.subTitle) {
+            doc.text(col.title, textX, tableTopY + 3.0, { align: col.align });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(5.5);
+            doc.text(`(${col.subTitle})`, textX, tableTopY + 5.8, { align: col.align });
+          } else {
+            doc.text(col.title, textX, tableTopY + 4.5, { align: col.align });
+          }
+
+          curColX += col.width;
+        }
+
+        // 4. Draw 25 Fixed Content Rows
+        for (let r = 0; r < 25; r++) {
+          const curRowY = tableTopY + headerH + r * rowH;
+          const serialNo = pageIdx * 25 + r + 1;
+          const formattedId = `${prefix}${serialNo < 10 ? '0' + serialNo : serialNo}`;
+          const student = studentMapById.get(formattedId) || studentMapByNumber.get(serialNo) || null;
+
+          let cellX = tableLeftX;
+          for (let c = 0; c < columns.length; c++) {
+            const col = columns[c];
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.0);
+            doc.setTextColor(0, 0, 0);
+
+            if (c === 0) {
+              // ID
+              doc.setFont('courier', 'bold');
+              doc.text(formattedId, cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+            } else if (c === 1) {
+              // Student Name
+              if (student) {
+                doc.setFont('helvetica', 'bold');
+                doc.text(student.name, cellX + 2, curRowY + 4.4);
+              }
+            } else if (c === 2) {
+              // Class
+              if (student) {
+                doc.text(student.class || '—', cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+              }
+            } else if (c === 3) {
+              // School
+              if (student) {
+                const sch = student.school || '—';
+                const maxW = col.width - 2.5;
+                const schText = doc.getTextWidth(sch) > maxW ? sch.slice(0, 8) + '..' : sch;
+                doc.text(schText, cellX + 1.5, curRowY + 4.4);
+              }
+            } else if (col.isDate && col.dateKey) {
+              // Evaluation status cell
+              if (student && student.evaluations) {
+                const val = student.evaluations[col.dateKey];
+                if (val) {
+                  let shortText = val;
+                  if (val === 'Done' || val === 'Prepared' || val === 'Practiced') {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(22, 101, 52); // Green
+                    shortText = val === 'Done' ? 'Done' : val === 'Prepared' ? 'Prep' : 'Pract';
+                  } else if (val === 'Not Done' || val === 'Not Prepared' || val === 'Not Practiced') {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(185, 28, 28); // Red
+                    shortText = val === 'Not Done' ? 'ND' : val === 'Not Prepared' ? 'NP' : 'NP';
+                  } else if (val === 'Absent' || val === 'On Leave') {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(180, 83, 9); // Amber
+                    shortText = val === 'Absent' ? 'Abs' : 'Leave';
+                  } else {
+                    doc.setTextColor(107, 114, 128); // Gray
+                  }
+                  doc.setFontSize(6.5);
+                  doc.text(shortText, cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+                }
+              }
+            }
+
+            cellX += col.width;
+          }
+        }
+
+        const tableBottomY = tableTopY + headerH + 25 * rowH;
+
+        // Draw horizontal divider lines
+        doc.setDrawColor(160, 160, 160);
+        doc.setLineWidth(0.25);
+        for (let r = 0; r < 24; r++) {
+          const lineY = tableTopY + headerH + (r + 1) * rowH;
+          doc.line(tableLeftX, lineY, tableLeftX + tableWidth, lineY);
+        }
+
+        // Draw continuous vertical grid lines
+        let curLineX = tableLeftX;
+        for (let c = 0; c < columns.length - 1; c++) {
+          curLineX += columns[c].width;
+          doc.line(curLineX, tableTopY, curLineX, tableBottomY);
+        }
+
+        // Header bottom border
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.35);
+        doc.line(tableLeftX, tableTopY + headerH, tableLeftX + tableWidth, tableTopY + headerH);
+
+        // Outer table rectangle border
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.45);
+        doc.rect(tableLeftX, tableTopY, tableWidth, headerH + 25 * rowH, 'S');
+      }
+    }
+  }
+
+  return doc;
+}
+
+/**
+ * Generates and downloads the official A4 Landscape Homework & Evaluation Reports PDF.
+ */
+export async function generateHomeworkReportPDF(options: HomeworkReportPDFOptions): Promise<void> {
+  const doc = await buildHomeworkReportDoc(options);
+  const { groupsData, month, academicYear, track } = options;
+  const trackLabel = track === 'all'
+    ? 'All_Tracks'
+    : track === 'homework'
+    ? 'Homework'
+    : track === 'test_prep'
+    ? 'Test_Prep'
+    : 'Home_Practice';
+
+  const fileName = groupsData.length === 1
+    ? `Group_${groupsData[0].group.id}_${month}_${academicYear}_${trackLabel}_Report.pdf`
+    : `Selected_Groups_${month}_${academicYear}_${trackLabel}_Report.pdf`;
+
+  doc.save(fileName);
+}
+
+/**
+ * Direct Print official vector A4 Landscape Homework Report PDF.
+ */
+export async function printHomeworkReportPDF(
+  options: HomeworkReportPDFOptions,
+  targetWindow?: Window | null
+): Promise<void> {
+  const doc = await buildHomeworkReportDoc(options);
+  doc.autoPrint();
+
+  const blob = doc.output('blob');
+  const blobUrl = URL.createObjectURL(blob);
+
+  if (targetWindow && !targetWindow.closed) {
+    targetWindow.location.href = blobUrl;
+  } else {
+    const win = window.open(blobUrl, '_blank');
+    if (!win) {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.bottom = '0';
+      iframe.style.right = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.src = blobUrl;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          } catch {
+            window.location.href = blobUrl;
+          }
+        }, 150);
+      };
+    }
+  }
+}
+
 // ─── Academic Rankings PDF Generator (A4 Landscape Vector Exact Offline Layout) ───
 
 export interface RankingsGroupItem {

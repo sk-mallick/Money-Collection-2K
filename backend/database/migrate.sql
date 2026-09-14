@@ -289,6 +289,47 @@ ON DUPLICATE KEY UPDATE
   `name` = VALUES(`name`),
   `password_hash` = VALUES(`password_hash`);
 
+-- --------------------------------------------------------
+-- 13. Table structure for `hw_class_sessions`
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `hw_class_sessions` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `session_code` VARCHAR(30) NOT NULL,
+  `group_id` VARCHAR(10) NOT NULL,
+  `session_date` DATE NOT NULL,
+  `month` VARCHAR(5) NOT NULL DEFAULT 'SEP',
+  `academic_year` VARCHAR(10) NOT NULL DEFAULT '2026-27',
+  `created_by` INT(11) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_session_code` (`session_code`),
+  UNIQUE KEY `uk_group_date` (`group_id`, `session_date`),
+  KEY `idx_session_month_group` (`academic_year`, `month`, `group_id`),
+  CONSTRAINT `fk_hws_group` FOREIGN KEY (`group_id`)
+    REFERENCES `groups` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- 14. Table structure for `hw_student_records`
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `hw_student_records` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `session_id` INT(11) NOT NULL,
+  `session_code` VARCHAR(30) DEFAULT NULL,
+  `student_id` VARCHAR(10) NOT NULL,
+  `homework_status` ENUM('Done','Not Done','Absent','N/A') DEFAULT NULL,
+  `test_prep_status` ENUM('Prepared','Not Prepared','Absent','N/A') DEFAULT NULL,
+  `practice_status` ENUM('Practiced','Not Practiced','On Leave','N/A') DEFAULT NULL,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_session_student` (`session_id`, `student_id`),
+  KEY `idx_record_code` (`session_code`),
+  CONSTRAINT `fk_hwr_session` FOREIGN KEY (`session_id`)
+    REFERENCES `hw_class_sessions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_hwr_student` FOREIGN KEY (`student_id`)
+    REFERENCES `students` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 

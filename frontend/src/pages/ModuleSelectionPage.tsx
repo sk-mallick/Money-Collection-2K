@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Wallet, GraduationCap, ArrowRight } from 'lucide-react';
+import { Wallet, GraduationCap, ClipboardCheck, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import logoUrl from '@/assets/favicon.png';
 
@@ -24,6 +24,16 @@ const modules = [
     glowColor: 'rgba(20, 184, 166, 0.15)',
     iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
   },
+  {
+    id: 'homework',
+    title: 'Home Work Report',
+    subtitle: 'Homework, Test Prep & Practice Tracking',
+    icon: ClipboardCheck,
+    path: '/homework/dashboard',
+    gradient: 'from-amber-600 via-orange-600 to-red-600',
+    glowColor: 'rgba(245, 158, 11, 0.15)',
+    iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
+  },
 ];
 
 export default function ModuleSelectionPage() {
@@ -46,7 +56,7 @@ export default function ModuleSelectionPage() {
       </div>
 
       {/* Module Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-6 w-full max-w-2xl animate-fade-in" style={{ animationDelay: '0.1s' }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-6 w-full max-w-4xl animate-fade-in" style={{ animationDelay: '0.1s' }}>
         {modules.map((mod) => {
           const Icon = mod.icon;
           const isHovered = hoveredId === mod.id;

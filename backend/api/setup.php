@@ -162,8 +162,32 @@ if ($pdo && $actionTriggered && !$isLocked) {
                     }
                 } catch (Throwable $ignorePeriod) {}
 
+                // Auto-ensure session_code exists on hw_class_sessions
+                try {
+                    $colCheck = $pdo->query("SHOW COLUMNS FROM `hw_class_sessions` LIKE 'session_code'");
+                    if ($colCheck->rowCount() === 0) {
+                        $pdo->exec("ALTER TABLE `hw_class_sessions` ADD COLUMN `session_code` VARCHAR(30) NOT NULL AFTER `id`");
+                    }
+                    $sIdxCheck = $pdo->query("SHOW INDEX FROM `hw_class_sessions` WHERE Key_name = 'uk_session_code'");
+                    if ($sIdxCheck->rowCount() === 0) {
+                        $pdo->exec("ALTER TABLE `hw_class_sessions` ADD UNIQUE KEY `uk_session_code` (`session_code`)");
+                    }
+                    $mColCheck = $pdo->query("SHOW COLUMNS FROM `hw_class_sessions` LIKE 'month'");
+                    if ($mColCheck->rowCount() === 0) {
+                        $pdo->exec("ALTER TABLE `hw_class_sessions` ADD COLUMN `month` VARCHAR(5) NULL AFTER `session_date`");
+                    }
+                } catch (Throwable $ignoreHw) {}
+
+                // Auto-ensure session_code exists on hw_student_records
+                try {
+                    $colCheck2 = $pdo->query("SHOW COLUMNS FROM `hw_student_records` LIKE 'session_code'");
+                    if ($colCheck2->rowCount() === 0) {
+                        $pdo->exec("ALTER TABLE `hw_student_records` ADD COLUMN `session_code` VARCHAR(30) NULL AFTER `session_id`");
+                    }
+                } catch (Throwable $ignoreHw2) {}
+
                 $migrationSuccess = true;
-                $migrationMessage = "Schema migration completed successfully! All 12 tables and default seed records (groups A–K, system settings, subjects, and admin credentials) are fully synchronized.";
+                $migrationMessage = "Schema migration completed successfully! All 14 tables and default seed records (groups A–K, system settings, subjects, homework tables, and admin credentials) are fully synchronized.";
             } catch (Exception $ex) {
                 $migrationMessage = "Migration execution failed: " . $ex->getMessage();
             }
@@ -227,7 +251,9 @@ $expectedTables = [
     'rc_student_marks'   => ['category' => 'Transactional', 'desc' => 'Subject-level marks & attendance flags'],
     'admins'             => ['category' => 'Security', 'desc' => 'Administrator credentials & access control'],
     'audit_logs'         => ['category' => 'Telemetry', 'desc' => 'System activity log & administrative actions'],
-    'login_attempts'     => ['category' => 'Security', 'desc' => 'IP rate limiting & brute-force prevention records']
+    'login_attempts'     => ['category' => 'Security', 'desc' => 'IP rate limiting & brute-force prevention records'],
+    'hw_class_sessions'  => ['category' => 'Transactional', 'desc' => 'Homework class sessions & dates per group'],
+    'hw_student_records' => ['category' => 'Transactional', 'desc' => 'Student homework, test prep & practice status records']
 ];
 
 $tableStatuses = [];

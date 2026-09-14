@@ -199,6 +199,8 @@ export function getApiBase(): string {
     '/mcms/students', '/mcms/groups', '/mcms/collect', '/mcms/receipts', '/mcms/dues', '/mcms/settings', '/mcms/about', '/mcms',
     // Reports routes
     '/reports/dashboard', '/reports/monthly', '/reports/rankings', '/reports/student-reports', '/reports/blank-sheet', '/reports/settings', '/reports',
+    // Homework routes
+    '/homework/dashboard', '/homework/record', '/homework/reports', '/homework',
     // Legacy routes (backward compat)
     '/login', '/students', '/groups', '/collect', '/receipts', '/dues', '/settings', '/about',
   ];
