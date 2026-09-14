@@ -1776,26 +1776,26 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
         const titleX = headerCenterX - totalW / 2;
 
         doc.setTextColor(...blackColor);
-        doc.text(part1, titleX, marginTop + 4.8);
+        doc.text(part1, titleX, marginTop + 5.8);
         doc.setTextColor(...redColor);
-        doc.text(part2, titleX + w1, marginTop + 4.8);
+        doc.text(part2, titleX + w1, marginTop + 5.8);
         doc.setTextColor(...blackColor);
-        doc.text(part3, titleX + w1 + w2, marginTop + 4.8);
+        doc.text(part3, titleX + w1 + w2, marginTop + 5.8);
 
         // Title Banner
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.0);
         doc.setTextColor(0, 0, 0);
         const sheetTitle = `MONTHLY ${trackTitle} TRACKING SHEET — ${monthName.toUpperCase()} ${academicYear}`;
-        doc.text(sheetTitle, headerCenterX, marginTop + 8.4, { align: 'center' });
+        doc.text(sheetTitle, headerCenterX, marginTop + 9.8, { align: 'center' });
 
         // Red Divider
         doc.setFillColor(220, 38, 38);
-        doc.rect(marginX + 1.5, marginTop + 10.3, contentWidth - 3, 0.7, 'F');
+        doc.rect(marginX + 1.5, marginTop + 11.6, contentWidth - 3, 0.7, 'F');
 
         // Group & Batch Meta Banner
-        const metaY = marginTop + 12.3;
-        const metaH = 5.0;
+        const metaY = marginTop + 13.3;
+        const metaH = 5.2;
         const tableLeftX = marginX + 1.5;
         const tableWidth = contentWidth - 3; // 280mm
         doc.setFillColor(245, 246, 248);
@@ -1807,17 +1807,17 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
         doc.setFontSize(7.5);
         doc.setTextColor(0, 0, 0);
         const colSpacing = tableWidth / 6;
-        doc.text(`BATCH: Group ${group.id} (${group.class || '—'})`, tableLeftX + 3, metaY + 3.5);
-        doc.text(`CATEGORY: ${group.category || '—'}`, tableLeftX + colSpacing + 2, metaY + 3.5);
-        doc.text(`TIMING: ${group.timing || '—'}`, tableLeftX + colSpacing * 2 + 2, metaY + 3.5);
-        doc.text(trackBadge, tableLeftX + colSpacing * 3 + 2, metaY + 3.5);
-        doc.text(`ENROLLED: ${students.length} Students`, tableLeftX + colSpacing * 4 + 2, metaY + 3.5);
-        doc.text(`PAGE: ${pageIdx + 1} OF ${totalPagesForGroup}`, tableLeftX + colSpacing * 5 + 2, metaY + 3.5);
+        doc.text(`BATCH: Group ${group.id} (${group.class || '—'})`, tableLeftX + 3, metaY + 3.7);
+        doc.text(`CATEGORY: ${group.category || '—'}`, tableLeftX + colSpacing + 2, metaY + 3.7);
+        doc.text(`TIMING: ${group.timing || '—'}`, tableLeftX + colSpacing * 2 + 2, metaY + 3.7);
+        doc.text(trackBadge, tableLeftX + colSpacing * 3 + 2, metaY + 3.7);
+        doc.text(`ENROLLED: ${students.length} Students`, tableLeftX + colSpacing * 4 + 2, metaY + 3.7);
+        doc.text(`PAGE: ${pageIdx + 1} OF ${totalPagesForGroup}`, tableLeftX + colSpacing * 5 + 2, metaY + 3.7);
 
         // 3. Table Column Setup
-        const tableTopY = marginTop + 18.5; // Y = 24.0mm
+        const tableTopY = marginTop + 20.0; // Y = 25.5mm
         const headerH = 7.0;
-        const rowH = 6.65; // 25 * 6.65 = 166.25mm
+        const rowH = 6.82; // 25 * 6.82 = 170.5mm, tableBottom = 25.5 + 7.0 + 170.5 = 203.0mm (leaves exact 1.5mm bottom margin inside 204.5mm outer border)
 
         const colIdW = 14;
         const colNameW = 46;
@@ -1887,7 +1887,7 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
             doc.setFontSize(5.5);
             doc.text(`(${col.subTitle})`, textX, tableTopY + 5.8, { align: col.align });
           } else {
-            doc.text(col.title, textX, tableTopY + 4.5, { align: col.align });
+            doc.text(col.title, textX, tableTopY + 4.6, { align: col.align });
           }
 
           curColX += col.width;
@@ -1911,17 +1911,17 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
             if (c === 0) {
               // ID
               doc.setFont('courier', 'bold');
-              doc.text(formattedId, cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+              doc.text(formattedId, cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
             } else if (c === 1) {
               // Student Name
               if (student) {
                 doc.setFont('helvetica', 'bold');
-                doc.text(student.name, cellX + 2, curRowY + 4.4);
+                doc.text(student.name, cellX + 2, curRowY + 4.55);
               }
             } else if (c === 2) {
               // Class
               if (student) {
-                doc.text(student.class || '—', cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+                doc.text(student.class || '—', cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
               }
             } else if (c === 3) {
               // School
@@ -1929,7 +1929,7 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
                 const sch = student.school || '—';
                 const maxW = col.width - 2.5;
                 const schText = doc.getTextWidth(sch) > maxW ? sch.slice(0, 8) + '..' : sch;
-                doc.text(schText, cellX + 1.5, curRowY + 4.4);
+                doc.text(schText, cellX + 1.5, curRowY + 4.55);
               }
             } else if (col.isDate && col.dateKey) {
               // Evaluation status cell
@@ -1953,7 +1953,7 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
                     doc.setTextColor(107, 114, 128); // Gray
                   }
                   doc.setFontSize(6.5);
-                  doc.text(shortText, cellX + col.width / 2, curRowY + 4.4, { align: 'center' });
+                  doc.text(shortText, cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
                 }
               }
             }
