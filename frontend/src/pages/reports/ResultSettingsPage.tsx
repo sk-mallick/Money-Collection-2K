@@ -234,7 +234,7 @@ export default function ResultSettingsPage() {
               <table className="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead className="bg-muted/50 border-b">
                   <tr>
-                    <th className="p-3 font-semibold text-muted-foreground w-16 text-center">Order</th>
+                    <th className="hidden sm:table-cell p-3 font-semibold text-muted-foreground w-16 text-center">Order</th>
                     <th className="p-3 font-semibold text-muted-foreground">Subject Name</th>
                     <th className="p-3 font-semibold text-muted-foreground">Category Applicable</th>
                     <th className="p-3 font-semibold text-muted-foreground text-center">Status</th>
@@ -244,7 +244,7 @@ export default function ResultSettingsPage() {
                 <tbody className="divide-y divide-border">
                   {subjects.map((sub) => (
                     <tr key={sub.id} className="hover:bg-accent/40 transition-colors">
-                      <td className="p-3 text-center font-mono font-medium text-muted-foreground">
+                      <td className="hidden sm:table-cell p-3 text-center font-mono font-medium text-muted-foreground">
                         {sub.display_order}
                       </td>
                       <td className="p-3 font-bold text-foreground">{sub.name}</td>

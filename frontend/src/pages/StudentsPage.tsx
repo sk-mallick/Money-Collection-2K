@@ -303,9 +303,9 @@ export default function StudentsPage() {
 
       {/* Search & Filter Toolbar & Active Filters */}
       <div className="space-y-2 sm:space-y-2.5">
-        <div className="flex flex-col 2xl:flex-row 2xl:items-center gap-2.5 sm:gap-3 justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-2.5 sm:gap-3 justify-between">
           {/* Search Input & Mobile Settings/Filters Button (Line 1 on responsive screens) */}
-          <div className="flex items-center gap-2 flex-1 w-full 2xl:min-w-[280px]">
+          <div className="flex items-center gap-2 flex-1 w-full lg:w-auto lg:min-w-[200px]">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
@@ -523,12 +523,12 @@ export default function StudentsPage() {
           </div>
 
           {/* Filters & Sort Controls (Desktop toolbar >= sm, hidden on mobile < sm) */}
-          <div className="hidden sm:flex flex-wrap items-center justify-between sm:justify-start 2xl:justify-end gap-2 sm:gap-2.5 w-full 2xl:w-auto">
+          <div className="hidden sm:flex flex-wrap lg:flex-nowrap items-center justify-between sm:justify-start lg:justify-end gap-2 sm:gap-2.5 w-full lg:w-auto shrink-0">
             {/* Filter Dropdowns Group */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 flex-1 sm:flex-initial">
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
               {/* Group Filter */}
               <Select value={groupFilter} onValueChange={handleGroupFilterChange}>
-                <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[130px] text-xs sm:text-sm h-9 bg-card">
+                <SelectTrigger className="w-auto sm:w-[110px] xl:w-[125px] text-xs sm:text-sm h-9 bg-card px-2.5">
                   <SelectValue placeholder="All Groups" />
                 </SelectTrigger>
                 <SelectContent>
@@ -543,7 +543,7 @@ export default function StudentsPage() {
 
               {/* Class Filter */}
               <Select value={classFilter} onValueChange={handleClassChange}>
-                <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[120px] text-xs sm:text-sm h-9 bg-card">
+                <SelectTrigger className="w-auto sm:w-[105px] xl:w-[115px] text-xs sm:text-sm h-9 bg-card px-2.5">
                   <SelectValue placeholder="All Classes" />
                 </SelectTrigger>
                 <SelectContent>
@@ -558,7 +558,7 @@ export default function StudentsPage() {
 
               {/* Category Filter */}
               <Select value={categoryFilter} onValueChange={handleCategoryChange}>
-                <SelectTrigger className="flex-1 sm:flex-initial w-auto sm:w-[130px] text-xs sm:text-sm h-9 bg-card">
+                <SelectTrigger className="w-auto sm:w-[115px] xl:w-[125px] text-xs sm:text-sm h-9 bg-card px-2.5">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -570,10 +570,10 @@ export default function StudentsPage() {
             </div>
 
             {/* Sort Controls Group */}
-            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 ml-auto sm:ml-0">
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
               {/* Sort Field */}
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-auto sm:w-[180px] text-xs sm:text-sm h-9 bg-card px-2.5 sm:px-3">
+                <SelectTrigger className="w-auto sm:w-[145px] xl:w-[165px] text-xs sm:text-sm h-9 bg-card px-2.5">
                   <span className="flex items-center gap-1.5 min-w-0 text-left">
                     <span className="text-muted-foreground/70 shrink-0 font-medium">Sort:</span>
                     <span className="truncate">
