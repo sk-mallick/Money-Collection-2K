@@ -81,7 +81,7 @@ export default function HomeworkReportsPage() {
   const [month, setMonth] = useState<string>('SEP');
   const [selectedTrack, setSelectedTrack] = useState<HWReportTrack | 'all'>('homework');
   const [settings, setSettings] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
@@ -131,9 +131,12 @@ export default function HomeworkReportsPage() {
         setGroups(groupsList);
         if (groupsList.length > 0) {
           setSelectedGroupIds([groupsList[0].id]);
+        } else {
+          setLoading(false);
         }
       } catch (err) {
         console.error('Failed to init homework reports:', err);
+        setLoading(false);
       }
     }
     init();
@@ -565,7 +568,8 @@ export default function HomeworkReportsPage() {
         <div className="flex items-center sm:items-end justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
-              Monthly Homework & Evaluation Reports
+              <span className="hidden sm:inline">Monthly Homework Reports</span>
+              <span className="sm:hidden">Monthly Reports</span>
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
               <span className="hidden sm:inline">

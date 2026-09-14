@@ -1286,13 +1286,13 @@ export function ModuleSelectionPageLoading() {
     <div className="page-enter min-h-svh flex flex-col items-center justify-center bg-background px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-6 sm:mb-10 text-center flex flex-col items-center">
-        <Skeleton className="h-12 w-12 sm:h-13 sm:w-13 rounded-2xl mb-3" />
+        <Skeleton className="h-12 w-12 sm:h-13 sm:w-13 rounded-2xl mb-3 shadow-lg" />
         <Skeleton className="h-7 sm:h-8 w-44 sm:w-56 mb-2" />
         <Skeleton className="h-4 w-36 sm:w-44" />
       </div>
 
-      {/* Module Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-6 w-full max-w-2xl">
+      {/* Module Cards Grid - 3 cards matching ModuleSelectionPage */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-6 w-full max-w-4xl">
         {/* Card 1 — MCMS */}
         <div className="flex flex-row md:flex-col items-center md:items-start text-left rounded-2xl border border-border/70 bg-card p-4 sm:p-5 md:p-7 gap-4 md:gap-0 md:min-h-[220px]">
           <Skeleton className="h-15 w-15 sm:h-16 sm:w-16 md:h-13 md:w-13 rounded-2xl md:mb-4 bg-blue-500/20 shrink-0" />
@@ -1312,6 +1312,20 @@ export function ModuleSelectionPageLoading() {
           <Skeleton className="h-15 w-15 sm:h-16 sm:w-16 md:h-13 md:w-13 rounded-2xl md:mb-4 bg-emerald-500/20 shrink-0" />
           <div className="flex-1 min-w-0">
             <Skeleton className="h-5 sm:h-6 w-36 sm:w-44 md:mb-1.5" />
+            <Skeleton className="hidden md:block h-4 w-52 sm:w-60 mb-6 mt-1" />
+          </div>
+          <Skeleton className="md:hidden h-9 w-9 rounded-full shrink-0" />
+          <div className="hidden md:flex items-center gap-1.5 mt-auto pt-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-3.5 w-3.5 rounded" />
+          </div>
+        </div>
+
+        {/* Card 3 — Home Work Report */}
+        <div className="flex flex-row md:flex-col items-center md:items-start text-left rounded-2xl border border-border/70 bg-card p-4 sm:p-5 md:p-7 gap-4 md:gap-0 md:min-h-[220px]">
+          <Skeleton className="h-15 w-15 sm:h-16 sm:w-16 md:h-13 md:w-13 rounded-2xl md:mb-4 bg-amber-500/20 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <Skeleton className="h-5 sm:h-6 w-32 sm:w-40 md:mb-1.5" />
             <Skeleton className="hidden md:block h-4 w-52 sm:w-60 mb-6 mt-1" />
           </div>
           <Skeleton className="md:hidden h-9 w-9 rounded-full shrink-0" />
@@ -1370,67 +1384,102 @@ export function LoginPageLoading() {
 
 export function HomeworkDashboardLoading() {
   return (
-    <div className="page-enter space-y-6 p-4 md:p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-56" />
-          <Skeleton className="h-4 w-72" />
-        </div>
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-9 w-32" />
-          <Skeleton className="h-9 w-36" />
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
+      {/* Page Header */}
+      <div className="border-b pb-3.5 sm:pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          <div>
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+              Homework Dashboard
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 flex items-center gap-1.5">
+              <span>Academic Year:</span>
+              <Skeleton className="h-3.5 sm:h-4 w-16 rounded" />
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-8 w-8 rounded-lg" />
-            </div>
-            <Skeleton className="h-8 w-16" />
-            <Skeleton className="h-3 w-28" />
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        {[
+          { label: 'Total Sessions', w: 'w-12' },
+          { label: 'This Month', w: 'w-10' },
+          { label: 'Groups Tracked', w: 'w-10' },
+          { label: 'Total Records', w: 'w-14' },
+        ].map((stat, i) => (
+          <Card key={i} className="relative overflow-hidden">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Skeleton className="h-4 w-4 rounded" />
+                <span className="text-xs text-muted-foreground font-medium">{stat.label}</span>
+              </div>
+              <Skeleton className={`h-7 sm:h-8 ${stat.w} rounded-md`} />
+            </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Recent Sessions List */}
-      <Card className="p-4 space-y-4">
-        <Skeleton className="h-6 w-40" />
-        <div className="space-y-3">
+      {/* Quick Actions */}
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="h-auto py-4 flex flex-col items-center gap-2 text-sm border rounded-md bg-card">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-4 w-28 rounded" />
+          </div>
+          <div className="h-auto py-4 flex flex-col items-center gap-2 text-sm border rounded-md bg-card">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-4 w-28 rounded" />
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Sessions */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Recent Sessions</h2>
+          <Skeleton className="h-7 w-16 rounded-md" />
+        </div>
+        <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between p-3 rounded-lg border">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-10 w-10 rounded-lg" />
-                <div className="space-y-1">
-                  <Skeleton className="h-4 w-28" />
-                  <Skeleton className="h-3 w-44" />
+            <Card key={i}>
+              <CardContent className="p-3 sm:p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4.5 w-32 rounded-md" />
+                      <Skeleton className="h-4.5 w-12 rounded-full" />
+                    </div>
+                    <Skeleton className="h-3.5 w-48 rounded-md mt-1" />
+                  </div>
                 </div>
-              </div>
-              <Skeleton className="h-8 w-24" />
-            </div>
+                <Skeleton className="h-5.5 w-16 rounded-full shrink-0" />
+              </CardContent>
+            </Card>
           ))}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
 
 export function HomeworkRecordLoading() {
   return (
-    <div className="page-enter space-y-6 p-4 md:p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-60" />
-          <Skeleton className="h-4 w-80" />
+    <div className="page-enter space-y-6 text-left p-4 md:p-6 w-full">
+      {/* Top Header */}
+      <div className="flex flex-row items-center justify-between gap-4 border-b pb-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Record Entry</h1>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+            <span className="sm:hidden">Select a group</span>
+            <span className="hidden sm:inline">Select a group to start recording homework status</span>
+          </p>
         </div>
+        <Skeleton className="h-7 w-20 rounded-lg shrink-0" />
       </div>
 
-      {/* Step 1: Groups skeleton (matches mcms/groups) */}
+      {/* Step 1: Groups skeleton (8 group cards) */}
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 8 }).map((_, idx) => (
           <Card key={idx} className="overflow-hidden flex flex-col justify-between">
@@ -1439,13 +1488,13 @@ export function HomeworkRecordLoading() {
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
                   <div className="space-y-1.5 min-w-0 flex-1">
-                    <Skeleton className="h-4 w-20 rounded" />
-                    <Skeleton className="h-3 w-14 rounded" />
+                    <Skeleton className="h-4 w-20 rounded-md" />
+                    <Skeleton className="h-3 w-14 rounded-md" />
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Skeleton className="h-5 w-14 rounded-full" />
-                  <Skeleton className="h-5 w-5 rounded" />
+                  <Skeleton className="h-7 w-7 rounded-md" />
                 </div>
               </div>
               <div className="px-4 pt-0 pb-3.5">
@@ -1455,67 +1504,57 @@ export function HomeworkRecordLoading() {
           </Card>
         ))}
       </div>
-
-      {/* Step 2: Dates skeleton */}
-      <Card className="p-5 space-y-4">
-        <Skeleton className="h-5 w-48" />
-        <div className="flex gap-2 overflow-hidden">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-24 shrink-0 rounded-xl" />
-          ))}
-        </div>
-      </Card>
-
-      {/* Step 3: Tabs & Student rows */}
-      <Card className="p-5 space-y-4">
-        <Skeleton className="h-10 w-80 rounded-lg" />
-        <div className="space-y-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-8 w-32" />
-            </div>
-          ))}
-        </div>
-      </Card>
     </div>
   );
 }
 
 export function HomeworkReportsLoading() {
   return (
-    <div className="page-enter space-y-6 p-4 md:p-6">
+    <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-3.5 sm:space-y-4 w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
-        <div className="space-y-2">
-          <Skeleton className="h-8 w-52" />
-          <Skeleton className="h-4 w-72" />
-        </div>
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-9 w-32" />
-          <Skeleton className="h-9 w-36" />
+      <div className="border-b pb-3 sm:pb-3.5">
+        <div className="flex items-center sm:items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+              <span className="hidden sm:inline">Monthly Homework Reports</span>
+              <span className="sm:hidden">Monthly Reports</span>
+            </h1>
+            <Skeleton className="mt-1 h-3.5 w-60 sm:w-96 rounded" />
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Skeleton className="hidden sm:block h-9 w-20 rounded-md" />
+            <Skeleton className="h-8 w-8 sm:h-9 sm:w-28 rounded-md" />
+          </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <Card className="p-4">
-        <div className="flex flex-wrap gap-4 items-center">
-          <Skeleton className="h-10 w-44" />
-          <Skeleton className="h-10 w-36" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-      </Card>
+      {/* Desktop Filter Controls */}
+      <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-2.5">
+        <Skeleton className="h-9 w-[130px] rounded-md" />
+        <Skeleton className="h-9 w-[130px] rounded-md" />
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-9 w-20 rounded-md" />
+        ))}
+      </div>
 
-      {/* Table skeleton */}
-      <Card className="p-4 space-y-3">
-        <Skeleton className="h-10 w-72 rounded-lg" />
-        <div className="space-y-2">
-          <Skeleton className="h-10 w-full" />
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full" />
+      {/* Mobile Filter Controls */}
+      <div className="sm:hidden space-y-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-9 flex-1 rounded-md" />
+          <Skeleton className="h-9 flex-1 rounded-md" />
+        </div>
+        <div className="flex items-center gap-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-9 flex-1 rounded-md" />
           ))}
         </div>
-      </Card>
+      </div>
+
+      {/* Preview Area (exact matching blank-sheet preview skeleton) */}
+      <div className="space-y-4">
+        <Skeleton className="h-28 w-full rounded-xl" />
+        <Skeleton className="h-96 w-full rounded-xl" />
+      </div>
     </div>
   );
 }

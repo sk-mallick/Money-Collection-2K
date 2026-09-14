@@ -33,7 +33,7 @@ import {
 import { getApiBase } from '@/lib/constants';
 
 function DynamicSuspenseFallback() {
-  const path = window.location.pathname.toLowerCase();
+  const path = (window.location.pathname + window.location.hash).toLowerCase();
   
   if (path.includes('/login')) {
     return <LoginPageLoading />;
@@ -301,9 +301,30 @@ export default function App() {
             {/* Homework Module */}
             <Route path="/homework" element={<HomeworkLayout />}>
               <Route index element={<Navigate to="/homework/dashboard" replace />} />
-              <Route path="dashboard" element={<HomeworkDashboard />} />
-              <Route path="record" element={<HomeworkRecordPage />} />
-              <Route path="reports" element={<HomeworkReportsPage />} />
+              <Route
+                path="dashboard"
+                element={
+                  <Suspense fallback={<HomeworkDashboardLoading />}>
+                    <HomeworkDashboard />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="record"
+                element={
+                  <Suspense fallback={<HomeworkRecordLoading />}>
+                    <HomeworkRecordPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="reports"
+                element={
+                  <Suspense fallback={<HomeworkReportsLoading />}>
+                    <HomeworkReportsPage />
+                  </Suspense>
+                }
+              />
             </Route>
           </Route>
 
