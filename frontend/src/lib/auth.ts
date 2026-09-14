@@ -26,10 +26,35 @@ export function setAuth(token: string, user: AuthUser): void {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
+const MCMS_PASSKEY_KEY = 'mcms_passkey_auth';
+
+export function isMcmsPasskeyAuthenticated(): boolean {
+  return (
+    localStorage.getItem(MCMS_PASSKEY_KEY) === 'true' ||
+    sessionStorage.getItem(MCMS_PASSKEY_KEY) === 'true'
+  );
+}
+
+export function setMcmsPasskeyAuth(remember: boolean): void {
+  if (remember) {
+    localStorage.setItem(MCMS_PASSKEY_KEY, 'true');
+    sessionStorage.removeItem(MCMS_PASSKEY_KEY);
+  } else {
+    sessionStorage.setItem(MCMS_PASSKEY_KEY, 'true');
+    localStorage.removeItem(MCMS_PASSKEY_KEY);
+  }
+}
+
+export function clearMcmsPasskeyAuth(): void {
+  localStorage.removeItem(MCMS_PASSKEY_KEY);
+  sessionStorage.removeItem(MCMS_PASSKEY_KEY);
+}
+
 export function clearAuth(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem('mcms_last_pull_timestamp');
+  clearMcmsPasskeyAuth();
 }
 
 /**

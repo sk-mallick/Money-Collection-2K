@@ -6,6 +6,7 @@ import { McmsSidebar } from '@/components/mcms-sidebar';
 import { ReportsSidebar } from '@/components/reports-sidebar';
 import { HomeworkSidebar } from '@/components/homework-sidebar';
 import { useAuth } from '@/hooks/useAuth';
+import { isMcmsPasskeyAuthenticated } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 import { Suspense, lazy } from 'react';
 import { 
@@ -148,6 +149,14 @@ function AuthGuard() {
   return <Outlet />;
 }
 
+/** Client-side Passkey guard for MCMS module */
+function McmsPasskeyGuard() {
+  if (!isMcmsPasskeyAuthenticated()) {
+    return <Navigate to="/?require_mcms=1" replace />;
+  }
+  return <Outlet />;
+}
+
 /** MCMS module layout with sidebar */
 function McmsLayout() {
   return (
@@ -265,26 +274,28 @@ export default function App() {
               }
             />
 
-            {/* MCMS Module */}
-            <Route path="/mcms" element={<McmsLayout />}>
-              <Route index element={<Navigate to="/mcms/students" replace />} />
-              <Route path="students" element={<StudentsPage />} />
-              <Route path="groups" element={<GroupsPage />} />
-              <Route path="collect" element={<CollectPage />} />
-              <Route path="receipts" element={<ReceiptsPage />} />
-              <Route path="dues" element={<DuesPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="about" element={<AboutPage />} />
-            </Route>
+            {/* MCMS Module with Passkey Protection */}
+            <Route element={<McmsPasskeyGuard />}>
+              <Route path="/mcms" element={<McmsLayout />}>
+                <Route index element={<Navigate to="/mcms/students" replace />} />
+                <Route path="students" element={<StudentsPage />} />
+                <Route path="groups" element={<GroupsPage />} />
+                <Route path="collect" element={<CollectPage />} />
+                <Route path="receipts" element={<ReceiptsPage />} />
+                <Route path="dues" element={<DuesPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="about" element={<AboutPage />} />
+              </Route>
 
-            {/* Legacy route redirects (backward compatibility) */}
-            <Route path="/students" element={<LegacyRedirect to="/mcms/students" />} />
-            <Route path="/groups" element={<LegacyRedirect to="/mcms/groups" />} />
-            <Route path="/collect" element={<LegacyRedirect to="/mcms/collect" />} />
-            <Route path="/receipts" element={<LegacyRedirect to="/mcms/receipts" />} />
-            <Route path="/dues" element={<LegacyRedirect to="/mcms/dues" />} />
-            <Route path="/settings" element={<LegacyRedirect to="/mcms/settings" />} />
-            <Route path="/about" element={<LegacyRedirect to="/mcms/about" />} />
+              {/* Legacy route redirects (backward compatibility) */}
+              <Route path="/students" element={<LegacyRedirect to="/mcms/students" />} />
+              <Route path="/groups" element={<LegacyRedirect to="/mcms/groups" />} />
+              <Route path="/collect" element={<LegacyRedirect to="/mcms/collect" />} />
+              <Route path="/receipts" element={<LegacyRedirect to="/mcms/receipts" />} />
+              <Route path="/dues" element={<LegacyRedirect to="/mcms/dues" />} />
+              <Route path="/settings" element={<LegacyRedirect to="/mcms/settings" />} />
+              <Route path="/about" element={<LegacyRedirect to="/mcms/about" />} />
+            </Route>
 
             {/* Reports Module */}
             <Route path="/reports" element={<ReportsLayout />}>
