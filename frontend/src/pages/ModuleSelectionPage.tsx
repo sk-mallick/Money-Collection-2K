@@ -182,7 +182,10 @@ export default function ModuleSelectionPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[360px] p-5">
+        <DialogContent
+          className="sm:max-w-[360px] p-5"
+          overlayClassName="backdrop-blur-md bg-black/60"
+        >
           <DialogHeader className="flex flex-col items-center text-center space-y-2 pb-1">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/20">
               <Lock className="h-5 w-5" />
