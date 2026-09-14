@@ -47,26 +47,26 @@ export default function DuesPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
         <Card className="shadow-xs border bg-card/45 backdrop-blur-md py-0 gap-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-2.5 px-3.5">
-            <CardTitle className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase">Total Defaulters</CardTitle>
-            <Users className="size-3.5 text-muted-foreground/70" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-2.5 px-3 sm:px-3.5">
+            <CardTitle className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase truncate">Total Defaulters</CardTitle>
+            <Users className="size-3.5 text-muted-foreground/70 shrink-0" />
           </CardHeader>
-          <CardContent className="p-2.5 px-3.5 pt-0">
-            <p className="text-xl font-bold tracking-tight">{dues.length}</p>
-            <p className="text-[9px] text-muted-foreground mt-0.5">for {MONTH_NAMES[selectedMonth]}</p>
+          <CardContent className="p-2.5 px-3 sm:px-3.5 pt-0">
+            <p className="text-lg sm:text-xl font-bold tracking-tight">{dues.length}</p>
+            <p className="text-[9px] text-muted-foreground mt-0.5 truncate">for {MONTH_NAMES[selectedMonth]}</p>
           </CardContent>
         </Card>
         
         <Card className="shadow-xs border bg-card/45 backdrop-blur-md py-0 gap-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-2.5 px-3.5">
-            <CardTitle className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase">Total Outstanding</CardTitle>
-            <IndianRupee className="size-3.5 text-muted-foreground/70" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 p-2.5 px-3 sm:px-3.5">
+            <CardTitle className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase truncate">Total Outstanding</CardTitle>
+            <IndianRupee className="size-3.5 text-muted-foreground/70 shrink-0" />
           </CardHeader>
-          <CardContent className="p-2.5 px-3.5 pt-0">
-            <p className="text-xl font-bold tracking-tight">{formatCurrency(totalOutstanding)}</p>
-            <p className="text-[9px] text-muted-foreground mt-0.5">unpaid fees this month</p>
+          <CardContent className="p-2.5 px-3 sm:px-3.5 pt-0">
+            <p className="text-lg sm:text-xl font-bold tracking-tight truncate">{formatCurrency(totalOutstanding)}</p>
+            <p className="text-[9px] text-muted-foreground mt-0.5 truncate">unpaid fees this month</p>
           </CardContent>
         </Card>
       </div>

@@ -85,11 +85,6 @@ export function PaymentFormFields({
                 <span className="text-[9px] font-extrabold uppercase tracking-wider bg-amber-500/15 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-sm shrink-0 border border-amber-500/20">
                   One-Time
                 </span>
-                {includeAdmissionFee && (
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-sm shrink-0 border border-emerald-500/20">
-                    Added to PDF
-                  </span>
-                )}
               </div>
               <span className="text-[10px] sm:text-[11px] text-muted-foreground block mt-0.5 truncate max-w-full">
                 {includeAdmissionFee

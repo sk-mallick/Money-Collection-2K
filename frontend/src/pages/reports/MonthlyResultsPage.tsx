@@ -616,57 +616,105 @@ export default function MonthlyResultsPage() {
 
       {/* Create Dialog (Mobile only / fallback) */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="w-[calc(100vw-24px)] sm:max-w-md p-4 sm:p-6 rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Create Monthly Result</DialogTitle>
-            <DialogDescription>Select the academic year, month, and group to create a new result period</DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">Create Monthly Result</DialogTitle>
+            <DialogDescription className="text-xs">
+              Select the academic year, month, and group to create a new result period
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            {/* Academic Year */}
-            <div className="space-y-1.5">
-              <Label htmlFor="create-year">Academic Year</Label>
-              <CustomDropdown
-                value={formYear}
-                placeholder="Select academic year"
-                options={yearOptions.map(y => ({ label: y, value: y }))}
-                onChange={setFormYear}
-                width="w-full"
-              />
+          <div className="space-y-3.5 py-1">
+            {/* Row 1: Academic Year & Month (2 in a single row) */}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              {/* Academic Year */}
+              <div className="space-y-1.5 min-w-0">
+                <Label htmlFor="create-year" className="text-xs font-semibold text-foreground">
+                  Academic Year
+                </Label>
+                <Select
+                  value={formYear || academicYear || undefined}
+                  onValueChange={(val) => {
+                    setFormYear(val);
+                    handleYearChange(val);
+                  }}
+                >
+                  <SelectTrigger id="create-year" className="w-full text-xs h-9 bg-card">
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" className="z-[70]">
+                    {yearOptions.map((y) => (
+                      <SelectItem key={y} value={y} className="text-xs">
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Month */}
+              <div className="space-y-1.5 min-w-0">
+                <Label htmlFor="create-month" className="text-xs font-semibold text-foreground">
+                  Month
+                </Label>
+                <Select
+                  value={formMonth || undefined}
+                  onValueChange={setFormMonth}
+                  disabled={availableMonths.length === 0}
+                >
+                  <SelectTrigger id="create-month" className="w-full text-xs h-9 bg-card">
+                    <SelectValue
+                      placeholder={availableMonths.length === 0 ? "Done" : "Month"}
+                    />
+                  </SelectTrigger>
+                  <SelectContent position="popper" className="z-[70]">
+                    {availableMonths.map((m) => (
+                      <SelectItem key={m} value={m} className="text-xs">
+                        {MONTH_NAMES[m] || m}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            {/* Month */}
+            {/* Row 2: Group / Batch (Full width) */}
             <div className="space-y-1.5">
-              <Label htmlFor="create-month">Month</Label>
-              <CustomDropdown
-                value={formMonth}
-                placeholder={availableMonths.length === 0 ? "All months completed" : "Select month"}
-                options={availableMonths.map(m => ({ label: MONTH_NAMES[m], value: m }))}
-                onChange={setFormMonth}
-                disabled={availableMonths.length === 0}
-                width="w-full"
-              />
-            </div>
-
-            {/* Group */}
-            <div className="space-y-1.5">
-              <Label htmlFor="create-group">Group / Batch</Label>
-              <CustomDropdown
-                value={formGroupId}
-                placeholder={!formMonth ? "Select month first" : availableGroupsForMonth.length === 0 ? "All groups done for this month" : "Select group"}
-                options={availableGroupsForMonth.map(g => ({ label: `Group ${g.id}`, value: g.id }))}
-                onChange={setFormGroupId}
+              <Label htmlFor="create-group" className="text-xs font-semibold text-foreground">
+                Group / Batch
+              </Label>
+              <Select
+                value={formGroupId || undefined}
+                onValueChange={setFormGroupId}
                 disabled={!formMonth || availableGroupsForMonth.length === 0}
-                width="w-full"
-              />
+              >
+                <SelectTrigger id="create-group" className="w-full text-xs h-9 bg-card">
+                  <SelectValue
+                    placeholder={
+                      !formMonth
+                        ? "Select month first"
+                        : availableGroupsForMonth.length === 0
+                        ? "All groups done for this month"
+                        : "Select group"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent position="popper" className="z-[70]">
+                  {availableGroupsForMonth.map((g) => (
+                    <SelectItem key={g.id} value={g.id} className="text-xs">
+                      Group {g.id}{g.class ? ` (${g.class})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Category & Info */}
             {formGroupId && (
-              <div className="rounded-lg border p-3.5 bg-muted/30 space-y-2">
+              <div className="rounded-lg border p-3 bg-muted/30 space-y-1.5 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-muted-foreground">Category:</span>
-                  <Badge variant="outline" className="font-semibold">{formCategory}</Badge>
+                  <Badge variant="outline" className="font-semibold text-xs">{formCategory}</Badge>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
                   Subjects will be loaded automatically. You can enter and adjust maximum marks individually for each student directly inside the marks entry screen.
@@ -675,9 +723,21 @@ export default function MonthlyResultsPage() {
             )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={creating || !formYear || !formMonth || !formGroupId}>
+          <DialogFooter className="flex flex-row items-center justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCreateOpen(false)}
+              className="flex-1 sm:flex-initial h-9 text-xs font-medium cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleCreate}
+              disabled={creating || !formYear || !formMonth || !formGroupId}
+              className="flex-1 sm:flex-initial h-9 text-xs font-semibold cursor-pointer"
+            >
               {creating ? 'Creating...' : 'Create & Enter Marks'}
             </Button>
           </DialogFooter>

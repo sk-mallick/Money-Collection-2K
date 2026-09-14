@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/constants';
 import type { Student } from '@/lib/constants';
-import { Plus, Search, Pencil, Trash2, UserRound, IndianRupee, MoreVertical, X, ArrowUpDown, Filter, RotateCcw } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, UserRound, IndianRupee, MoreVertical, X, ArrowUpDown, Filter, RotateCcw, Settings } from 'lucide-react';
 
 const CLASSES = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"];
 
@@ -286,9 +286,9 @@ export default function StudentsPage() {
   if (loading) return <StudentsPageLoading />;
 
   return (
-    <div className="page-enter space-y-6 p-4 md:p-6 w-full">
+    <div className="page-enter space-y-3 sm:space-y-6 p-3 sm:p-4 md:p-6 w-full">
       {/* Header */}
-      <div className="flex flex-row items-center justify-between gap-4 border-b pb-4">
+      <div className="flex flex-row items-center justify-between gap-4 border-b pb-3 sm:pb-4">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight">Students</h1>
           <Badge variant="secondary" className="font-mono text-xs sm:text-sm px-2 py-0.5 rounded-full shrink-0 font-bold bg-muted text-muted-foreground border">
@@ -302,31 +302,228 @@ export default function StudentsPage() {
       </div>
 
       {/* Search & Filter Toolbar & Active Filters */}
-      <div className="space-y-2.5">
+      <div className="space-y-2 sm:space-y-2.5">
         <div className="flex flex-col 2xl:flex-row 2xl:items-center gap-2.5 sm:gap-3 justify-between">
-          {/* Search Input (Line 1 on responsive screens) */}
-          <div className="relative flex-1 w-full 2xl:min-w-[280px]">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              placeholder="Search name, ID, school, class..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 text-xs sm:text-sm h-9 bg-card w-full"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full cursor-pointer"
-                title="Clear search"
+          {/* Search Input & Mobile Settings/Filters Button (Line 1 on responsive screens) */}
+          <div className="flex items-center gap-2 flex-1 w-full 2xl:min-w-[280px]">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                placeholder="Search name, ID, school, class..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8 text-xs sm:text-sm h-9 bg-card w-full"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-full cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Mobile Standalone Settings & Filters Pop-up Menu (< sm only) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="sm:hidden h-9 w-9 shrink-0 rounded-md bg-card hover:bg-accent border shadow-xs cursor-pointer relative"
+                  title="Settings & Filters"
+                  aria-label="Settings and Filters"
+                >
+                  <Settings className="h-4 w-4 text-foreground" />
+                  {hasActiveFilters && (
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                sideOffset={6}
+                className="w-80 max-w-[calc(100vw-24px)] max-h-[82vh] overflow-y-auto p-3 shadow-2xl border bg-popover text-popover-foreground z-50 rounded-2xl space-y-3"
               >
-                <X className="size-3.5" />
-              </button>
-            )}
+                {/* 1. Header with Title & Reset Button */}
+                <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                  <span className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                    <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span>Filters & Sort</span>
+                  </span>
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      className="text-[11px] font-semibold text-muted-foreground hover:text-destructive cursor-pointer transition-colors px-1.5 py-0.5 rounded hover:bg-muted/50 flex items-center gap-1"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      <span>Reset All</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* 2. Category / Section */}
+                <div className="space-y-1.5">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-0.5">
+                    Category / Section
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg bg-muted/40 border border-border/50 text-xs">
+                    {[
+                      { id: 'all', label: 'All' },
+                      { id: 'Junior', label: 'Junior' },
+                      { id: 'Senior', label: 'Senior' },
+                    ].map((cat) => {
+                      const isSelected = categoryFilter === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => handleCategoryChange(cat.id)}
+                          className={`py-1.5 px-2 text-xs font-semibold rounded-md transition-all cursor-pointer text-center truncate ${
+                            isSelected
+                              ? 'bg-primary text-primary-foreground shadow-2xs font-bold'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-card/60'
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Class Filter */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between px-0.5">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Class
+                    </span>
+                    {classFilter !== 'all' && (
+                      <span className="text-[10px] font-semibold text-primary">
+                        Class {classFilter}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-0.5">
+                    <button
+                      type="button"
+                      onClick={() => handleClassChange('all')}
+                      className={`py-1 px-2.5 text-xs rounded-md border text-center transition-all cursor-pointer ${
+                        classFilter === 'all'
+                          ? 'bg-primary text-primary-foreground border-primary font-bold shadow-2xs'
+                          : 'bg-card text-foreground hover:bg-muted border-border/70 font-medium'
+                      }`}
+                    >
+                      All
+                    </button>
+                    {availableClasses.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => handleClassChange(c)}
+                        className={`py-1 px-2.5 text-xs rounded-md border text-center transition-all cursor-pointer ${
+                          classFilter === c
+                            ? 'bg-primary text-primary-foreground border-primary font-bold shadow-2xs'
+                            : 'bg-card text-foreground hover:bg-muted border-border/70 font-medium'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Group Filter */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between px-0.5">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Group
+                    </span>
+                    {groupFilter !== 'all' && (
+                      <span className="text-[10px] font-semibold text-primary">
+                        Group {groupFilter}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-0.5">
+                    <button
+                      type="button"
+                      onClick={() => handleGroupFilterChange('all')}
+                      className={`py-1 px-2.5 text-xs rounded-md border text-center transition-all cursor-pointer ${
+                        groupFilter === 'all'
+                          ? 'bg-primary text-primary-foreground border-primary font-bold shadow-2xs'
+                          : 'bg-card text-foreground hover:bg-muted border-border/70 font-medium'
+                      }`}
+                    >
+                      All
+                    </button>
+                    {availableGroups.map((g) => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => handleGroupFilterChange(g.id)}
+                        className={`min-w-[28px] py-1 px-2 text-xs rounded-md border text-center transition-all cursor-pointer ${
+                          groupFilter === g.id
+                            ? 'bg-primary text-primary-foreground border-primary font-bold shadow-2xs'
+                            : 'bg-card text-foreground hover:bg-muted border-border/70 font-medium'
+                        }`}
+                      >
+                        {g.id.replace(/^Group\s*/i, '')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 5. Sort By & Sort Order */}
+                <div className="space-y-1.5">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-0.5">
+                    Sort By
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg bg-muted/40 border border-border/50 text-xs flex-1">
+                      {[
+                        { id: 'group', label: 'Group' },
+                        { id: 'class', label: 'Class' },
+                        { id: 'admDate', label: 'Adm. Date' },
+                      ].map((item) => {
+                        const isSelected = sortBy === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setSortBy(isSelected ? 'name' : item.id)}
+                            className={`py-1.5 px-1 text-xs font-semibold rounded-md transition-all cursor-pointer text-center truncate ${
+                              isSelected
+                                ? 'bg-primary text-primary-foreground shadow-2xs font-bold'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-card/60'
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Sort Order Toggle Button Beside Options */}
+                    <button
+                      type="button"
+                      onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                      className="h-8 w-8 shrink-0 rounded-lg flex items-center justify-center bg-muted/40 border border-border/50 hover:bg-muted/70 cursor-pointer transition-all active:scale-95 shadow-2xs"
+                      title={sortOrder === 'asc' ? 'Ascending (tap to change to Descending)' : 'Descending (tap to change to Ascending)'}
+                    >
+                      <ArrowUpDown className={`h-3.5 w-3.5 transition-transform duration-200 ${sortOrder === 'desc' ? 'rotate-180 text-primary' : 'text-muted-foreground'}`} />
+                    </button>
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
-          {/* Filters & Sort Controls (Line 2 on responsive screens) */}
-          <div className="flex flex-wrap items-center justify-between sm:justify-start 2xl:justify-end gap-2 sm:gap-2.5 w-full 2xl:w-auto">
+          {/* Filters & Sort Controls (Desktop toolbar >= sm, hidden on mobile < sm) */}
+          <div className="hidden sm:flex flex-wrap items-center justify-between sm:justify-start 2xl:justify-end gap-2 sm:gap-2.5 w-full 2xl:w-auto">
             {/* Filter Dropdowns Group */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 flex-1 sm:flex-initial">
               {/* Group Filter */}
@@ -410,9 +607,8 @@ export default function StudentsPage() {
         {/* Active Filters Summary Bar */}
         {hasActiveFilters && (
           <div className="flex flex-wrap items-center gap-1.5 p-2 rounded-lg bg-muted/20 border text-xs animate-in fade-in duration-200">
-            <span className="text-[11px] font-bold text-muted-foreground mr-1 flex items-center gap-1">
+            <span className="text-muted-foreground mr-0.5 flex items-center shrink-0" title="Active Filters">
               <Filter className="h-3.5 w-3.5" />
-              <span>Active:</span>
             </span>
 
             {/* Search chip */}
@@ -421,7 +617,7 @@ export default function StudentsPage() {
                 variant="secondary"
                 className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-primary/10 text-primary border-primary/20"
               >
-                <span>Search: "{search}"</span>
+                <span>&quot;{search}&quot;</span>
                 <button
                   type="button"
                   onClick={() => setSearch('')}
@@ -433,7 +629,7 @@ export default function StudentsPage() {
               </Badge>
             )}
 
-            {/* Category chip */}
+            {/* Category chip (Direct: Junior / Senior) */}
             {categoryFilter !== 'all' && (
               <Badge
                 variant="secondary"
@@ -443,7 +639,7 @@ export default function StudentsPage() {
                     : 'bg-red-600/15 text-red-600 dark:text-red-400 border-red-600/30'
                 }`}
               >
-                <span>Category: {categoryFilter}</span>
+                <span>{categoryFilter}</span>
                 <button
                   type="button"
                   onClick={() => handleCategoryChange('all')}
@@ -455,13 +651,13 @@ export default function StudentsPage() {
               </Badge>
             )}
 
-            {/* Group chip */}
+            {/* Group chip (Direct: Group H) */}
             {groupFilter !== 'all' && (
               <Badge
                 variant="secondary"
                 className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
               >
-                <span>Group {groupFilter}</span>
+                <span>{groupFilter.startsWith('Group') ? groupFilter : `Group ${groupFilter}`}</span>
                 <button
                   type="button"
                   onClick={() => handleGroupFilterChange('all')}
@@ -473,13 +669,13 @@ export default function StudentsPage() {
               </Badge>
             )}
 
-            {/* Class chip */}
+            {/* Class chip (Direct: 6th) */}
             {classFilter !== 'all' && (
               <Badge
                 variant="secondary"
                 className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
               >
-                <span>Class {classFilter}</span>
+                <span>{classFilter}</span>
                 <button
                   type="button"
                   onClick={() => handleClassChange('all')}
@@ -491,14 +687,18 @@ export default function StudentsPage() {
               </Badge>
             )}
 
-            {/* Sort Tag */}
+            {/* Sort chip (Direct: Adm Date (Desc) / Asc / Desc) */}
             {(sortBy !== 'name' || sortOrder !== 'asc') && (
               <Badge
                 variant="secondary"
                 className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20"
               >
                 <span>
-                  Sort: {sortBy === 'name' ? 'Name' : sortBy === 'group' ? 'Group' : sortBy === 'class' ? 'Class' : sortBy === 'admDate' ? 'Adm Date' : 'Fee'} ({sortOrder.toUpperCase()})
+                  {sortBy !== 'name'
+                    ? `${sortBy === 'group' ? 'Group' : sortBy === 'class' ? 'Class' : sortBy === 'admDate' ? 'Adm Date' : 'Fee'} (${sortOrder === 'asc' ? 'Asc' : 'Desc'})`
+                    : sortOrder === 'desc'
+                    ? 'Desc'
+                    : 'Asc'}
                 </span>
                 <button
                   type="button"
@@ -511,15 +711,17 @@ export default function StudentsPage() {
               </Badge>
             )}
 
-            {/* Clear All Button */}
+            {/* Clear / Reset All Button */}
             <Button
               variant="ghost"
               size="xs"
               onClick={resetFilters}
-              className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer font-medium"
+              title="Reset All Filters"
+              aria-label="Reset All Filters"
+              className="h-6 w-6 sm:w-auto p-0 sm:px-2 text-[11px] text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer font-medium ml-auto sm:ml-0 shrink-0"
             >
-              <RotateCcw className="h-3 w-3 mr-1" />
-              <span>Reset All</span>
+              <RotateCcw className="h-3 w-3 sm:mr-1 shrink-0" />
+              <span className="hidden sm:inline">Reset All</span>
             </Button>
 
             <span className="text-[11px] text-muted-foreground ml-auto hidden sm:inline">

@@ -199,9 +199,9 @@ export function CollectPageLoading() {
 // 2. Students Page loading state
 export function StudentsPageLoading() {
   return (
-    <div className="page-enter space-y-6 p-4 md:p-6">
+    <div className="page-enter space-y-3 sm:space-y-6 p-3 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="flex flex-row items-center justify-between gap-4 border-b pb-4">
+      <div className="flex flex-row items-center justify-between gap-4 border-b pb-3 sm:pb-4">
         <div className="flex items-center gap-2">
           <Skeleton className="h-8 w-32 sm:w-40" />
           <Skeleton className="h-5 w-10 rounded-full" />
@@ -211,7 +211,7 @@ export function StudentsPageLoading() {
 
       {/* Search Input Bar */}
       <div className="relative max-w-sm">
-        <Skeleton className="h-10 w-full rounded-md" />
+        <Skeleton className="h-9 w-full rounded-md" />
       </div>
 
       {/* Mobile Card List View */}
@@ -365,15 +365,15 @@ export function DuesPageLoading() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
         {Array.from({ length: 2 }).map((_, i) => (
           <Card key={i} className="overflow-hidden transition-all duration-300">
-            <CardContent className="p-4 flex items-center justify-between gap-4">
-              <div className="space-y-1.5 flex-1">
-                <Skeleton className="h-3.5 w-24" />
-                <Skeleton className="h-6 w-16" />
+            <CardContent className="p-3 sm:p-4 flex items-center justify-between gap-2 sm:gap-4">
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <Skeleton className="h-3.5 w-20 sm:w-24" />
+                <Skeleton className="h-6 w-14 sm:w-16" />
               </div>
-              <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
+              <Skeleton className="size-8 sm:size-10 rounded-lg shrink-0" />
             </CardContent>
           </Card>
         ))}

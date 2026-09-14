@@ -69,11 +69,11 @@ export function RolloverCard({
           </div>
         </div>
 
-        <div className="flex justify-end pt-1">
+        <div className="flex justify-end pt-2">
           <Dialog open={rolloverDialogOpen} onOpenChange={setRolloverDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 font-bold h-9 text-xs bg-amber-600 hover:bg-amber-700 text-white border-none shadow-md transition-all duration-300">
-                <RefreshCw className="size-3.5" />
+              <Button className="gap-2 font-bold bg-amber-600 hover:bg-amber-700 text-white border-none shadow-md transition-all duration-300 w-full sm:w-auto">
+                <RefreshCw className="size-4" />
                 Start New Year Rollover
               </Button>
             </DialogTrigger>
