@@ -48,6 +48,8 @@ export default function BlankMarksSheetPage() {
   // A4 Landscape scale reference (1123px width x 794px height at 96 DPI)
   const a4ContainerRef = useRef<HTMLDivElement>(null);
   const [a4Scale, setA4Scale] = useState<number>(1);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [sheetHeight, setSheetHeight] = useState<number>(794);
 
   // Load groups & settings on mount
   useEffect(() => {
@@ -123,6 +125,12 @@ export default function BlankMarksSheetPage() {
           setA4Scale(calculatedScale > 0.1 ? calculatedScale : 1);
         }
       }
+      if (sheetRef.current) {
+        const actualH = sheetRef.current.offsetHeight;
+        if (actualH > 0) {
+          setSheetHeight(actualH);
+        }
+      }
     };
 
     handleResize();
@@ -130,6 +138,9 @@ export default function BlankMarksSheetPage() {
     const resizeObserver = new ResizeObserver(handleResize);
     if (a4ContainerRef.current) {
       resizeObserver.observe(a4ContainerRef.current);
+    }
+    if (sheetRef.current) {
+      resizeObserver.observe(sheetRef.current);
     }
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -698,11 +709,12 @@ export default function BlankMarksSheetPage() {
             ref={a4ContainerRef}
             className="w-full flex justify-center items-start overflow-hidden py-1 print:overflow-visible print:h-auto print:py-0 print:block"
             style={{
-              height: a4Scale < 1 ? `${Math.ceil(794 * a4Scale)}px` : 'auto',
+              height: a4Scale < 1 ? `${Math.ceil(sheetHeight * a4Scale)}px` : 'auto',
             }}
           >
             {/* A4 Landscape Paper Layout (1123px width x 794px minHeight) */}
             <div
+              ref={sheetRef}
               id="printable-a4-sheet"
               style={{
                 width: '1123px',
@@ -711,7 +723,7 @@ export default function BlankMarksSheetPage() {
                 transformOrigin: 'top center',
                 backgroundColor: '#ffffff',
               }}
-              className="printable-sheet bg-white text-black font-sans border-[2.5px] border-black rounded-none pt-8 pb-5 px-5 sm:pt-9 sm:pb-6 sm:px-6 shadow-xl ring-1 ring-black/5 flex flex-col justify-start shrink-0 box-border print:transform-none print:w-full print:border-[2px] print:shadow-none print:p-4"
+              className="printable-sheet bg-white text-black font-sans border-[2.5px] border-black rounded-none pt-5 pb-4 px-5 sm:pt-6 sm:pb-4 sm:px-6 shadow-xl ring-1 ring-black/5 flex flex-col justify-start shrink-0 box-border print:transform-none print:w-full print:border-[2px] print:shadow-none print:p-4"
             >
               <div className="space-y-1.5">
                 {/* ─── 1. Header & Title Banner (Compact, Less Area) ─── */}

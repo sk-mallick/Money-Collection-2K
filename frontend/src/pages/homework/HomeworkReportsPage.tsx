@@ -95,6 +95,8 @@ export default function HomeworkReportsPage() {
   // A4 Landscape scale reference (1123px width x 794px height at 96 DPI)
   const a4ContainerRef = useRef<HTMLDivElement>(null);
   const [a4Scale, setA4Scale] = useState<number>(1);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const [sheetHeight, setSheetHeight] = useState<number>(794);
 
   // Academic Year options (5 years dynamic)
   const currentYear = new Date().getFullYear();
@@ -190,6 +192,12 @@ export default function HomeworkReportsPage() {
           setA4Scale(calculatedScale > 0.1 ? calculatedScale : 1);
         }
       }
+      if (sheetRef.current) {
+        const actualH = sheetRef.current.offsetHeight;
+        if (actualH > 0) {
+          setSheetHeight(actualH);
+        }
+      }
     };
 
     handleResize();
@@ -197,6 +205,9 @@ export default function HomeworkReportsPage() {
     const resizeObserver = new ResizeObserver(handleResize);
     if (a4ContainerRef.current) {
       resizeObserver.observe(a4ContainerRef.current);
+    }
+    if (sheetRef.current) {
+      resizeObserver.observe(sheetRef.current);
     }
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -675,7 +686,7 @@ export default function HomeworkReportsPage() {
           </div>
 
           {/* Desktop Direct Group Toggle Buttons */}
-          <div className="flex items-center gap-0.5 p-1 bg-muted/40 dark:bg-muted/25 border border-border/80 rounded-lg shadow-2xs h-9">
+          <div className="flex items-center gap-0.5 p-1 bg-muted/40 dark:bg-muted/25 border border-border/80 rounded-lg shadow-2xs h-9 overflow-x-auto max-w-full">
             <button
               type="button"
               onClick={selectAllGroups}
@@ -887,7 +898,7 @@ export default function HomeworkReportsPage() {
                 type="button"
                 onClick={() => setSelectedTrack(trackKey)}
                 className={cn(
-                  "flex-1 inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 gap-1 rounded-md h-7 px-1 text-xs cursor-pointer select-none",
+                  "flex-1 inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 gap-1 rounded-md h-7 px-1 text-[11px] sm:text-xs cursor-pointer select-none",
                   isSelected
                     ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs font-semibold"
                     : "text-muted-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 font-medium"
@@ -997,11 +1008,12 @@ export default function HomeworkReportsPage() {
                   key={track}
                   className="w-full flex justify-center items-start overflow-hidden py-1 print:overflow-visible print:h-auto print:py-0 print:block"
                   style={{
-                    height: a4Scale < 1 ? `${Math.ceil(794 * a4Scale)}px` : 'auto',
+                    height: a4Scale < 1 ? `${Math.ceil(sheetHeight * a4Scale)}px` : 'auto',
                   }}
                 >
                   {/* A4 Landscape Paper Layout (1123px width x 794px minHeight) */}
                   <div
+                    ref={sheetRef}
                     style={{
                       width: '1123px',
                       minHeight: '794px',
@@ -1009,7 +1021,7 @@ export default function HomeworkReportsPage() {
                       transformOrigin: 'top center',
                       backgroundColor: '#ffffff',
                     }}
-                    className="printable-sheet bg-white text-black font-sans border-[2.5px] border-black rounded-none pt-8 pb-5 px-5 sm:pt-9 sm:pb-6 sm:px-6 shadow-xl ring-1 ring-black/5 flex flex-col justify-start shrink-0 box-border print:transform-none print:w-full print:border-[2px] print:shadow-none print:p-4"
+                    className="printable-sheet bg-white text-black font-sans border-[2.5px] border-black rounded-none pt-5 pb-4 px-5 sm:pt-6 sm:pb-4 sm:px-6 shadow-xl ring-1 ring-black/5 flex flex-col justify-start shrink-0 box-border print:transform-none print:w-full print:border-[2px] print:shadow-none print:p-4"
                   >
                     <div className="space-y-1.5">
                       {/* ─── 1. Header & Title Banner ─── */}
