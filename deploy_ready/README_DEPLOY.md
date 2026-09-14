@@ -1,6 +1,6 @@
-# Deployment Guide — Money Collection Management System (MCMS)
+# Deployment Guide — EnglishJibi Classes Management System (MCMS)
 
-This `deploy_ready` folder contains the fully compiled, production-optimized build of the Money Collection Management System and Student Report Card module.
+This `deploy_ready` folder contains the fully compiled, production-optimized build of the Money Collection Management System (MCMS), Student Report Cards, and Home Work Report & Evaluation modules.
 
 ---
 
@@ -9,10 +9,10 @@ This `deploy_ready` folder contains the fully compiled, production-optimized bui
 ```
 deploy_ready/
 ├── backend/                  # PHP API endpoints, auth, and database migrations
-│   ├── api/                  # 14 REST API controllers
+│   ├── api/                  # 15 REST API controllers (students, groups, receipts, homework, results...)
 │   ├── auth/                 # Login and JWT verification
 │   ├── data/                 # Protected log directory with .htaccess
-│   ├── database/             # Database migration SQL schema
+│   ├── database/             # Database migration SQL schema (migrate.sql)
 │   └── includes/             # DB connection, auth helper, JWT, functions
 ├── dist/                     # Compiled React frontend bundle (Vite + TS)
 │   ├── assets/               # JS chunks, CSS stylesheets, images
@@ -27,6 +27,8 @@ deploy_ready/
 ├── icon.png                  # System logo icon
 ├── index.php                 # Dynamic SPA fallback with base href injection
 ├── setup.php                 # Database initialization & table migration runner
+├── deploy_ready.zip          # Complete production zip package (ready for upload)
+├── MCMS 2K.zip               # Complete production zip package (alternate name)
 └── README_DEPLOY.md          # This guide
 ```
 

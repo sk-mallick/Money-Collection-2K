@@ -199,6 +199,8 @@ if ($pdo && $actionTriggered && !$isLocked) {
             $pdo->exec("TRUNCATE TABLE `rc_student_marks`");
             $pdo->exec("TRUNCATE TABLE `rc_student_results`");
             $pdo->exec("TRUNCATE TABLE `rc_result_periods`");
+            $pdo->exec("TRUNCATE TABLE `hw_student_records`");
+            $pdo->exec("TRUNCATE TABLE `hw_class_sessions`");
             $pdo->exec("TRUNCATE TABLE `old_students`");
             $pdo->exec("TRUNCATE TABLE `audit_logs`");
             $pdo->exec("TRUNCATE TABLE `login_attempts`");
