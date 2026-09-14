@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import logoUrl from '@/assets/favicon.png';
+import loginBgDesktopUrl from '@/assets/login-bg-desktop.webp';
+import loginBgMobileUrl from '@/assets/login-bg-mobile.webp';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -43,26 +45,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-svh items-center justify-center overflow-hidden bg-zinc-950 px-6 py-12">
-      {/* Decorative premium blurred gradient backgrounds */}
-      <div className="absolute -left-40 -top-40 h-[600px] w-[600px] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none" />
-      <div className="absolute -right-40 -bottom-40 h-[600px] w-[600px] rounded-full bg-purple-500/10 blur-[120px] pointer-events-none" />
+    <div className="relative flex h-screen h-svh w-screen max-w-full items-center justify-center overflow-hidden bg-zinc-950 p-4 select-none">
+      {/* Full-bleed crisp responsive background with dedicated Desktop and Mobile artwork */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
+        <picture>
+          <source media="(max-width: 640px)" srcSet={loginBgMobileUrl} />
+          <img
+            src={loginBgDesktopUrl}
+            alt=""
+            className="w-full h-full object-cover object-center"
+            loading="eager"
+            decoding="async"
+          />
+        </picture>
+        {/* Crisp presentation with minimal overlay — zero blur on background */}
+        <div className="absolute inset-0 bg-black/25" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.5)_100%)]" />
+      </div>
 
-      {/* Grid pattern overlay for subtle texture */}
-      <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-        backgroundSize: '30px 30px',
-      }} />
-
-      {/* Glassmorphic Login Card */}
-      <div className="relative z-10 w-full max-w-[400px] rounded-2xl border border-white/5 bg-zinc-900/50 p-8 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-        <div className="flex flex-col items-center mb-8">
-          <img src={logoUrl} alt="Logo" className="h-14 w-14 rounded-xl shadow-lg border border-white/10 mb-4" />
+      {/* Glassmorphic Login Card with subtle blur for clear background visibility */}
+      <div className="relative z-10 w-full max-w-[390px] rounded-2xl border border-white/20 bg-zinc-950/80 p-6 sm:p-8 backdrop-blur-md shadow-[0_20px_50px_rgba(0,0,0,0.6)] ring-1 ring-white/10">
+        <div className="flex flex-col items-center mb-6 sm:mb-7">
+          <img src={logoUrl} alt="Logo" className="h-13 w-13 rounded-xl shadow-lg border border-white/10 mb-3.5" />
           <h1 className="text-xl font-bold tracking-tight text-white">MCMS</h1>
           <p className="text-xs text-zinc-400 mt-1">Sign in to your dashboard</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="username" className="text-xs font-semibold text-zinc-300">Username</Label>
             <Input

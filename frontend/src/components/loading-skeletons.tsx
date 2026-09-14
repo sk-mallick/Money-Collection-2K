@@ -1345,15 +1345,14 @@ export function ModuleSelectionPageLoading() {
 // 17. Login Page loading state
 export function LoginPageLoading() {
   return (
-    <div className="page-enter relative flex min-h-svh items-center justify-center overflow-hidden bg-zinc-950 px-6 py-12">
-      {/* Decorative blurred gradient backgrounds */}
-      <div className="absolute -left-40 -top-40 h-[600px] w-[600px] rounded-full bg-indigo-500/10 blur-[120px] pointer-events-none" />
-      <div className="absolute -right-40 -bottom-40 h-[600px] w-[600px] rounded-full bg-purple-500/10 blur-[120px] pointer-events-none" />
+    <div className="page-enter relative flex h-screen h-svh w-screen max-w-full items-center justify-center overflow-hidden bg-zinc-950 p-4 select-none">
+      {/* Full-bleed crisp background */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none bg-zinc-950" aria-hidden="true" />
 
       {/* Glassmorphic Login Card */}
-      <div className="relative z-10 w-full max-w-[400px] rounded-2xl border border-white/5 bg-zinc-900/50 p-8 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+      <div className="relative z-10 w-full max-w-[390px] rounded-2xl border border-white/15 bg-zinc-950/75 p-6 sm:p-8 backdrop-blur-xl shadow-2xl ring-1 ring-white/10">
         {/* Logo & Header */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-6 sm:mb-7">
           <Skeleton className="h-14 w-14 rounded-xl border border-white/10 mb-4 bg-zinc-800" />
           <Skeleton className="h-6 w-20 mb-1.5 bg-zinc-800" />
           <Skeleton className="h-3.5 w-36 bg-zinc-800/70" />
