@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const { login, isLoggedIn, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -69,7 +70,14 @@ export default function LoginPage() {
               placeholder="Enter username"
               value={username}
               onChange={e => setUsername(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  passwordRef.current?.focus();
+                }
+              }}
               autoComplete="username"
+              autoFocus
               disabled={loading}
               className="bg-zinc-850/40 border-zinc-700/40 text-zinc-100 placeholder:text-zinc-500 focus-visible:ring-indigo-500 h-10 text-sm"
             />
@@ -79,6 +87,7 @@ export default function LoginPage() {
             <Label htmlFor="password" className="text-xs font-semibold text-zinc-300">Password</Label>
             <div className="relative">
               <Input
+                ref={passwordRef}
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Enter password"
