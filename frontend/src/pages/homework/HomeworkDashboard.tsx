@@ -169,7 +169,19 @@ export default function HomeworkDashboard() {
             {sessions.slice(0, 8).map(session => {
               const group = groups.find(g => g.id === session.group_id);
               return (
-                <Card key={session.id} className="hover:bg-accent/50 transition-colors cursor-pointer" onClick={() => navigate('/homework/record')}>
+                <Card
+                  key={session.id}
+                  className="hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => {
+                    const [yStr, mStr] = session.session_date.split('-');
+                    const sYear = parseInt(yStr, 10) || new Date(session.session_date).getFullYear();
+                    const sMonth = parseInt(mStr, 10) || (new Date(session.session_date).getMonth() + 1);
+                    navigate(
+                      `/homework/record?group=${encodeURIComponent(session.group_id)}&session=${session.id}&month=${sMonth}&year=${sYear}`,
+                      { state: { groupId: session.group_id, sessionId: session.id, month: sMonth, year: sYear } }
+                    );
+                  }}
+                >
                   <CardContent className="p-3 sm:p-3.5 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div>

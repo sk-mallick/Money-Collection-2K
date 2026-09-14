@@ -70,7 +70,7 @@ export default function ModuleSelectionPage() {
               onFocus={() => setHoveredId(mod.id)}
               onBlur={() => setHoveredId(null)}
               aria-label={`Open ${mod.title} — ${mod.subtitle}`}
-              className="group relative flex flex-row md:flex-col items-center md:items-start text-left rounded-2xl border border-border/70 bg-card p-4 sm:p-5 md:p-7 gap-4 md:gap-0 transition-all duration-300 ease-out hover:border-border hover:shadow-xl hover:-translate-y-0.5 md:hover:-translate-y-1 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
+              className="group relative flex flex-row md:flex-col items-center md:items-start text-left rounded-2xl border border-border/70 bg-card p-4 sm:p-5 md:p-7 gap-4 md:gap-0 transition-all duration-300 ease-out hover:border-border hover:shadow-xl active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
               style={{
                 boxShadow: isHovered ? `0 8px 30px ${mod.glowColor}` : undefined,
               }}

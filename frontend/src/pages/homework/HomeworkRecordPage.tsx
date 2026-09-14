@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -70,6 +71,15 @@ function generateDatesForMonth(year: number, month: number, dayNames: string[]):
 }
 
 export default function HomeworkRecordPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const locationState = location.state as { groupId?: string; sessionId?: number; month?: number; year?: number } | null;
+
+  const urlGroupId = searchParams.get('group') || locationState?.groupId || null;
+  const urlSessionId = searchParams.get('session') ? parseInt(searchParams.get('session')!, 10) : (locationState?.sessionId || null);
+  const urlMonth = searchParams.get('month') ? parseInt(searchParams.get('month')!, 10) : (locationState?.month || (new Date().getMonth() + 1));
+  const urlYear = searchParams.get('year') ? parseInt(searchParams.get('year')!, 10) : (locationState?.year || new Date().getFullYear());
+
   const { students } = useStudents();
   const [groups, setGroups] = useState<Group[]>([]);
   const [academicYear, setAcademicYear] = useState('');
@@ -87,15 +97,20 @@ export default function HomeworkRecordPage() {
   }, [students]);
 
   // Selection state
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(urlGroupId);
   const selectedGroup = useMemo(() => groups.find(g => g.id === selectedGroupId), [groups, selectedGroupId]);
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(urlMonth);
+  const [selectedYear, setSelectedYear] = useState<number>(urlYear);
 
   // Session state
   const [sessions, setSessions] = useState<HWClassSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
-  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<number | null>(urlSessionId);
+
+  // Preserve session ID across initial session list loading
+  const preserveSessionIdRef = useRef<number | null>(urlSessionId);
+  const selectedSessionIdRef = useRef<number | null>(selectedSessionId);
+  selectedSessionIdRef.current = selectedSessionId;
 
   // Records state
   const [records, setRecords] = useState<HWStudentRecord[]>([]);
@@ -114,8 +129,8 @@ export default function HomeworkRecordPage() {
   }, [students]);
 
   const getStudentClass = useCallback((rec: HWStudentRecord) => {
-    return rec.student_class || studentMap.get(rec.student_id)?.class || selectedGroup?.class || '—';
-  }, [studentMap, selectedGroup]);
+    return rec.student_class || studentMap.get(rec.student_id)?.class || selectedGroup?.class || sessionInfo?.group_class || '—';
+  }, [studentMap, selectedGroup, sessionInfo]);
 
   const getStudentSchool = useCallback((rec: HWStudentRecord) => {
     return rec.student_school || studentMap.get(rec.student_id)?.school || '—';
@@ -192,15 +207,24 @@ export default function HomeworkRecordPage() {
   useEffect(() => { loadInitial(); }, [loadInitial]);
 
   // ─── Load sessions when group/month changes ───────
-  const loadSessions = useCallback(async () => {
+  const loadSessions = useCallback(async (explicitSessionId?: number | null) => {
     if (!selectedGroupId) return;
     setSessionsLoading(true);
-    setSelectedSessionId(null);
-    setRecords([]);
-    setSessionInfo(null);
+
+    const targetSessionId = explicitSessionId !== undefined ? explicitSessionId : preserveSessionIdRef.current;
+    preserveSessionIdRef.current = null;
+
+    if (!targetSessionId && !selectedSessionIdRef.current) {
+      setSelectedSessionId(null);
+      setRecords([]);
+      setSessionInfo(null);
+    }
     try {
       const data = await fetchHWSessions(selectedGroupId, selectedMonth, academicYear);
       setSessions(data);
+      if (targetSessionId) {
+        setSelectedSessionId(targetSessionId);
+      }
     } catch (err) {
       console.error('Failed to load sessions:', err);
       toast.error('Failed to load sessions');
@@ -222,6 +246,9 @@ export default function HomeworkRecordPage() {
       const { session, records: recs } = await fetchHWSessionRecords(sessionId);
       setSessionInfo(session);
       setRecords(recs);
+      if (session?.group_id) {
+        setSelectedGroupId(prev => prev || session.group_id);
+      }
     } catch (err) {
       console.error('Failed to load records:', err);
       toast.error('Failed to load records');
@@ -235,6 +262,28 @@ export default function HomeworkRecordPage() {
       loadRecords(selectedSessionId);
     }
   }, [selectedSessionId, loadRecords]);
+
+  // Sync URL search params if changed externally
+  useEffect(() => {
+    const qGroup = searchParams.get('group');
+    const qSession = searchParams.get('session') ? parseInt(searchParams.get('session')!, 10) : null;
+    const qMonth = searchParams.get('month') ? parseInt(searchParams.get('month')!, 10) : null;
+    const qYear = searchParams.get('year') ? parseInt(searchParams.get('year')!, 10) : null;
+
+    if (qGroup && qGroup !== selectedGroupId) {
+      setSelectedGroupId(qGroup);
+    }
+    if (qMonth && qMonth !== selectedMonth) {
+      setSelectedMonth(qMonth);
+    }
+    if (qYear && qYear !== selectedYear) {
+      setSelectedYear(qYear);
+    }
+    if (qSession !== null && qSession !== selectedSessionId) {
+      preserveSessionIdRef.current = qSession;
+      setSelectedSessionId(qSession);
+    }
+  }, [searchParams]);
 
   // ─── Derived data ─────────────────────────────────
   const availableDates = useMemo(() => {
@@ -258,11 +307,20 @@ export default function HomeworkRecordPage() {
     setSessions([]);
     setRecords([]);
     setSessionInfo(null);
+    setSearchParams({ group: groupId, month: String(selectedMonth), year: String(selectedYear) }, { replace: true });
   };
 
   const handleDateClick = (sessionId: number) => {
     setSelectedSessionId(sessionId);
     setActiveTab('homework');
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('session', String(sessionId));
+      if (selectedGroupId) next.set('group', selectedGroupId);
+      next.set('month', String(selectedMonth));
+      next.set('year', String(selectedYear));
+      return next;
+    }, { replace: true });
   };
 
   const handleAddSessionDate = async (dateStr: string) => {
@@ -271,9 +329,17 @@ export default function HomeworkRecordPage() {
     try {
       const { session_id } = await createHWSession(selectedGroupId, dateStr, academicYear);
       toast.success('Session created successfully');
-      await loadSessions();
+      await loadSessions(session_id);
       setSelectedSessionId(session_id);
       setActiveTab('homework');
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('session', String(session_id));
+        if (selectedGroupId) next.set('group', selectedGroupId);
+        next.set('month', String(selectedMonth));
+        next.set('year', String(selectedYear));
+        return next;
+      }, { replace: true });
     } catch (err) {
       const error = err as Error;
       toast.error(error.message || 'Failed to create session');
@@ -293,6 +359,11 @@ export default function HomeworkRecordPage() {
         setSelectedSessionId(null);
         setRecords([]);
         setSessionInfo(null);
+        setSearchParams(prev => {
+          const next = new URLSearchParams(prev);
+          next.delete('session');
+          return next;
+        }, { replace: true });
       }
       loadSessions();
     } catch (err) {
@@ -333,12 +404,20 @@ export default function HomeworkRecordPage() {
 
   const handleBack = () => {
     if (selectedSessionId) {
+      preserveSessionIdRef.current = null;
       setSelectedSessionId(null);
       setRecords([]);
       setSessionInfo(null);
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.delete('session');
+        return next;
+      }, { replace: true });
     } else if (selectedGroupId) {
+      preserveSessionIdRef.current = null;
       setSelectedGroupId(null);
       setSessions([]);
+      setSearchParams({}, { replace: true });
     }
   };
 
@@ -707,10 +786,10 @@ export default function HomeworkRecordPage() {
         <div className="min-w-0 flex-1">
           <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground leading-tight truncate flex items-center gap-2">
             <span className="sm:hidden">
-              Group {selectedGroup?.id} — {sessionInfo ? formatShortDate(sessionInfo.session_date) : ''}
+              Group {selectedGroup?.id || sessionInfo?.group_id || selectedGroupId} — {sessionInfo ? formatShortDate(sessionInfo.session_date) : ''}
             </span>
             <span className="hidden sm:inline">
-              Group {selectedGroup?.id} — {sessionInfo ? formatFullDate(sessionInfo.session_date) : ''}
+              Group {selectedGroup?.id || sessionInfo?.group_id || selectedGroupId} — {sessionInfo ? formatFullDate(sessionInfo.session_date) : ''}
             </span>
             {sessionInfo?.session_code && (
               <Badge variant="outline" className="hidden sm:inline-flex font-mono text-[10px] font-bold text-primary border-primary/30 shrink-0">
@@ -720,7 +799,7 @@ export default function HomeworkRecordPage() {
           </h1>
           <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 truncate">
             <Users className="h-3 w-3 shrink-0" />
-            <span>{records.length} students · {selectedGroup?.class}</span>
+            <span>{records.length} students · {selectedGroup?.class || sessionInfo?.group_class || ''}</span>
           </p>
         </div>
 
