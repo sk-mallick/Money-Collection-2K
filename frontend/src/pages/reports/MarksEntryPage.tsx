@@ -526,11 +526,13 @@ function MarksDropdownInput({
                 }}
                 onKeyDown={handleKeyDown}
                 className={`w-full font-mono font-bold text-center bg-transparent outline-none select-none flex items-center justify-center ${
+                  isTable ? 'h-8 text-xs' : 'h-8 text-xs sm:text-sm'
+                } ${
                   disabled
                     ? 'cursor-not-allowed text-foreground/80 px-1'
                     : isTable
-                    ? 'cursor-pointer h-8 text-xs pl-5 pr-1'
-                    : 'cursor-pointer h-8 text-xs sm:text-sm pl-6 pr-1.5'
+                    ? 'cursor-pointer pl-5 pr-1'
+                    : 'cursor-pointer pl-6 pr-1.5'
                 }`}
                 title={disabled ? "Published result (Read-Only)" : "Select marks from dropdown"}
               >
@@ -555,11 +557,9 @@ function MarksDropdownInput({
                 data-row={rowIndex}
                 data-col={colIndex}
                 className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/60 placeholder:font-semibold ${
-                  disabled
-                    ? 'cursor-not-allowed text-foreground/80'
-                    : isTable
-                    ? 'h-8 text-xs px-1'
-                    : 'h-8 text-xs sm:text-sm px-1.5'
+                  isTable ? 'h-8 text-xs px-1' : 'h-8 text-xs sm:text-sm px-1.5'
+                } ${
+                  disabled ? 'cursor-not-allowed text-foreground/80' : ''
                 }`}
                 title={disabled ? "Published result (Read-Only)" : "Enter marks"}
               />
@@ -896,11 +896,13 @@ function MaxMarksDropdownInput({
               }}
               onKeyDown={handleKeyDown}
               className={`w-full font-mono font-bold text-center bg-transparent outline-none select-none flex items-center justify-center ${
+                isTable ? 'h-8 text-xs' : 'h-8 text-xs sm:text-sm'
+              } ${
                 disabled
                   ? 'cursor-not-allowed text-foreground/80 px-1'
                   : isTable
-                  ? 'cursor-pointer h-8 text-xs pl-5 pr-1'
-                  : 'cursor-pointer h-8 text-xs sm:text-sm pl-6 pr-1.5'
+                  ? 'cursor-pointer pl-5 pr-1'
+                  : 'cursor-pointer pl-6 pr-1.5'
               }`}
               title={disabled ? "Published result (Read-Only)" : "Select maximum marks from dropdown"}
             >
@@ -927,11 +929,11 @@ function MaxMarksDropdownInput({
               data-row={rowIndex}
               data-col={colIndex}
               className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/75 placeholder:font-semibold placeholder:tracking-wide ${
-                disabled
-                  ? 'cursor-not-allowed text-foreground/80'
-                  : isTable
+                isTable
                   ? 'h-8 text-xs px-1 placeholder:text-[10px]'
                   : 'h-8 text-xs sm:text-sm px-1.5 placeholder:text-[11px] sm:placeholder:text-xs'
+              } ${
+                disabled ? 'cursor-not-allowed text-foreground/80' : ''
               }`}
               title={disabled ? "Published result (Read-Only)" : "Maximum marks (10 to 150 range)"}
             />
