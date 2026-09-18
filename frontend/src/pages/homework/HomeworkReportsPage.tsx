@@ -256,27 +256,7 @@ export default function HomeworkReportsPage() {
 
   // Students mapping for 25 fixed rows per page
   const activeStudents = activeExportData?.students || [];
-  const activePrefix = (activeGroup?.id || 'A').trim().toUpperCase();
-
-  const activeStudentMap = useMemo(() => {
-    const numMap = new Map<number, (typeof activeStudents)[0]>();
-    const idMap = new Map<string, (typeof activeStudents)[0]>();
-    let maxN = 25;
-    for (const s of activeStudents) {
-      idMap.set(s.id.toUpperCase(), s);
-      const m = s.id.match(/\d+/);
-      if (m) {
-        const n = parseInt(m[0], 10);
-        if (!isNaN(n)) {
-          numMap.set(n, s);
-          if (n > maxN) maxN = n;
-        }
-      }
-    }
-    return { numMap, idMap, maxN };
-  }, [activeStudents]);
-
-  const totalPagesForActiveGroup = Math.max(1, Math.ceil(activeStudentMap.maxN / 25));
+  const totalPagesForActiveGroup = Math.max(1, Math.ceil(activeStudents.length / 25));
 
   // Fast record lookup: student_id -> session_date -> HWStudentRecord
   const recordsLookup = useMemo(() => {
@@ -511,7 +491,7 @@ export default function HomeworkReportsPage() {
     if (val === 'Done' || val === 'Prepared' || val === 'Practiced') {
       const label = val === 'Done' ? 'Done' : val === 'Prepared' ? 'Prepared' : 'Practiced';
       return (
-        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold text-green-700 bg-green-50 border border-green-200/80 leading-none whitespace-nowrap">
+        <span className="inline-flex items-center justify-center w-[82px] h-[19px] rounded text-[9.5px] font-bold text-green-700 bg-green-50 border border-green-200/80 leading-none whitespace-nowrap shadow-2xs">
           ✓ {label}
         </span>
       );
@@ -519,7 +499,7 @@ export default function HomeworkReportsPage() {
     if (val === 'Not Done' || val === 'Not Prepared' || val === 'Not Practiced') {
       const label = val === 'Not Done' ? 'Not Done' : val === 'Not Prepared' ? 'Not Prepared' : 'Not Practiced';
       return (
-        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold text-red-700 bg-red-50 border border-red-200/80 leading-none whitespace-nowrap">
+        <span className="inline-flex items-center justify-center w-[82px] h-[19px] rounded text-[9px] font-bold text-red-700 bg-red-50 border border-red-200/80 leading-none tracking-tight whitespace-nowrap shadow-2xs">
           ✗ {label}
         </span>
       );
@@ -527,13 +507,13 @@ export default function HomeworkReportsPage() {
     if (val === 'Absent' || val === 'On Leave') {
       const label = val === 'Absent' ? 'Absent' : 'On Leave';
       return (
-        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 leading-none whitespace-nowrap">
+        <span className="inline-flex items-center justify-center w-[82px] h-[19px] rounded text-[9.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 leading-none whitespace-nowrap shadow-2xs">
           {label}
         </span>
       );
     }
     return (
-      <span className="inline-block px-1 py-0.5 rounded text-[9.5px] font-medium text-gray-500 bg-gray-50 leading-none">
+      <span className="inline-flex items-center justify-center w-[82px] h-[19px] rounded text-[9px] font-medium text-gray-500 bg-gray-50 leading-none">
         {val}
       </span>
     );
@@ -1089,10 +1069,10 @@ export default function HomeworkReportsPage() {
                         <table className="w-full text-left border-collapse table-fixed">
                           <thead className="bg-gray-100 border-b border-black text-[11px] font-bold">
                             <tr>
-                              <th className="p-1.5 font-bold text-black border-r border-black w-14 text-center">
+                              <th className="p-1.5 font-bold text-black border-r border-black w-12 text-center">
                                 ID
                               </th>
-                              <th className="p-1.5 font-bold text-black border-r border-black w-[200px]">
+                              <th className="p-1.5 font-bold text-black border-r border-black w-[170px]">
                                 Student Name
                               </th>
                               <th className="p-1.5 font-bold text-black border-r border-black w-10 text-center">
@@ -1124,22 +1104,18 @@ export default function HomeworkReportsPage() {
                           </thead>
                           <tbody className="divide-y divide-gray-300">
                             {Array.from({ length: 25 }).map((_, r) => {
-                              const serialNo = previewPageIndex * 25 + r + 1;
-                              const formattedId = `${activePrefix}${serialNo < 10 ? '0' + serialNo : serialNo}`;
-                              const student =
-                                activeStudentMap.idMap.get(formattedId) ||
-                                activeStudentMap.numMap.get(serialNo) ||
-                                null;
+                              const studentIndex = previewPageIndex * 25 + r;
+                              const student = activeStudents[studentIndex] || null;
 
                               return (
                                 <tr
                                   key={r}
                                   className="h-[27px] text-[11px] bg-white"
                                 >
-                                  <td className="p-1 text-center font-mono font-bold text-black border-r border-gray-300 w-14">
-                                    {formattedId}
+                                  <td className="p-1 text-center font-mono font-bold text-black border-r border-gray-300 w-12">
+                                    {student ? student.id : <span className="opacity-0 select-none">-</span>}
                                   </td>
-                                  <td className="p-1 font-semibold text-black border-r border-gray-300 w-[200px] truncate">
+                                  <td className="p-1 font-semibold text-black border-r border-gray-300 w-[170px] truncate">
                                     {student ? student.name : <span className="opacity-0 select-none">-</span>}
                                   </td>
                                   <td className="p-1 text-center text-gray-800 border-r border-gray-300 w-10 truncate">

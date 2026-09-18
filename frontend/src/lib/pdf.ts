@@ -1851,7 +1851,7 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
       }
     });
 
-    const totalPagesForGroup = Math.max(1, Math.ceil(maxStudentNum / 25));
+    const totalPagesForGroup = Math.max(1, Math.ceil(students.length / 25));
 
     for (const currentTrack of tracksToRender) {
       let trackTitle = 'HOMEWORK';
@@ -2009,9 +2009,8 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
         // 4. Draw 25 Fixed Content Rows
         for (let r = 0; r < 25; r++) {
           const curRowY = tableTopY + headerH + r * rowH;
-          const serialNo = pageIdx * 25 + r + 1;
-          const formattedId = `${prefix}${serialNo < 10 ? '0' + serialNo : serialNo}`;
-          const student = studentMapById.get(formattedId) || studentMapByNumber.get(serialNo) || null;
+          const studentIdx = pageIdx * 25 + r;
+          const student = students[studentIdx] || null;
 
           let cellX = tableLeftX;
           for (let c = 0; c < columns.length; c++) {
@@ -2023,8 +2022,10 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
 
             if (c === 0) {
               // ID
-              doc.setFont('courier', 'bold');
-              doc.text(formattedId, cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
+              if (student) {
+                doc.setFont('courier', 'bold');
+                doc.text(student.id, cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
+              }
             } else if (c === 1) {
               // Student Name
               if (student) {
