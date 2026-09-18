@@ -180,6 +180,9 @@ function saveMarks(PDO $pdo): void {
     if (!$period) {
         json_response(['success' => false, 'error' => 'Result period not found'], 404);
     }
+    if (($period['status'] ?? '') === 'Published') {
+        json_response(['success' => false, 'error' => 'This result period is published and locked. Revert to Draft to make changes.'], 403);
+    }
     $periodId = (int)$period['id'];
     
     $pdo->beginTransaction();
@@ -270,6 +273,9 @@ function recalculate(PDO $pdo): void {
     $period = resolve_period($pdo, $periodParam);
     if (!$period) {
         json_response(['success' => false, 'error' => 'Result period not found'], 404);
+    }
+    if (($period['status'] ?? '') === 'Published') {
+        json_response(['success' => false, 'error' => 'This result period is published and locked. Revert to Draft to recalculate.'], 403);
     }
     $periodId = (int)$period['id'];
     

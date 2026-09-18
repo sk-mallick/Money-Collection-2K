@@ -16,8 +16,14 @@ if ($method !== 'GET') {
     json_response(['success' => false, 'error' => 'Method not allowed'], 405);
 }
 
+$allParam = query_param('all', '', 5);
 $studentId = query_param('student_id', '', 10);
 $periodParam = query_param('period_id', '', 20);
+
+if ($allParam === '1' || $allParam === 'true' || $studentId === 'all') {
+    getAllReports($pdo);
+    exit;
+}
 
 if (empty($studentId)) {
     json_response(['success' => false, 'error' => 'student_id required'], 400);
@@ -43,6 +49,116 @@ if ($periodParam) {
 } else {
     // Full history
     getFullHistory($pdo, $studentId, $student);
+}
+
+function getAllReports(PDO $pdo): void {
+    // 1. Get all students
+    $studentsStmt = $pdo->query('SELECT id, name, category, class, school, group_id, adm_date, dob, contact_no, father_no, mother_no FROM students ORDER BY group_id ASC, id ASC');
+    $students = $studentsStmt->fetchAll();
+
+    // 2. Get all student results
+    $resultsStmt = $pdo->query("
+        SELECT sr.*, rp.period_code, rp.academic_year, rp.month, rp.group_id, rp.category as period_category, rp.status as period_status,
+               g.class as group_class
+        FROM rc_student_results sr
+        JOIN rc_result_periods rp ON sr.result_period_id = rp.id
+        LEFT JOIN `groups` g ON rp.group_id = g.id
+        ORDER BY sr.student_id ASC, rp.academic_year ASC, FIELD(rp.month, 'APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC','JAN','FEB','MAR') ASC
+    ");
+    $allResults = $resultsStmt->fetchAll();
+
+    // 3. Get all marks for all results
+    $marksStmt = $pdo->query("
+        SELECT sm.*, s.name as subject_name, s.category as subject_category
+        FROM rc_student_marks sm
+        JOIN rc_subjects s ON sm.subject_id = s.id
+        ORDER BY sm.student_result_id ASC, s.display_order ASC
+    ");
+    $allMarks = $marksStmt->fetchAll();
+
+    // Map marks by student_result_id
+    $marksByResultId = [];
+    foreach ($allMarks as $m) {
+        $rId = (int)$m['student_result_id'];
+        if (!isset($marksByResultId[$rId])) {
+            $marksByResultId[$rId] = [];
+        }
+        $marksByResultId[$rId][] = [
+            'id' => (int)$m['id'],
+            'student_result_id' => $rId,
+            'subject_id' => (int)$m['subject_id'],
+            'max_marks' => (int)$m['max_marks'],
+            'obtained_marks' => $m['obtained_marks'] !== null ? (float)$m['obtained_marks'] : null,
+            'is_absent' => (bool)($m['is_absent'] ?? 0),
+            'is_default_max' => (bool)$m['is_default_max'],
+            'subject_name' => $m['subject_name'],
+            'subject_category' => $m['subject_category'],
+        ];
+    }
+
+    // Month map for admission date comparison
+    $monthMap = [
+        'MAR' => 3, 'APR' => 4, 'MAY' => 5, 'JUN' => 6, 'JUL' => 7, 'AUG' => 8,
+        'SEP' => 9, 'OCT' => 10, 'NOV' => 11, 'DEC' => 12, 'JAN' => 1, 'FEB' => 2,
+    ];
+
+    // Map results by student_id
+    $resultsByStudentId = [];
+    foreach ($allResults as $r) {
+        $sId = $r['student_id'];
+        if (!isset($resultsByStudentId[$sId])) {
+            $resultsByStudentId[$sId] = [];
+        }
+
+        $rId = (int)$r['id'];
+        $r['total_obtained'] = $r['total_obtained'] !== null ? (float)$r['total_obtained'] : null;
+        $r['total_max'] = $r['total_max'] !== null ? (float)$r['total_max'] : null;
+        $r['percentage'] = $r['percentage'] !== null ? (float)$r['percentage'] : null;
+        $r['class_rank'] = $r['class_rank'] !== null ? (int)$r['class_rank'] : null;
+        $r['group_rank'] = $r['group_rank'] !== null ? (int)$r['group_rank'] : null;
+        $r['marks'] = $marksByResultId[$rId] ?? [];
+        $resultsByStudentId[$sId][] = $r;
+    }
+
+    // Build per-student report array
+    $reports = [];
+    foreach ($students as $student) {
+        $sId = $student['id'];
+        $admDate = $student['adm_date'];
+        $sResults = $resultsByStudentId[$sId] ?? [];
+        $filteredResults = [];
+
+        foreach ($sResults as $r) {
+            $calMonth = $monthMap[$r['month']] ?? 1;
+            $yearParts = explode('-', $r['academic_year']);
+            $startYear = (int)($yearParts[0] ?? 2026);
+            $calYear = ($r['month'] === 'JAN' || $r['month'] === 'FEB') ? $startYear + 1 : $startYear;
+            $resultDate = sprintf('%04d-%02d-01', $calYear, $calMonth);
+
+            if (!$admDate || $resultDate >= substr($admDate, 0, 7) . '-01') {
+                $filteredResults[] = $r;
+            }
+        }
+
+        $reports[] = [
+            'student' => $student,
+            'results' => $filteredResults,
+        ];
+    }
+
+    // Get settings
+    $settingsStmt = $pdo->query("SELECT setting_key, setting_value FROM settings");
+    $settingsRows = $settingsStmt->fetchAll();
+    $settings = [];
+    foreach ($settingsRows as $row) {
+        $settings[$row['setting_key']] = $row['setting_value'];
+    }
+
+    json_response([
+        'success' => true,
+        'reports' => $reports,
+        'settings' => $settings,
+    ]);
 }
 
 function getSingleReport(PDO $pdo, string $studentId, int $periodId, array $student): void {
