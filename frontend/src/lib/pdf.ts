@@ -798,9 +798,22 @@ export async function buildStudentReportCardDoc(data: StudentReportPDFData): Pro
     if (num >= 80) return 'A';
     if (num >= 70) return 'B+';
     if (num >= 60) return 'B';
-    if (num >= 50) return 'C';
-    if (num >= 40) return 'D';
-    return 'E';
+    if (num >= 50) return 'C+';
+    return 'C';
+  };
+
+  const getGrdDetails = (percentage: number | null | undefined, totalAttended: number = 1): { grade: string; feedback: string } => {
+    if (totalAttended === 0 || percentage === null || percentage === undefined) {
+      return { grade: '—', feedback: '' };
+    }
+    const num = Number(percentage);
+    if (isNaN(num)) return { grade: '—', feedback: '' };
+    if (num >= 90) return { grade: 'A+', feedback: 'Outstanding' };
+    if (num >= 80) return { grade: 'A', feedback: 'Excellent' };
+    if (num >= 70) return { grade: 'B+', feedback: 'Good' };
+    if (num >= 60) return { grade: 'B', feedback: 'Keep Practicing' };
+    if (num >= 50) return { grade: 'C+', feedback: 'Needs Improvement' };
+    return { grade: 'C', feedback: 'Poor' };
   };
 
   // ─── 1. HEADER SECTION ──────────────────────────────────
@@ -1111,15 +1124,36 @@ export async function buildStudentReportCardDoc(data: StudentReportPDFData): Pro
 
   // ─── 6. SUMMARY STATS (3 KPI BOXES) ──────────────────────
   const tableBottomY = tableStartY + headerH + monthCodes.length * rowH; // ~188.9mm
-  const kpiY = tableBottomY + 4.5; // ~193.4mm
-  const kpiH = 13.5; // Tall, legible KPI boxes
+  const kpiY = tableBottomY + 3.5; // ~192.4mm
+  const kpiH = 12.5; // Legible, balanced KPI boxes
 
   // Calculate stats
   const attendedResults = resultsList.filter((r) => r.status !== 'Absent' && r.total_obtained !== null);
   const attendedCount = attendedResults.length;
   const validScores = attendedResults.map((r) => Number(r.percentage)).filter((p) => !isNaN(p));
   const avgPct = validScores.length > 0 ? Math.round(validScores.reduce((a, b) => a + b, 0) / validScores.length) : 0;
-  const grade = getGrd(avgPct);
+  const gradeInfo = getGrdDetails(avgPct, attendedCount);
+
+  // Latest attended result for "best at subject name of that month"
+  const latestAttended = attendedResults.length > 0 ? attendedResults[attendedResults.length - 1] : undefined;
+  let bestSubjectName = '—';
+  if (latestAttended && latestAttended.marks && latestAttended.marks.length > 0) {
+    let maxPct = -1;
+    let maxObt = -1;
+    for (const m of latestAttended.marks) {
+      const isAbsent = Boolean(m.is_absent);
+      if (isAbsent || m.obtained_marks === null || m.obtained_marks === undefined) continue;
+      const max = Number(m.max_marks);
+      const obt = Number(m.obtained_marks);
+      if (isNaN(obt) || isNaN(max) || max <= 0) continue;
+      const pct = (obt / max) * 100;
+      if (pct > maxPct || (Math.abs(pct - maxPct) < 0.001 && obt > maxObt)) {
+        maxPct = pct;
+        maxObt = obt;
+        bestSubjectName = m.subject_name;
+      }
+    }
+  }
 
   // Outer 3-box container
   doc.setFillColor(249, 250, 251);
@@ -1137,44 +1171,125 @@ export async function buildStudentReportCardDoc(data: StudentReportPDFData): Pro
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(6.8);
   doc.setTextColor(100, 100, 100);
-  doc.text('EXAMS ATTENDED', tableX + kpiColW / 2, kpiY + 4.5, { align: 'center' });
+  doc.text('BEST SUBJECT', tableX + kpiColW / 2, kpiY + 4.2, { align: 'center' });
   doc.setFontSize(9.5);
   doc.setTextColor(...blackColor);
-  doc.text(`${attendedCount} of 12 Months`, tableX + kpiColW / 2, kpiY + 10.0, { align: 'center' });
+  doc.text(bestSubjectName.toUpperCase(), tableX + kpiColW / 2, kpiY + 9.5, { align: 'center' });
 
   // Box 2 Content
   doc.setFontSize(6.8);
   doc.setTextColor(100, 100, 100);
-  doc.text('CUMULATIVE AVG', tableX + kpiColW + kpiColW / 2, kpiY + 4.5, { align: 'center' });
+  doc.text('TOTAL AVG', tableX + kpiColW + kpiColW / 2, kpiY + 4.2, { align: 'center' });
   doc.setFontSize(9.5);
   doc.setTextColor(...blackColor);
-  doc.text(`${avgPct}%`, tableX + kpiColW + kpiColW / 2, kpiY + 10.0, { align: 'center' });
+  doc.text(`${avgPct}%`, tableX + kpiColW + kpiColW / 2, kpiY + 9.5, { align: 'center' });
 
   // Box 3 Content
   doc.setFontSize(6.8);
   doc.setTextColor(100, 100, 100);
-  doc.text('OVERALL GRADE', tableX + kpiColW * 2 + kpiColW / 2, kpiY + 4.5, { align: 'center' });
-  doc.setFontSize(10);
-  doc.setTextColor(...redColor);
-  doc.text(grade, tableX + kpiColW * 2 + kpiColW / 2, kpiY + 10.0, { align: 'center' });
+  doc.text('OVERALL GRADE', tableX + kpiColW * 2 + kpiColW / 2, kpiY + 4.2, { align: 'center' });
 
-  // ─── 7. FEEDBACK BOX ─────────────────────────────────────
-  const fbY = kpiY + kpiH + 4.5; // ~211.4mm
-  const fbH = 26; // Generous height for written feedback
+  if (attendedCount === 0 || gradeInfo.grade === '—') {
+    doc.setFontSize(9.5);
+    doc.setTextColor(...blackColor);
+    doc.text('—', tableX + kpiColW * 2 + kpiColW / 2, kpiY + 9.5, { align: 'center' });
+  } else {
+    const gradeStr = gradeInfo.grade;
+    const fbStr = gradeInfo.feedback ? ` (${gradeInfo.feedback})` : '';
+
+    doc.setFontSize(9.5);
+    const gW = doc.getTextWidth(gradeStr);
+    doc.setFontSize(7.5);
+    const fbW = doc.getTextWidth(fbStr);
+    const totalW = gW + fbW;
+    const startX = (tableX + kpiColW * 2 + kpiColW / 2) - totalW / 2;
+
+    doc.setFontSize(9.5);
+    doc.setTextColor(...redColor);
+    doc.text(gradeStr, startX, kpiY + 9.5);
+
+    if (fbStr) {
+      doc.setFontSize(7.5);
+      doc.setTextColor(...darkGray);
+      doc.text(fbStr, startX + gW, kpiY + 9.5);
+    }
+  }
+
+  // ─── 7. PARENTS FEEDBACK BOX ─────────────────────────────
+  const fbY = kpiY + kpiH + 3.5; // ~208.4mm
+  const fbH = 22.0; // Clean height for written feedback
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(...blackColor);
   doc.setLineWidth(0.35);
   doc.rect(tableX, fbY, tableW, fbH, 'FD');
 
   // Feedback tab header
-  const tabW = 30;
-  const tabH = 5.5;
+  const tabW = 42;
+  const tabH = 5.2;
   doc.setFillColor(249, 250, 251);
   doc.rect(tableX, fbY, tabW, tabH, 'FD');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(...blackColor);
-  doc.text('FEEDBACK', tableX + 3.5, fbY + 3.9);
+  doc.text('PARENTS FEEDBACK', tableX + 3.5, fbY + 3.7);
+
+  // ─── 8. COMPACT GRADING SCALE LEGEND ──────────────────────
+  const scaleY = fbY + fbH + 3.5; // ~233.9mm
+  const scaleH = 8.5; // Compact 2-row strip
+  const scaleColW = tableW / 6; // 194 / 6 = 32.33mm
+
+  doc.setFillColor(255, 255, 255);
+  doc.setDrawColor(...blackColor);
+  doc.setLineWidth(0.35);
+  doc.rect(tableX, scaleY, tableW, scaleH, 'FD');
+
+  const scaleHeaderH = 3.6;
+  doc.setFillColor(243, 244, 246);
+  doc.rect(tableX, scaleY, tableW, scaleHeaderH, 'FD');
+  doc.line(tableX, scaleY + scaleHeaderH, tableX + tableW, scaleY + scaleHeaderH);
+
+  const tiers = [
+    { range: '90–100%', grade: 'A+', feedback: 'Outstanding' },
+    { range: '80–89%', grade: 'A', feedback: 'Excellent' },
+    { range: '70–79%', grade: 'B+', feedback: 'Good' },
+    { range: '60–69%', grade: 'B', feedback: 'Keep Practicing' },
+    { range: '50–59%', grade: 'C+', feedback: 'Needs Improvement' },
+    { range: 'Below 50%', grade: 'C', feedback: 'Poor' },
+  ];
+
+  tiers.forEach((tier, i) => {
+    const colX = tableX + i * scaleColW;
+    const centerX = colX + scaleColW / 2;
+
+    if (i > 0) {
+      doc.line(colX, scaleY, colX, scaleY + scaleH);
+    }
+
+    // Row 1: Range
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.2);
+    doc.setTextColor(60, 60, 60);
+    doc.text(tier.range, centerX, scaleY + 2.6, { align: 'center' });
+
+    // Row 2: Grade + Feedback
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.2);
+    const gW = doc.getTextWidth(tier.grade);
+    doc.setFontSize(5.8);
+    const fbW = doc.getTextWidth(` ${tier.feedback}`);
+    const totalW = gW + fbW;
+    const startX = centerX - totalW / 2;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.2);
+    doc.setTextColor(...redColor);
+    doc.text(tier.grade, startX, scaleY + scaleHeaderH + 3.4);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(5.8);
+    doc.setTextColor(40, 40, 40);
+    doc.text(` ${tier.feedback}`, startX + gW, scaleY + scaleHeaderH + 3.4);
+  });
 
   // ─── 8. SIGNATURES & DATES ───────────────────────────────
   const sigY = 265.0; // Anchored near bottom of A4 for balanced, professional proportions
@@ -1786,7 +1901,7 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.0);
         doc.setTextColor(0, 0, 0);
-        const sheetTitle = `MONTHLY ${trackTitle} TRACKING SHEET — ${monthName.toUpperCase()} ${academicYear}`;
+        const sheetTitle = `WEEKLY ${trackTitle} TRACKING SHEET — ${monthName.toUpperCase()} ${academicYear}`;
         doc.text(sheetTitle, headerCenterX, marginTop + 9.8, { align: 'center' });
 
         // Red Divider
@@ -1816,16 +1931,15 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
 
         // 3. Table Column Setup
         const tableTopY = marginTop + 20.0; // Y = 25.5mm
-        const headerH = 7.0;
-        const rowH = 6.82; // 25 * 6.82 = 170.5mm, tableBottom = 25.5 + 7.0 + 170.5 = 203.0mm (leaves exact 1.5mm bottom margin inside 204.5mm outer border)
+        const headerH = 6.8;
+        const rowH = 6.64; // 25 * 6.64 = 166.0mm, tableBottom = 25.5 + 6.8 + 166.0 = 198.3mm, legend bottom = 203.7mm (inside 204.5mm outer border)
 
-        const colIdW = 14;
-        const colNameW = 46;
-        const colClassW = 12;
-        const colSchoolW = 18;
+        const colIdW = 13;
+        const colNameW = 47;
+        const colClassW = 10;
 
-        const fixedWidths = colIdW + colNameW + colClassW + colSchoolW; // 90mm
-        const remainingForDates = tableWidth - fixedWidths; // 190mm
+        const fixedWidths = colIdW + colNameW + colClassW; // 70mm
+        const remainingForDates = tableWidth - fixedWidths; // 210mm (generous space distributed evenly to all classes)
 
         // Use dates if available, fallback to 8 blank columns if none
         const displayDates: HWClassColumn[] = dates.length > 0
@@ -1852,7 +1966,6 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
           { title: 'ID', width: colIdW, align: 'center' },
           { title: 'Student Name', width: colNameW, align: 'left' },
           { title: 'Class', width: colClassW, align: 'center' },
-          { title: 'School', width: colSchoolW, align: 'left' },
         ];
 
         for (const d of displayDates) {
@@ -1923,37 +2036,36 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
               if (student) {
                 doc.text(student.class || '—', cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
               }
-            } else if (c === 3) {
-              // School
-              if (student) {
-                const sch = student.school || '—';
-                const maxW = col.width - 2.5;
-                const schText = doc.getTextWidth(sch) > maxW ? sch.slice(0, 8) + '..' : sch;
-                doc.text(schText, cellX + 1.5, curRowY + 4.55);
-              }
             } else if (col.isDate && col.dateKey) {
               // Evaluation status cell
               if (student && student.evaluations) {
                 const val = student.evaluations[col.dateKey];
                 if (val) {
-                  let shortText = val;
+                  let statusText = val;
                   if (val === 'Done' || val === 'Prepared' || val === 'Practiced') {
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(22, 101, 52); // Green
-                    shortText = val === 'Done' ? 'Done' : val === 'Prepared' ? 'Prep' : 'Pract';
+                    statusText = val === 'Done' ? 'Done' : val === 'Prepared' ? 'Prepared' : 'Practiced';
                   } else if (val === 'Not Done' || val === 'Not Prepared' || val === 'Not Practiced') {
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(185, 28, 28); // Red
-                    shortText = val === 'Not Done' ? 'ND' : val === 'Not Prepared' ? 'NP' : 'NP';
+                    statusText = val === 'Not Done' ? 'Not Done' : val === 'Not Prepared' ? 'Not Prepared' : 'Not Practiced';
                   } else if (val === 'Absent' || val === 'On Leave') {
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(180, 83, 9); // Amber
-                    shortText = val === 'Absent' ? 'Abs' : 'Leave';
+                    statusText = val === 'Absent' ? 'Absent' : 'On Leave';
                   } else {
                     doc.setTextColor(107, 114, 128); // Gray
                   }
-                  doc.setFontSize(6.5);
-                  doc.text(shortText, cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
+
+                  doc.setFont('helvetica', 'bold');
+                  let fs = 6.2;
+                  doc.setFontSize(fs);
+                  while (doc.getTextWidth(statusText) > col.width - 1.5 && fs > 4.5) {
+                    fs -= 0.3;
+                    doc.setFontSize(fs);
+                  }
+                  doc.text(statusText, cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
                 }
               }
             }
@@ -1988,6 +2100,38 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
         doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(0.45);
         doc.rect(tableLeftX, tableTopY, tableWidth, headerH + 25 * rowH, 'S');
+
+        // Draw Status Legend Strip below table
+        const legY = tableBottomY + 1.2;
+        const legH = 4.2;
+        doc.setFillColor(245, 246, 248);
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.3);
+        doc.rect(tableLeftX, legY, tableWidth, legH, 'FD');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(6.0);
+        doc.setTextColor(0, 0, 0);
+        doc.text('STATUS LEGEND:', tableLeftX + 2.5, legY + 2.8);
+
+        let legendContent = '';
+        if (track === 'homework') {
+          legendContent = 'Done = Homework Done  |  Not Done = Homework Not Done  |  Absent = Student Absent';
+        } else if (track === 'test_prep') {
+          legendContent = 'Prepared = Test Prepared  |  Not Prepared = Test Not Prepared  |  Absent = Student Absent';
+        } else {
+          legendContent = 'Practiced = Home Practice Done  |  Not Practiced = Home Practice Not Done  |  On Leave = Approved Leave';
+        }
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(5.8);
+        doc.setTextColor(40, 40, 40);
+        doc.text(legendContent, tableLeftX + 23.5, legY + 2.8);
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(5.5);
+        doc.setTextColor(100, 100, 100);
+        doc.text('English Jibi Classes · Official Evaluation Sheet', tableLeftX + tableWidth - 2.5, legY + 2.8, { align: 'right' });
       }
     }
   }

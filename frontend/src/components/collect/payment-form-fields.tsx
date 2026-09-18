@@ -2,6 +2,8 @@ import { Loader2, Wallet, Check, GraduationCap } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MONTH_CODES, MONTH_NAMES } from '@/lib/constants';
 
 interface PaymentFormFieldsProps {
   selectedMonthsDue: number;
@@ -179,13 +181,32 @@ export function PaymentFormFields({
         </div>
         <div className="space-y-2">
           <Label htmlFor="nextDue">Next Due</Label>
-          <Input
-            id="nextDue"
-            placeholder="e.g. July onwards"
+          <Select
+            value={(() => {
+              if (!nextDue) return 'NONE';
+              const upper = nextDue.trim().toUpperCase();
+              if (upper === 'NONE' || upper === 'N/A') return 'NONE';
+              if (MONTH_NAMES[upper]) return MONTH_NAMES[upper].toUpperCase();
+              return upper;
+            })()}
+            onValueChange={val => setNextDue(val.toUpperCase())}
             disabled={selectedMonthsLength === 0}
-            value={nextDue}
-            onChange={e => setNextDue(e.target.value)}
-          />
+          >
+            <SelectTrigger id="nextDue" className="w-full h-9 font-semibold uppercase">
+              <SelectValue placeholder="SELECT MONTH" />
+            </SelectTrigger>
+            <SelectContent position="popper" className="w-[var(--radix-select-trigger-width)]">
+              <SelectItem value="NONE" className="font-semibold uppercase">NONE</SelectItem>
+              {MONTH_CODES.map(code => {
+                const fullName = (MONTH_NAMES[code] || code).toUpperCase();
+                return (
+                  <SelectItem key={code} value={fullName} className="font-semibold uppercase">
+                    {fullName}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="payNotes">Notes</Label>

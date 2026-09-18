@@ -509,25 +509,25 @@ export default function HomeworkReportsPage() {
   const renderStatusCell = (val: string | undefined) => {
     if (!val) return <span className="opacity-0 select-none">-</span>;
     if (val === 'Done' || val === 'Prepared' || val === 'Practiced') {
-      const label = val === 'Done' ? 'Done' : val === 'Prepared' ? 'Prep' : 'Pract';
+      const label = val === 'Done' ? 'Done' : val === 'Prepared' ? 'Prepared' : 'Practiced';
       return (
-        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold text-green-700 bg-green-50 border border-green-200/80 leading-none">
+        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold text-green-700 bg-green-50 border border-green-200/80 leading-none whitespace-nowrap">
           ✓ {label}
         </span>
       );
     }
     if (val === 'Not Done' || val === 'Not Prepared' || val === 'Not Practiced') {
-      const label = val === 'Not Done' ? 'Not Done' : val === 'Not Prepared' ? 'Not Prep' : 'Not Pract';
+      const label = val === 'Not Done' ? 'Not Done' : val === 'Not Prepared' ? 'Not Prepared' : 'Not Practiced';
       return (
-        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold text-red-700 bg-red-50 border border-red-200/80 leading-none">
+        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold text-red-700 bg-red-50 border border-red-200/80 leading-none whitespace-nowrap">
           ✗ {label}
         </span>
       );
     }
     if (val === 'Absent' || val === 'On Leave') {
-      const label = val === 'Absent' ? 'Absent' : 'Leave';
+      const label = val === 'Absent' ? 'Absent' : 'On Leave';
       return (
-        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 leading-none">
+        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 leading-none whitespace-nowrap">
           {label}
         </span>
       );
@@ -1037,7 +1037,7 @@ export default function HomeworkReportsPage() {
                         </h1>
                         <div className="text-center">
                           <span className="inline-block px-3 py-0.5 rounded-full border border-black text-[9.5px] font-bold uppercase tracking-wider bg-gray-50 text-black leading-tight">
-                            Monthly {sheetTitle} Tracking Sheet — {MONTH_NAMES[month] || month}{' '}
+                            Weekly {sheetTitle} Tracking Sheet — {MONTH_NAMES[month] || month}{' '}
                             {academicYear}
                           </span>
                         </div>
@@ -1092,14 +1092,11 @@ export default function HomeworkReportsPage() {
                               <th className="p-1.5 font-bold text-black border-r border-black w-14 text-center">
                                 ID
                               </th>
-                              <th className="p-1.5 font-bold text-black border-r border-black w-[190px]">
+                              <th className="p-1.5 font-bold text-black border-r border-black w-[200px]">
                                 Student Name
                               </th>
-                              <th className="p-1.5 font-bold text-black border-r border-black w-12 text-center">
+                              <th className="p-1.5 font-bold text-black border-r border-black w-10 text-center">
                                 Class
-                              </th>
-                              <th className="p-1.5 font-bold text-black border-r border-black w-[75px]">
-                                School
                               </th>
 
                               {/* Fixed Number of Class Columns for this Month */}
@@ -1142,17 +1139,11 @@ export default function HomeworkReportsPage() {
                                   <td className="p-1 text-center font-mono font-bold text-black border-r border-gray-300 w-14">
                                     {formattedId}
                                   </td>
-                                  <td className="p-1 font-semibold text-black border-r border-gray-300 w-[190px] truncate">
+                                  <td className="p-1 font-semibold text-black border-r border-gray-300 w-[200px] truncate">
                                     {student ? student.name : <span className="opacity-0 select-none">-</span>}
                                   </td>
-                                  <td className="p-1 text-center text-gray-800 border-r border-gray-300 w-12 truncate">
+                                  <td className="p-1 text-center text-gray-800 border-r border-gray-300 w-10 truncate">
                                     {student ? student.class || activeGroup?.class || '—' : <span className="opacity-0 select-none">-</span>}
-                                  </td>
-                                  <td
-                                    className="p-1 text-gray-800 border-r border-gray-300 w-[75px] truncate"
-                                    title={student?.school || ''}
-                                  >
-                                    {student ? student.school || '—' : <span className="opacity-0 select-none">-</span>}
                                   </td>
 
                                   {/* Class Date Columns */}
@@ -1184,6 +1175,55 @@ export default function HomeworkReportsPage() {
                             })}
                           </tbody>
                         </table>
+                      </div>
+
+                      {/* ─── 5. Status Legend Strip ─── */}
+                      <div className="flex items-center justify-between px-3 py-1 bg-gray-50 border border-black text-[10px] font-semibold text-gray-700">
+                        <div className="flex items-center gap-3.5 flex-wrap">
+                          <span className="font-bold text-black uppercase text-[9.5px]">STATUS LEGEND:</span>
+                          {track === 'homework' && (
+                            <>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-green-700">✓ Done:</span> Homework Done
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-red-700">✗ Not Done:</span> Homework Not Done
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-amber-800">Absent:</span> Student Absent
+                              </span>
+                            </>
+                          )}
+                          {track === 'test_prep' && (
+                            <>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-green-700">✓ Prepared:</span> Test Prepared
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-red-700">✗ Not Prepared:</span> Test Not Prepared
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-amber-800">Absent:</span> Student Absent
+                              </span>
+                            </>
+                          )}
+                          {track === 'practice' && (
+                            <>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-green-700">✓ Practiced:</span> Home Practice Done
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-red-700">✗ Not Practiced:</span> Home Practice Not Done
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-amber-800">On Leave:</span> Approved Leave
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        <span className="text-gray-500 font-mono text-[9px]">
+                          English Jibi Classes · Official Evaluation
+                        </span>
                       </div>
                     </div>
                   </div>

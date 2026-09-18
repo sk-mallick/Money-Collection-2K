@@ -528,7 +528,7 @@ export default function StudentsPage() {
             <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
               {/* Group Filter */}
               <Select value={groupFilter} onValueChange={handleGroupFilterChange}>
-                <SelectTrigger className="w-auto sm:w-[110px] xl:w-[125px] text-xs sm:text-sm h-9 bg-card px-2.5">
+                <SelectTrigger className="w-auto sm:w-[125px] lg:w-[130px] text-xs sm:text-sm h-9 bg-card px-2.5">
                   <SelectValue placeholder="All Groups" />
                 </SelectTrigger>
                 <SelectContent>
@@ -543,7 +543,7 @@ export default function StudentsPage() {
 
               {/* Class Filter */}
               <Select value={classFilter} onValueChange={handleClassChange}>
-                <SelectTrigger className="w-auto sm:w-[105px] xl:w-[115px] text-xs sm:text-sm h-9 bg-card px-2.5">
+                <SelectTrigger className="w-auto sm:w-[125px] lg:w-[130px] text-xs sm:text-sm h-9 bg-card px-2.5">
                   <SelectValue placeholder="All Classes" />
                 </SelectTrigger>
                 <SelectContent>
@@ -558,7 +558,7 @@ export default function StudentsPage() {
 
               {/* Category Filter */}
               <Select value={categoryFilter} onValueChange={handleCategoryChange}>
-                <SelectTrigger className="w-auto sm:w-[115px] xl:w-[125px] text-xs sm:text-sm h-9 bg-card px-2.5">
+                <SelectTrigger className="w-auto sm:w-[145px] lg:w-[155px] text-xs sm:text-sm h-9 bg-card px-2.5">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -573,7 +573,7 @@ export default function StudentsPage() {
             <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
               {/* Sort Field */}
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-auto sm:w-[145px] xl:w-[165px] text-xs sm:text-sm h-9 bg-card px-2.5">
+                <SelectTrigger className="w-auto sm:w-[170px] lg:w-[190px] text-xs sm:text-sm h-9 bg-card px-2.5">
                   <span className="flex items-center gap-1.5 min-w-0 text-left">
                     <span className="text-muted-foreground/70 shrink-0 font-medium">Sort:</span>
                     <span className="truncate">

@@ -347,7 +347,7 @@ export default function ReceiptsPage() {
                 <span>Total Received:</span>
                 <span className="text-lg">{formatCurrency(preview.totalRecv)}</span>
               </div>
-              {preview.nextDue && <div><span className="text-muted-foreground">Next Due:</span> {preview.nextDue}</div>}
+              {preview.nextDue && <div><span className="text-muted-foreground">Next Due:</span> {preview.nextDue.toUpperCase()}</div>}
               {preview.notes && <div><span className="text-muted-foreground">Notes:</span> {preview.notes}</div>}
               <div className="text-xs text-muted-foreground">
                 Generated on {formatDate(preview.generatedOn)} by {preview.generatedBy}

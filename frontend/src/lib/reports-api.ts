@@ -305,6 +305,35 @@ export async function fetchStudentReport(studentId: string): Promise<{
   return { student: res.student, results: res.results, settings: res.settings };
 }
 
+export interface SingleStudentReportData {
+  student: {
+    id: string;
+    name: string;
+    category: string;
+    class: string;
+    school: string;
+    group_id: string;
+    adm_date: string;
+    dob?: string | null;
+    contact_no?: string | null;
+    father_no?: string | null;
+    mother_no?: string | null;
+  };
+  results: StudentReportResult[];
+}
+
+export async function fetchAllStudentReports(): Promise<{
+  reports: SingleStudentReportData[];
+  settings: Record<string, string>;
+}> {
+  const res = await apiRequest<{
+    success: boolean;
+    reports: SingleStudentReportData[];
+    settings: Record<string, string>;
+  }>('/api/result-reports?all=1');
+  return { reports: res.reports || [], settings: res.settings || {} };
+}
+
 // ─── Blank Sheet API ────────────────────────────────
 
 export async function fetchBlankSheet(groupId: string, category?: string): Promise<BlankSheetData> {

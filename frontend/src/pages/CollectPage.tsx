@@ -302,7 +302,7 @@ export default function CollectPage() {
         receiptId,
         prevDue: 0,
         remainingAmount: 0,
-        nextDue: nextDue || 'N/A (Waiver)',
+        nextDue: nextDue ? nextDue.trim().toUpperCase() : 'N/A (WAIVER)',
         notes: notes || 'Fee Waiver (N/A)',
         date: new Date().toISOString().split('T')[0],
         academicYear: selectedYear,
@@ -367,7 +367,7 @@ export default function CollectPage() {
         prevDue: prevDueAmt,
         remainingAmount: remainingAmt,
         admissionFee: admissionFeeAmt,
-        nextDue: nextDue.trim(),
+        nextDue: (nextDue || 'NONE').trim().toUpperCase(),
         notes: notes.trim(),
         date,
         academicYear: selectedYear,
@@ -400,7 +400,7 @@ export default function CollectPage() {
         totalRecv,
         remainingAmount: remainingAmt,
         admissionFee: admissionFeeAmt,
-        nextDue: nextDue.trim(),
+        nextDue: (nextDue || 'NONE').trim().toUpperCase(),
         notes: notes.trim(),
         generatedOn: new Date().toISOString(),
         generatedBy: 'Admin',
@@ -484,19 +484,21 @@ export default function CollectPage() {
         <p className="text-xs sm:text-sm text-muted-foreground">Record payment and generate receipt</p>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 w-full min-w-0">
-        <div className="lg:col-span-2 w-full min-w-0">
-          <StudentSelector
-            search={search}
-            setSearch={val => {
-              setSearch(val);
-              if (!val) setSelected(null);
-            }}
-            filteredStudents={filteredStudents}
-            selectStudent={selectStudent}
-          />
+      {!selected && (
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 w-full min-w-0">
+          <div className="lg:col-span-2 w-full min-w-0">
+            <StudentSelector
+              search={search}
+              setSearch={val => {
+                setSearch(val);
+                if (!val) setSelected(null);
+              }}
+              filteredStudents={filteredStudents}
+              selectStudent={selectStudent}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {selected && (
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 w-full min-w-0">

@@ -14,8 +14,10 @@ import { fetchStudents, fetchGroups } from '@/lib/api';
 import type { Student, Group } from '@/lib/constants';
 import { MONTH_NAMES } from '@/lib/constants';
 import { generateStudentReportCardPDF, printStudentReportCardPDF } from '@/lib/pdf';
+import { BatchReportModal } from '@/components/reports/batch-report-modal';
 import logoUrl from '@/assets/logo.png';
 import {
+  Archive,
   UserRound,
   Search,
   Printer,
@@ -61,6 +63,7 @@ export default function StudentReportsPage() {
 
   // Detail View Active Tab
   const [activeTab, setActiveTab] = useState<'card' | 'history'>('card');
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   
   const [reportData, setReportData] = useState<{
     student: {
@@ -363,13 +366,13 @@ export default function StudentReportsPage() {
   // Academic statistics for the selected student
   const stats = useMemo(() => {
     if (!reportData || !reportData.results || reportData.results.length === 0) {
-      return { totalExams: 0, avgPercentage: 0, highestPercentage: 0, bestMonth: '—' };
+      return { totalExams: 0, totalAttended: 0, avgPercentage: 0, highestPercentage: 0, bestMonth: '—', bestSubject: '—' };
     }
     const attended = reportData.results.filter(
       (r) => r.status !== 'Absent' && r.percentage !== null && r.percentage !== undefined
     );
     if (attended.length === 0) {
-      return { totalExams: reportData.results.length, avgPercentage: 0, highestPercentage: 0, bestMonth: '—' };
+      return { totalExams: reportData.results.length, totalAttended: 0, avgPercentage: 0, highestPercentage: 0, bestMonth: '—', bestSubject: '—' };
     }
 
     const validScores = attended
@@ -380,7 +383,7 @@ export default function StudentReportsPage() {
       .filter((s) => !isNaN(s.percentage));
 
     if (validScores.length === 0) {
-      return { totalExams: reportData.results.length, avgPercentage: 0, highestPercentage: 0, bestMonth: '—' };
+      return { totalExams: reportData.results.length, totalAttended: 0, avgPercentage: 0, highestPercentage: 0, bestMonth: '—', bestSubject: '—' };
     }
 
     const sum = validScores.reduce((acc, curr) => acc + curr.percentage, 0);
@@ -388,11 +391,34 @@ export default function StudentReportsPage() {
     const highest = Math.max(...validScores.map((s) => s.percentage));
     const bestResult = validScores.find((s) => Math.abs(s.percentage - highest) < 0.01);
 
+    // Latest attended result for "best at subject name of that month"
+    const latestAttended = attended[attended.length - 1];
+    let bestSubjectName = '—';
+    if (latestAttended && latestAttended.marks && latestAttended.marks.length > 0) {
+      let maxPct = -1;
+      let maxObt = -1;
+      for (const m of latestAttended.marks) {
+        const isAbsent = Boolean(m.is_absent);
+        if (isAbsent || m.obtained_marks === null || m.obtained_marks === undefined) continue;
+        const max = Number(m.max_marks);
+        const obt = Number(m.obtained_marks);
+        if (isNaN(obt) || isNaN(max) || max <= 0) continue;
+        const pct = (obt / max) * 100;
+        if (pct > maxPct || (Math.abs(pct - maxPct) < 0.001 && obt > maxObt)) {
+          maxPct = pct;
+          maxObt = obt;
+          bestSubjectName = m.subject_name;
+        }
+      }
+    }
+
     return {
       totalExams: reportData.results.length,
+      totalAttended: attended.length,
       avgPercentage: isNaN(avg) ? 0 : avg,
       highestPercentage: isNaN(highest) ? 0 : Math.round(highest),
       bestMonth: bestResult ? (MONTH_NAMES[bestResult.month] || bestResult.month) : '—',
+      bestSubject: bestSubjectName,
     };
   }, [reportData]);
 
@@ -405,7 +431,7 @@ export default function StudentReportsPage() {
   };
 
   // Helper to determine Grade from percentage
-  const getGrade = (percentage: number | null) => {
+  const getGrade = (percentage: number | null | undefined) => {
     if (percentage === null || percentage === undefined) return '—';
     const num = Number(percentage);
     if (isNaN(num)) return '—';
@@ -413,9 +439,23 @@ export default function StudentReportsPage() {
     if (num >= 80) return 'A';
     if (num >= 70) return 'B+';
     if (num >= 60) return 'B';
-    if (num >= 50) return 'C';
-    if (num >= 40) return 'D';
-    return 'E';
+    if (num >= 50) return 'C+';
+    return 'C';
+  };
+
+  // Helper to determine Grade & Feedback according to user standards
+  const getGradeDetails = (percentage: number | null | undefined, totalAttended: number = 1): { grade: string; feedback: string } => {
+    if (totalAttended === 0 || percentage === null || percentage === undefined) {
+      return { grade: '—', feedback: '' };
+    }
+    const num = Number(percentage);
+    if (isNaN(num)) return { grade: '—', feedback: '' };
+    if (num >= 90) return { grade: 'A+', feedback: 'Outstanding' };
+    if (num >= 80) return { grade: 'A', feedback: 'Excellent' };
+    if (num >= 70) return { grade: 'B+', feedback: 'Good' };
+    if (num >= 60) return { grade: 'B', feedback: 'Keep Practicing' };
+    if (num >= 50) return { grade: 'C+', feedback: 'Needs Improvement' };
+    return { grade: 'C', feedback: 'Poor' };
   };
 
   // Download PDF handler: captures printable report card as exact A4 PDF
@@ -1130,28 +1170,75 @@ export default function StudentReportsPage() {
                       </table>
                     </div>
 
-                    {/* ─── 7. Cumulative Evaluation Summary Box ─── */}
+                    {/* ─── 7. Evaluation Summary Box ─── */}
                     <div className="grid grid-cols-3 border-[1.5px] border-black bg-gray-50 text-xs font-bold text-center" style={{ backgroundColor: '#f9fafb' }}>
-                      <div className="p-1.5 sm:p-2 border-r border-black">
-                        <span className="text-gray-600 block text-[10px] uppercase font-semibold">Exams Attended</span>
-                        <span className="font-bold text-black">{stats.totalExams} of 12 Months</span>
+                      <div className="p-1.5 sm:p-2 border-r border-black flex flex-col justify-center">
+                        <span className="text-gray-600 block text-[10px] uppercase font-semibold">Best Subject</span>
+                        <span className="font-bold text-black truncate">{stats.bestSubject.toUpperCase()}</span>
                       </div>
-                      <div className="p-1.5 sm:p-2 border-r border-black">
-                        <span className="text-gray-600 block text-[10px] uppercase font-semibold">Cumulative Avg</span>
+                      <div className="p-1.5 sm:p-2 border-r border-black flex flex-col justify-center">
+                        <span className="text-gray-600 block text-[10px] uppercase font-semibold">Total Avg</span>
                         <span className="font-bold text-black">{stats.avgPercentage}%</span>
                       </div>
-                      <div className="p-1.5 sm:p-2">
+                      <div className="p-1.5 sm:p-2 flex flex-col justify-center">
                         <span className="text-gray-600 block text-[10px] uppercase font-semibold">Overall Grade</span>
-                        <span className="font-black text-red-600">{getGrade(stats.avgPercentage)}</span>
+                        {stats.totalAttended === 0 ? (
+                          <span className="font-bold text-black">—</span>
+                        ) : (
+                          <div className="flex items-center justify-center gap-1 leading-none">
+                            <span className="font-black text-red-600 text-sm">{getGradeDetails(stats.avgPercentage, stats.totalAttended).grade}</span>
+                            <span className="text-[10px] sm:text-[10.5px] font-bold text-gray-700">
+                              ({getGradeDetails(stats.avgPercentage, stats.totalAttended).feedback})
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* ─── 8. Feedback Box ─── */}
+                    {/* ─── 8. Parents Feedback Box ─── */}
                     <div className="border-[1.5px] border-black rounded-xs overflow-hidden">
-                      <div className="border-b-[1.5px] border-black bg-gray-50 px-2.5 py-0.5 font-bold text-xs uppercase w-28 border-r" style={{ backgroundColor: '#f9fafb' }}>
-                        FEEDBACK
+                      <div className="border-b-[1.5px] border-black bg-gray-50 px-2.5 py-0.5 font-bold text-xs uppercase border-r inline-block" style={{ backgroundColor: '#f9fafb' }}>
+                        PARENTS FEEDBACK
                       </div>
-                      <div className="h-14 p-1.5" />
+                      <div className="h-12 p-1.5" />
+                    </div>
+
+                    {/* ─── 9. Compact Grading Scale Legend ─── */}
+                    <div className="border-[1.5px] border-black bg-white rounded-xs overflow-hidden text-[9px] sm:text-[10px]">
+                      <div className="grid grid-cols-6 divide-x divide-black text-center bg-gray-100 border-b border-black font-bold text-gray-700 py-0.5" style={{ backgroundColor: '#f3f4f6' }}>
+                        <div>90–100%</div>
+                        <div>80–89%</div>
+                        <div>70–79%</div>
+                        <div>60–69%</div>
+                        <div>50–59%</div>
+                        <div>Below 50%</div>
+                      </div>
+                      <div className="grid grid-cols-6 divide-x divide-black text-center py-1 font-semibold text-black bg-white">
+                        <div className="px-0.5">
+                          <span className="font-black text-red-600 mr-1">A+</span>
+                          <span className="text-gray-700 text-[8.5px] sm:text-[9.5px] font-medium whitespace-nowrap">Outstanding</span>
+                        </div>
+                        <div className="px-0.5">
+                          <span className="font-black text-red-600 mr-1">A</span>
+                          <span className="text-gray-700 text-[8.5px] sm:text-[9.5px] font-medium whitespace-nowrap">Excellent</span>
+                        </div>
+                        <div className="px-0.5">
+                          <span className="font-black text-red-600 mr-1">B+</span>
+                          <span className="text-gray-700 text-[8.5px] sm:text-[9.5px] font-medium whitespace-nowrap">Good</span>
+                        </div>
+                        <div className="px-0.5">
+                          <span className="font-black text-red-600 mr-1">B</span>
+                          <span className="text-gray-700 text-[8.5px] sm:text-[9.5px] font-medium whitespace-nowrap">Keep Practicing</span>
+                        </div>
+                        <div className="px-0.5">
+                          <span className="font-black text-red-600 mr-1">C+</span>
+                          <span className="text-gray-700 text-[8.5px] sm:text-[9.5px] font-medium whitespace-nowrap">Needs Improvement</span>
+                        </div>
+                        <div className="px-0.5">
+                          <span className="font-black text-red-600 mr-1">C</span>
+                          <span className="text-gray-700 text-[8.5px] sm:text-[9.5px] font-medium whitespace-nowrap">Poor</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -1192,13 +1279,33 @@ export default function StudentReportsPage() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 w-full">
           {/* Left: Title & Subtitle */}
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
-                Student Reports & Results
-              </h1>
-              <Badge variant="secondary" className="hidden sm:inline-flex font-mono text-xs px-2 py-0.5 rounded-full font-bold">
-                {studentsList.length} Students
-              </Badge>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground leading-tight">
+                  Student Reports & Results
+                </h1>
+                <Badge variant="secondary" className="hidden sm:inline-flex font-mono text-xs px-2 py-0.5 rounded-full font-bold">
+                  {studentsList.length} Students
+                </Badge>
+              </div>
+
+              {/* Mobile/Responsive Batch Download Button (< lg) */}
+              <div className="flex lg:hidden items-center shrink-0">
+                <Button
+                  type="button"
+                  onClick={() => setIsBatchModalOpen(true)}
+                  size="sm"
+                  className="h-8.5 w-8.5 p-0 sm:w-auto sm:px-2.5 sm:py-1.5 gap-1.5 text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs cursor-pointer active:scale-95 transition-all rounded-lg flex items-center justify-center"
+                  title="Download all student report cards in group-wise ZIP archive"
+                  aria-label="Download all student report cards (ZIP)"
+                >
+                  <Download className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Download All</span>
+                  <span className="hidden sm:inline-flex text-[9.5px] font-mono font-bold bg-primary-foreground/20 text-primary-foreground px-1 py-0.5 rounded leading-none">
+                    ZIP
+                  </span>
+                </Button>
+              </div>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
               <span className="hidden sm:inline">Browse all students to view comprehensive monthly marks history and generate official report cards</span>
@@ -1206,67 +1313,83 @@ export default function StudentReportsPage() {
             </p>
           </div>
 
-          {/* Desktop Right: 4 Compact Mini Stat Cards (>= lg only) */}
-          <div className="hidden lg:grid grid-cols-4 gap-2 shrink-0">
-            {/* 1. Total Students */}
-            <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
-              <div className="h-7 w-7 rounded-md bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-                <Users className="h-3.5 w-3.5 stroke-[2.2]" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
-                  Total
+          {/* Desktop Right: 4 Compact Mini Stat Cards + Batch Download Button (>= lg only) */}
+          <div className="hidden lg:flex items-center gap-2.5 shrink-0">
+            <div className="grid grid-cols-4 gap-2 shrink-0">
+              {/* 1. Total Students */}
+              <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
+                <div className="h-7 w-7 rounded-md bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Users className="h-3.5 w-3.5 stroke-[2.2]" />
                 </div>
-                <div className="text-xs sm:text-sm font-extrabold text-foreground leading-none mt-1">
-                  {studentsList.length}
+                <div className="min-w-0">
+                  <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+                    Total
+                  </div>
+                  <div className="text-xs sm:text-sm font-extrabold text-foreground leading-none mt-1">
+                    {studentsList.length}
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Junior Section */}
+              <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
+                <div className="h-7 w-7 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <GraduationCap className="h-3.5 w-3.5 stroke-[2.2]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+                    Junior
+                  </div>
+                  <div className="text-xs sm:text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none mt-1">
+                    {studentsList.filter(s => s.category === 'Junior').length}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Senior Section */}
+              <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
+                <div className="h-7 w-7 rounded-md bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                  <Award className="h-3.5 w-3.5 stroke-[2.2]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+                    Senior
+                  </div>
+                  <div className="text-xs sm:text-sm font-extrabold text-purple-600 dark:text-purple-400 leading-none mt-1">
+                    {studentsList.filter(s => s.category === 'Senior').length}
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Active Groups */}
+              <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
+                <div className="h-7 w-7 rounded-md bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <School className="h-3.5 w-3.5 stroke-[2.2]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
+                    Groups
+                  </div>
+                  <div className="text-xs sm:text-sm font-extrabold text-amber-600 dark:text-amber-400 leading-none mt-1">
+                    {groups.length}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* 2. Junior Section */}
-            <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
-              <div className="h-7 w-7 rounded-md bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <GraduationCap className="h-3.5 w-3.5 stroke-[2.2]" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
-                  Junior
-                </div>
-                <div className="text-xs sm:text-sm font-extrabold text-emerald-600 dark:text-emerald-400 leading-none mt-1">
-                  {studentsList.filter(s => s.category === 'Junior').length}
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Senior Section */}
-            <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
-              <div className="h-7 w-7 rounded-md bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                <Award className="h-3.5 w-3.5 stroke-[2.2]" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
-                  Senior
-                </div>
-                <div className="text-xs sm:text-sm font-extrabold text-purple-600 dark:text-purple-400 leading-none mt-1">
-                  {studentsList.filter(s => s.category === 'Senior').length}
-                </div>
-              </div>
-            </div>
-
-            {/* 4. Active Groups */}
-            <div className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-lg bg-card/90 border border-border/80 shadow-2xs hover:bg-card transition-colors">
-              <div className="h-7 w-7 rounded-md bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                <School className="h-3.5 w-3.5 stroke-[2.2]" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[9px] uppercase font-bold text-muted-foreground tracking-wider leading-none">
-                  Groups
-                </div>
-                <div className="text-xs sm:text-sm font-extrabold text-amber-600 dark:text-amber-400 leading-none mt-1">
-                  {groups.length}
-                </div>
-              </div>
-            </div>
+            {/* Desktop Button: Beside Group Card on the Right Side */}
+            <Button
+              type="button"
+              onClick={() => setIsBatchModalOpen(true)}
+              className="h-10 px-3.5 gap-2 font-bold text-xs bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs cursor-pointer active:scale-95 transition-all shrink-0 rounded-lg"
+              title="Download all student report cards in group-wise ZIP archive"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download All</span>
+              <span className="text-[10px] font-mono font-bold bg-primary-foreground/20 text-primary-foreground px-1.5 py-0.5 rounded leading-none">
+                ZIP
+              </span>
+            </Button>
           </div>
         </div>
       </div>
@@ -1332,7 +1455,7 @@ export default function StudentReportsPage() {
           <div className="grid grid-cols-3 sm:flex sm:items-center gap-1.5 sm:gap-2">
             {/* Group Filter */}
             <Select value={filterGroup} onValueChange={handleGroupChange}>
-              <SelectTrigger className="w-full sm:w-[125px] text-xs sm:text-sm h-9 px-2 sm:px-3 bg-card truncate">
+              <SelectTrigger className="w-full sm:w-[130px] lg:w-[135px] text-xs sm:text-sm h-9 px-2.5 sm:px-3 bg-card truncate">
                 <SelectValue placeholder="Groups" />
               </SelectTrigger>
               <SelectContent>
@@ -1350,7 +1473,7 @@ export default function StudentReportsPage() {
 
             {/* Class Filter */}
             <Select value={filterClass} onValueChange={handleClassChange}>
-              <SelectTrigger className="w-full sm:w-[115px] text-xs sm:text-sm h-9 px-2 sm:px-3 bg-card truncate">
+              <SelectTrigger className="w-full sm:w-[130px] lg:w-[135px] text-xs sm:text-sm h-9 px-2.5 sm:px-3 bg-card truncate">
                 <SelectValue placeholder="Classes" />
               </SelectTrigger>
               <SelectContent>
@@ -1360,7 +1483,7 @@ export default function StudentReportsPage() {
                 </SelectItem>
                 {availableClasses.map((c) => (
                   <SelectItem key={c} value={c}>
-                    {c}
+                    Class {c}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -1368,7 +1491,7 @@ export default function StudentReportsPage() {
 
             {/* Category Filter */}
             <Select value={filterCategory} onValueChange={handleCategoryChange}>
-              <SelectTrigger className="w-full sm:w-[120px] text-xs sm:text-sm h-9 px-2 sm:px-3 bg-card truncate">
+              <SelectTrigger className="w-full sm:w-[150px] lg:w-[155px] text-xs sm:text-sm h-9 px-2.5 sm:px-3 bg-card truncate">
                 <SelectValue placeholder="Categories" />
               </SelectTrigger>
               <SelectContent>
@@ -1578,6 +1701,14 @@ export default function StudentReportsPage() {
           })}
         </div>
       )}
+
+      {/* Batch Download Modal */}
+      <BatchReportModal
+        open={isBatchModalOpen}
+        onOpenChange={setIsBatchModalOpen}
+        students={studentsList}
+        groups={groups}
+      />
     </div>
   );
 }
