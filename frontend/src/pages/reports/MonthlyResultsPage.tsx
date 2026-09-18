@@ -10,11 +10,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { fetchResultPeriods, createResultPeriod, deleteResultPeriod, fetchSubjects, type ResultPeriod, type Subject } from '@/lib/reports-api';
+import { fetchResultPeriods, createResultPeriod, deleteResultPeriod, updateResultPeriod, fetchSubjects, type ResultPeriod, type Subject } from '@/lib/reports-api';
 import { fetchGroups, fetchSettings } from '@/lib/api';
 import type { Group } from '@/lib/constants';
 import { MONTH_NAMES, MONTH_CODES } from '@/lib/constants';
-import { Plus, Trash2, Pencil, Eye, ClipboardList, RotateCcw, Search, Filter, X, ChevronDown, Check } from 'lucide-react';
+import { Plus, Trash2, Pencil, ClipboardList, RotateCcw, Search, Filter, X, ChevronDown, Check } from 'lucide-react';
 
 interface CustomDropdownProps {
   value: string;
@@ -123,7 +123,9 @@ export default function MonthlyResultsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ResultPeriod | null>(null);
+  const [revertTarget, setRevertTarget] = useState<ResultPeriod | null>(null);
   const [creating, setCreating] = useState(false);
+  const [reverting, setReverting] = useState(false);
 
   // Create form state
   const [formYear, setFormYear] = useState('');
@@ -298,6 +300,11 @@ export default function MonthlyResultsPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    if (deleteTarget.status === 'Published') {
+      toast.error('Cannot delete a published period. Revert to draft first.');
+      setDeleteTarget(null);
+      return;
+    }
     try {
       await deleteResultPeriod(deleteTarget.id);
       toast.success('Result period deleted');
@@ -306,6 +313,22 @@ export default function MonthlyResultsPage() {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to delete';
       toast.error(message);
+    }
+  };
+
+  const handleRevert = async () => {
+    if (!revertTarget) return;
+    setReverting(true);
+    try {
+      await updateResultPeriod(revertTarget.id, { status: 'Draft' });
+      toast.success('Result period reverted to Draft');
+      setRevertTarget(null);
+      load();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to revert';
+      toast.error(message);
+    } finally {
+      setReverting(false);
     }
   };
 
@@ -419,7 +442,7 @@ export default function MonthlyResultsPage() {
                 size="sm"
                 className="h-9 text-xs px-3.5 gap-1.5 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs shrink-0 active:scale-[0.98] transition-all"
                 onClick={() => navigate(`/reports/monthly/${existingPeriod.period_code || existingPeriod.id}/marks`)}
-                title="Open existing marks sheet"
+                title="Open marks sheet"
               >
                 <Pencil className="h-3.5 w-3.5" />
                 <span>Open Marks Sheet</span>
@@ -556,22 +579,31 @@ export default function MonthlyResultsPage() {
       ) : (
         <div className="space-y-2">
           {filteredPeriods.map(period => (
-            <Card key={period.id} className="hover:bg-accent/30 transition-colors shadow-2xs border rounded-xl overflow-hidden">
+            <Card
+              key={period.id}
+              onClick={() => navigate(`/reports/monthly/${period.period_code || period.id}/marks`)}
+              className="hover:bg-accent/40 hover:border-primary/40 active:scale-[0.995] transition-all duration-150 cursor-pointer shadow-2xs border rounded-xl overflow-hidden group select-none"
+            >
               <CardContent className="p-3 sm:p-3.5 flex flex-row items-center justify-between gap-2.5 sm:gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                    <span className="font-bold text-sm text-foreground">
+                    <span className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
                       {MONTH_NAMES[period.month] || period.month} {period.academic_year}
                     </span>
                     {period.period_code && (
-                      <Badge variant="secondary" className="font-mono text-[10px] px-1.5 py-0 font-bold border border-border/60 bg-muted/70 text-foreground">
+                      <Badge variant="secondary" className="hidden sm:inline-flex font-mono text-[10px] px-1.5 py-0 font-bold border border-border/60 bg-muted/70 text-foreground">
                         {period.period_code}
                       </Badge>
                     )}
                     <Badge variant={period.status === 'Published' ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'} className="text-[10px] px-1.5 py-0 font-semibold">
                       {period.status}
                     </Badge>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-medium">{period.category}</Badge>
+                    <Badge
+                      variant={period.category === 'Junior' ? 'junior' : 'senior'}
+                      className="text-[10px] px-1.5 py-0 font-bold"
+                    >
+                      {period.category}
+                    </Badge>
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5 truncate">
                     <span>Group {period.group_id}</span>
@@ -587,23 +619,55 @@ export default function MonthlyResultsPage() {
                 </div>
 
                 {/* Actions (Always on right side) */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 px-2 sm:px-3 text-xs gap-1 cursor-pointer bg-card hover:bg-accent shadow-2xs"
-                    onClick={() => navigate(`/reports/monthly/${period.period_code || period.id}/marks`)}
-                    title="Open Marks Entry"
-                  >
-                    <Pencil className="h-3.5 w-3.5 text-primary" />
-                    <span className="hidden sm:inline">Marks</span>
-                  </Button>
+                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {period.status === 'Published' ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs gap-1 cursor-pointer text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 border-amber-500/30 shadow-2xs font-medium"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRevertTarget(period);
+                      }}
+                      title="Revert to Draft to edit marks"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Revert to Draft</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 sm:w-auto p-0 sm:px-3 text-xs gap-1 cursor-pointer bg-card hover:bg-accent shadow-2xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/reports/monthly/${period.period_code || period.id}/marks`);
+                      }}
+                      title="Open Marks Entry"
+                    >
+                      <Pencil className="h-3.5 w-3.5 text-primary" />
+                      <span className="hidden sm:inline">Marks</span>
+                    </Button>
+                  )}
+
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                    onClick={() => setDeleteTarget(period)}
-                    title="Delete Result Period"
+                    className={`h-8 w-8 cursor-pointer ${
+                      period.status === 'Published'
+                        ? 'text-muted-foreground/30 hover:text-muted-foreground/50 cursor-not-allowed'
+                        : 'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
+                    }`}
+                    disabled={period.status === 'Published'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (period.status === 'Published') {
+                        toast.error('Cannot delete a published period. Revert to draft first.');
+                        return;
+                      }
+                      setDeleteTarget(period);
+                    }}
+                    title={period.status === 'Published' ? 'Published periods cannot be deleted (Revert to Draft first)' : 'Delete Result Period'}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
@@ -714,7 +778,12 @@ export default function MonthlyResultsPage() {
               <div className="rounded-lg border p-3 bg-muted/30 space-y-1.5 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-muted-foreground">Category:</span>
-                  <Badge variant="outline" className="font-semibold text-xs">{formCategory}</Badge>
+                  <Badge
+                    variant={formCategory === 'Junior' ? 'junior' : 'senior'}
+                    className="font-bold text-xs"
+                  >
+                    {formCategory}
+                  </Badge>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
                   Subjects will be loaded automatically. You can enter and adjust maximum marks individually for each student directly inside the marks entry screen.
@@ -752,6 +821,17 @@ export default function MonthlyResultsPage() {
         description={deleteTarget ? `This will permanently delete the result for ${MONTH_NAMES[deleteTarget.month] || deleteTarget.month} ${deleteTarget.academic_year} (Group ${deleteTarget.group_id}), including all student marks and rankings. This action cannot be undone.` : ''}
         actionLabel="Delete"
         onConfirm={handleDelete}
+        variant="destructive"
+      />
+
+      {/* Revert Confirmation */}
+      <ConfirmDialog
+        open={!!revertTarget}
+        onOpenChange={(open) => !open && setRevertTarget(null)}
+        title="Revert Result Period to Draft?"
+        description={revertTarget ? `This will unlock ${MONTH_NAMES[revertTarget.month] || revertTarget.month} ${revertTarget.academic_year} (Group ${revertTarget.group_id}) and revert its status back to Draft so you can edit student marks.` : ''}
+        actionLabel="Revert to Draft"
+        onConfirm={handleRevert}
         variant="destructive"
       />
     </div>

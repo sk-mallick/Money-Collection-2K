@@ -236,15 +236,13 @@ function updateResultPeriod(PDO $pdo): void {
         $values[] = $input['status'];
     }
     
-    if (!empty($fields)) {
-        $values[] = $realId;
-        $sql = 'UPDATE rc_result_periods SET ' . implode(', ', $fields) . ' WHERE id = ?';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($values);
-    }
-    
-    // Update default max marks: propagate to rc_student_marks directly
+    // Update default max marks: propagate to rc_student_marks directly (only allowed if not published, or if transitioning to Draft)
     if (isset($input['defaultMaxMarks']) && is_array($input['defaultMaxMarks'])) {
+        $newStatus = $input['status'] ?? $period['status'];
+        if ($period['status'] === 'Published' && $newStatus === 'Published') {
+            json_response(['success' => false, 'error' => 'This result period is published and locked. Revert to Draft to modify maximum marks.'], 403);
+        }
+        
         // Get all student_result_ids for this period
         $srIdStmt = $pdo->prepare('SELECT id FROM rc_student_results WHERE result_period_id = ?');
         $srIdStmt->execute([$realId]);
@@ -261,12 +259,29 @@ function updateResultPeriod(PDO $pdo): void {
             }
         }
     }
+
+    if (!empty($fields)) {
+        $values[] = $realId;
+        $sql = 'UPDATE rc_result_periods SET ' . implode(', ', $fields) . ' WHERE id = ?';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($values);
+    }
     
     // Audit log
     global $user;
     $adminId = $user['sub'] ?? null;
+    $auditDesc = "Updated result period: {$period['period_code']} (ID: $realId)";
+    if (isset($input['status'])) {
+        if ($period['status'] === 'Published' && $input['status'] === 'Draft') {
+            $auditDesc = "Reverted result period: {$period['period_code']} from Published to Draft";
+        } elseif ($input['status'] === 'Published') {
+            $auditDesc = "Published and finalized result period: {$period['period_code']}";
+        } else {
+            $auditDesc = "Changed status of result period {$period['period_code']} to {$input['status']}";
+        }
+    }
     $auditStmt = $pdo->prepare('INSERT INTO audit_logs (admin_id, action, target_entity, target_id, description) VALUES (?, ?, ?, ?, ?)');
-    $auditStmt->execute([$adminId, 'UPDATE', 'rc_result_period', $realId, "Updated result period: {$period['period_code']} (ID: $realId)"]);
+    $auditStmt->execute([$adminId, 'UPDATE', 'rc_result_period', $realId, $auditDesc]);
     
     json_response(['success' => true]);
 }
@@ -281,6 +296,9 @@ function deleteResultPeriod(PDO $pdo): void {
     $period = resolve_period($pdo, $id);
     if (!$period) {
         json_response(['success' => false, 'error' => 'Result period not found'], 404);
+    }
+    if (($period['status'] ?? '') === 'Published') {
+        json_response(['success' => false, 'error' => 'Published result periods cannot be deleted. Please revert to Draft first.'], 403);
     }
     $realId = (int)$period['id'];
     

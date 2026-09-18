@@ -95,6 +95,7 @@ interface MarksDropdownInputProps {
     direction: 'next' | 'prev' | 'up' | 'down'
   ) => void;
   inputMode?: 'dropdown' | 'normal';
+  disabled?: boolean;
 }
 
 function MarksDropdownInput({
@@ -108,6 +109,7 @@ function MarksDropdownInput({
   colIndex,
   onNavigate,
   inputMode = 'dropdown',
+  disabled = false,
 }: MarksDropdownInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpwards, setOpenUpwards] = useState(false);
@@ -152,7 +154,7 @@ function MarksDropdownInput({
   }, [isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (inputMode === 'dropdown') return;
+    if (disabled || inputMode === 'dropdown') return;
     const raw = e.target.value;
 
     const trimmed = raw.trim().toLowerCase();
@@ -184,6 +186,26 @@ function MarksDropdownInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (disabled) {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+          onNavigate(rowIndex, colIndex, 'obtained', e.shiftKey ? 'prev' : 'next');
+        }
+        return;
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+          const dir = e.key === 'ArrowDown' ? 'down' : e.key === 'ArrowUp' ? 'up' : e.key === 'ArrowRight' ? 'next' : 'prev';
+          onNavigate(rowIndex, colIndex, 'obtained', dir);
+        }
+        return;
+      }
+      e.preventDefault();
+      return;
+    }
+
     // 0. Jump shortcut '/': prevent '/' from typing into marks and let it bubble to global jump handler
     if (e.key === '/' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
@@ -340,7 +362,11 @@ function MarksDropdownInput({
     <div ref={containerRef} className={`relative inline-block w-full ${className}`}>
       <div
         className={`flex items-center rounded-md border transition-all ${
-          isAbsent
+          disabled
+            ? isAbsent
+              ? 'border-destructive/30 bg-destructive/5 text-destructive cursor-not-allowed opacity-80'
+              : 'border-border/60 bg-muted/40 text-foreground cursor-not-allowed opacity-85'
+            : isAbsent
             ? 'border-destructive/40 bg-destructive/10 text-destructive'
             : isExceeded
             ? 'border-destructive bg-destructive/5 ring-1 ring-destructive'
@@ -357,6 +383,7 @@ function MarksDropdownInput({
             data-row={rowIndex}
             data-col={colIndex}
             onClick={() => {
+              if (disabled) return;
               if (inputMode === 'normal') {
                 onChange(null, false);
                 setTimeout(() => {
@@ -367,6 +394,25 @@ function MarksDropdownInput({
               }
             }}
             onKeyDown={(e) => {
+              if (disabled) {
+                if (e.key === 'Tab') {
+                  e.preventDefault();
+                  if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+                    onNavigate(rowIndex, colIndex, 'obtained', e.shiftKey ? 'prev' : 'next');
+                  }
+                  return;
+                }
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                  e.preventDefault();
+                  if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+                    const dir = e.key === 'ArrowDown' ? 'down' : e.key === 'ArrowUp' ? 'up' : e.key === 'ArrowRight' ? 'next' : 'prev';
+                    onNavigate(rowIndex, colIndex, 'obtained', dir);
+                  }
+                  return;
+                }
+                e.preventDefault();
+                return;
+              }
               if (e.key === '/' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
                 e.preventDefault();
                 return;
@@ -424,14 +470,16 @@ function MarksDropdownInput({
                 return;
               }
             }}
-            className={`flex-1 flex items-center w-full cursor-pointer select-none outline-none focus:ring-1 focus:ring-primary ${
+            className={`flex-1 flex items-center w-full select-none outline-none ${
+              disabled ? 'cursor-not-allowed' : 'cursor-pointer focus:ring-1 focus:ring-primary'
+            } ${
               isTable ? 'h-8 text-xs' : 'h-8 text-xs sm:text-sm'
             }`}
           >
             {isTable ? (
               <span
                 className={`w-full font-mono font-bold text-center text-destructive ${
-                  inputMode === 'normal' ? 'px-1' : 'pl-5 pr-1'
+                  inputMode === 'normal' || disabled ? 'px-1' : 'pl-5 pr-1'
                 }`}
               >
                 A
@@ -443,7 +491,7 @@ function MarksDropdownInput({
                 <span className="sm:hidden font-black text-destructive">A</span>
               </div>
             )}
-            {inputMode !== 'normal' && (
+            {!disabled && inputMode !== 'normal' && (
               <div
                 className={`${
                   isTable ? 'w-5 pr-1.5' : 'w-6 pr-1.5'
@@ -473,12 +521,18 @@ function MarksDropdownInput({
                 data-marks-input="true"
                 data-row={rowIndex}
                 data-col={colIndex}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => {
+                  if (!disabled) setIsOpen(!isOpen);
+                }}
                 onKeyDown={handleKeyDown}
-                className={`w-full font-mono font-bold text-center bg-transparent outline-none cursor-pointer select-none flex items-center justify-center ${
-                  isTable ? 'h-8 text-xs pl-5 pr-1' : 'h-8 text-xs sm:text-sm pl-6 pr-1.5'
+                className={`w-full font-mono font-bold text-center bg-transparent outline-none select-none flex items-center justify-center ${
+                  disabled
+                    ? 'cursor-not-allowed text-foreground/80 px-1'
+                    : isTable
+                    ? 'cursor-pointer h-8 text-xs pl-5 pr-1'
+                    : 'cursor-pointer h-8 text-xs sm:text-sm pl-6 pr-1.5'
                 }`}
-                title="Select marks from dropdown"
+                title={disabled ? "Published result (Read-Only)" : "Select marks from dropdown"}
               >
                 {inputValue !== '' ? (
                   <span>{inputValue}</span>
@@ -490,6 +544,8 @@ function MarksDropdownInput({
               <input
                 ref={inputRef}
                 type="text"
+                disabled={disabled}
+                readOnly={disabled}
                 inputMode="decimal"
                 placeholder="0"
                 value={inputValue}
@@ -499,14 +555,16 @@ function MarksDropdownInput({
                 data-row={rowIndex}
                 data-col={colIndex}
                 className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/60 placeholder:font-semibold ${
-                  isTable
+                  disabled
+                    ? 'cursor-not-allowed text-foreground/80'
+                    : isTable
                     ? 'h-8 text-xs px-1'
                     : 'h-8 text-xs sm:text-sm px-1.5'
                 }`}
-                title="Enter marks"
+                title={disabled ? "Published result (Read-Only)" : "Enter marks"}
               />
             )}
-            {inputMode !== 'normal' && (
+            {!disabled && inputMode !== 'normal' && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -533,7 +591,7 @@ function MarksDropdownInput({
       </div>
 
       {/* Floating Compact Dropdown Menu for Marks & Absent (Only when not in normal input mode) */}
-      {inputMode !== 'normal' && isOpen && (
+      {!disabled && inputMode !== 'normal' && isOpen && (
         <div
           className={`absolute left-0 z-50 w-full min-w-[70px] bg-popover text-popover-foreground border rounded-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ${
             openUpwards ? 'bottom-full mb-1' : 'top-full mt-1'
@@ -605,6 +663,7 @@ interface MaxMarksDropdownInputProps {
     field: 'obtained' | 'max',
     direction: 'next' | 'prev' | 'up' | 'down'
   ) => void;
+  disabled?: boolean;
 }
 
 function MaxMarksDropdownInput({
@@ -616,6 +675,7 @@ function MaxMarksDropdownInput({
   rowIndex,
   colIndex,
   onNavigate,
+  disabled = false,
 }: MaxMarksDropdownInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpwards, setOpenUpwards] = useState(false);
@@ -660,7 +720,7 @@ function MaxMarksDropdownInput({
   }, [isOpen, value]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (inputMode === 'dropdown') return;
+    if (disabled || inputMode === 'dropdown') return;
     const raw = e.target.value;
     // Strictly numbers only: strip out any non-digit characters
     const val = raw.replace(/\D/g, '');
@@ -674,6 +734,26 @@ function MaxMarksDropdownInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (disabled) {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+          onNavigate(rowIndex, colIndex, 'max', e.shiftKey ? 'prev' : 'next');
+        }
+        return;
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (onNavigate && rowIndex !== undefined && colIndex !== undefined) {
+          const dir = e.key === 'ArrowDown' ? 'down' : e.key === 'ArrowUp' ? 'up' : e.key === 'ArrowRight' ? 'next' : 'prev';
+          onNavigate(rowIndex, colIndex, 'max', dir);
+        }
+        return;
+      }
+      e.preventDefault();
+      return;
+    }
+
     // 0. Jump shortcut '/': prevent '/' from typing into max marks
     if (e.key === '/' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
@@ -796,7 +876,11 @@ function MaxMarksDropdownInput({
 
   return (
     <div ref={containerRef} className={`relative inline-block w-full ${className}`}>
-      <div className="flex items-center rounded-md border transition-all border-input bg-muted/30 hover:bg-muted/45 focus-within:ring-1 focus-within:ring-primary focus-within:border-primary focus-within:bg-card">
+      <div className={`flex items-center rounded-md border transition-all ${
+        disabled
+          ? 'border-border/60 bg-muted/40 cursor-not-allowed opacity-85'
+          : 'border-input bg-muted/30 hover:bg-muted/45 focus-within:ring-1 focus-within:ring-primary focus-within:border-primary focus-within:bg-card'
+      }`}>
         <div className="flex items-center w-full">
           {inputMode === 'dropdown' ? (
             <div
@@ -807,14 +891,18 @@ function MaxMarksDropdownInput({
               data-max-marks-input="true"
               data-row={rowIndex}
               data-col={colIndex}
-              onClick={() => setIsOpen(!isOpen)}
+              onClick={() => {
+                if (!disabled) setIsOpen(!isOpen);
+              }}
               onKeyDown={handleKeyDown}
-              className={`w-full font-mono font-bold text-center bg-transparent outline-none cursor-pointer select-none flex items-center justify-center ${
-                isTable
-                  ? 'h-8 text-xs pl-5 pr-1'
-                  : 'h-8 text-xs sm:text-sm pl-6 pr-1.5'
+              className={`w-full font-mono font-bold text-center bg-transparent outline-none select-none flex items-center justify-center ${
+                disabled
+                  ? 'cursor-not-allowed text-foreground/80 px-1'
+                  : isTable
+                  ? 'cursor-pointer h-8 text-xs pl-5 pr-1'
+                  : 'cursor-pointer h-8 text-xs sm:text-sm pl-6 pr-1.5'
               }`}
-              title="Select maximum marks from dropdown"
+              title={disabled ? "Published result (Read-Only)" : "Select maximum marks from dropdown"}
             >
               {inputValue !== '' ? (
                 <span>{inputValue}</span>
@@ -828,6 +916,8 @@ function MaxMarksDropdownInput({
             <input
               ref={inputRef}
               type="text"
+              disabled={disabled}
+              readOnly={disabled}
               inputMode="decimal"
               placeholder="MAX"
               value={inputValue}
@@ -837,14 +927,16 @@ function MaxMarksDropdownInput({
               data-row={rowIndex}
               data-col={colIndex}
               className={`w-full font-mono font-bold text-center bg-transparent outline-none placeholder:text-muted-foreground/75 placeholder:font-semibold placeholder:tracking-wide ${
-                isTable
+                disabled
+                  ? 'cursor-not-allowed text-foreground/80'
+                  : isTable
                   ? 'h-8 text-xs px-1 placeholder:text-[10px]'
                   : 'h-8 text-xs sm:text-sm px-1.5 placeholder:text-[11px] sm:placeholder:text-xs'
               }`}
-              title="Maximum marks (10 to 150 range)"
+              title={disabled ? "Published result (Read-Only)" : "Maximum marks (10 to 150 range)"}
             />
           )}
-          {inputMode !== 'normal' && (
+          {!disabled && inputMode !== 'normal' && (
             <button
               type="button"
               onClick={(e) => {
@@ -869,7 +961,7 @@ function MaxMarksDropdownInput({
         </div>
       </div>
 
-      {inputMode !== 'normal' && isOpen && (
+      {!disabled && inputMode !== 'normal' && isOpen && (
         <div
           className={`absolute left-0 z-50 w-full min-w-[75px] bg-popover text-popover-foreground border rounded-md shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ${
             openUpwards ? 'bottom-full mb-1' : 'top-full mt-1'
@@ -925,8 +1017,11 @@ export default function MarksEntryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [revertDialogOpen, setRevertDialogOpen] = useState(false);
   const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const isPublished = period?.status === 'Published';
   const [viewMode, setViewModeState] = useState<'accordion' | 'table'>(() => {
     // On phone / mobile screen size (< 640px), always open with Cards ('accordion')
     if (typeof window !== 'undefined' && window.innerWidth < 640) {
@@ -1445,7 +1540,7 @@ export default function MarksEntryPage() {
   };
 
   const handleSave = async () => {
-    if (!periodId) return;
+    if (!periodId || isPublished) return;
     setSaving(true);
     try {
       const payload = students.map((s) => ({
@@ -1489,6 +1584,7 @@ export default function MarksEntryPage() {
     try {
       await updateResultPeriod(periodId, { status: 'Draft' });
       toast.success('Result reverted to Draft');
+      setRevertDialogOpen(false);
       await loadData(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to revert';
@@ -1869,6 +1965,10 @@ export default function MarksEntryPage() {
       // 1. Ctrl+S / Cmd+S: Save Marks
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
+        if (isPublished) {
+          toast.info('Result period is published and read-only. Revert to draft to edit.');
+          return;
+        }
         if (!saving) {
           handleSave();
         }
@@ -1925,7 +2025,7 @@ export default function MarksEntryPage() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [saving, handleSave, handleJumpToFirstOrLastFilled]);
+  }, [saving, handleSave, handleJumpToFirstOrLastFilled, isPublished]);
 
   if (loading) {
     return <MarksEntryPageLoading />;
@@ -1941,260 +2041,290 @@ export default function MarksEntryPage() {
     );
   }
 
-  const isPublished = period.status === 'Published';
-
   return (
     <>
       <ContextMenu>
         <ContextMenuTrigger asChild>
         <div className="page-enter p-3 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 w-full max-w-[99vw] 2xl:max-w-[1850px] mx-auto min-h-[85vh]">
           {/* Top Header Bar */}
-      {/* Top Header Bar */}
-      <div className="bg-card p-3.5 sm:p-4 rounded-xl border shadow-xs w-full">
-        {/* MOBILE VIEW (< sm) */}
-        <div className="sm:hidden space-y-2">
-          {/* Top Title & Group Info + Icon-only Back Button on the right */}
-          <div className="flex items-center justify-between gap-2 pb-2 border-b border-border/40">
-            <div className="space-y-0.5 min-w-0 flex-1">
-              <h1 className="text-base font-black tracking-tight text-foreground leading-snug truncate">
-                {MONTH_NAMES[period.month] || period.month} {period.academic_year} Marks Entry
-              </h1>
-              <div className="text-xs text-muted-foreground font-medium">
-                Group <strong className="text-foreground">{period.group_id}</strong>{' '}
-                {period.group_class ? `(${period.group_class})` : ''}
+          <div className="bg-card p-3.5 sm:p-4 rounded-xl border shadow-xs w-full">
+            {/* MOBILE VIEW (< sm) */}
+            <div className="sm:hidden space-y-2">
+              {/* Top Title & Group Info + Icon-only Back Button on the right */}
+              <div className="flex items-center justify-between gap-2 pb-2 border-b border-border/40">
+                <div className="space-y-0.5 min-w-0 flex-1">
+                  <h1 className="text-base font-black tracking-tight text-foreground leading-snug truncate">
+                    {MONTH_NAMES[period.month] || period.month} {period.academic_year} Marks Entry
+                  </h1>
+                  <div className="text-xs text-muted-foreground font-medium">
+                    Group <strong className="text-foreground">{period.group_id}</strong>{' '}
+                    {period.group_class ? `(${period.group_class})` : ''}
+                  </div>
+                </div>
+
+                {/* Back Button (Icon Only) */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (hasUnsavedChanges) {
+                      if (window.confirm('You have unsaved changes. Do you really want to leave?')) {
+                        navigate('/reports/monthly');
+                      }
+                    } else {
+                      navigate('/reports/monthly');
+                    }
+                  }}
+                  className="h-8 w-8 p-0 shrink-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
+                  title="Back to Monthly Reports"
+                  aria-label="Back"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Centered Single Line: Counts + Badges (Unsaved Changes, Draft, Senior) */}
+              <div className="text-xs text-muted-foreground flex items-center justify-center gap-2 flex-wrap text-center py-0.5">
+                <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                  <span>
+                    <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{completedCount}</strong>/{students.length} done
+                  </span>
+                  {partialAbsentCount > 0 && (
+                    <>
+                      <span>•</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                        {partialAbsentCount} partial
+                      </span>
+                    </>
+                  )}
+                  {fullyAbsentCount > 0 && (
+                    <>
+                      <span>•</span>
+                      <span className="text-destructive font-semibold">{fullyAbsentCount} absent</span>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0 justify-center">
+                  {hasUnsavedChanges && (
+                    <Badge variant="destructive" className="animate-pulse text-[10px] font-bold px-1.5 py-0.5 shadow-xs">
+                      Unsaved Changes
+                    </Badge>
+                  )}
+                  <Badge
+                    variant={isPublished ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'}
+                    className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5"
+                  >
+                    {period.status}
+                  </Badge>
+                  <Badge
+                    variant={period.category === 'Junior' ? 'junior' : 'senior'}
+                    className="text-[10px] font-bold px-1.5 py-0.5"
+                  >
+                    {period.category}
+                  </Badge>
+                  {period.period_code && (
+                    <Badge variant="secondary" className="font-mono text-[10px] px-1.5 py-0.5 font-bold border border-border/60 bg-muted/70 text-foreground">
+                      {period.period_code}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Mobile Action Buttons in a Single Line: Reset, Marks, Finalize / Revert */}
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full pt-2 border-t border-border/40">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadData()}
+                  disabled={saving || isPublished}
+                  className="text-xs h-9 font-medium justify-center px-2 cursor-pointer"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1 shrink-0" />
+                  Reset
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={saving || isPublished}
+                  className="text-xs h-9 font-bold shadow-xs bg-primary hover:bg-primary/90 text-primary-foreground justify-center px-2 cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="h-3.5 w-3.5 mr-1 shrink-0" />
+                  {saving ? 'Saving...' : 'Marks'}
+                </Button>
+
+                {!isPublished ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setPublishDialogOpen(true)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 font-semibold justify-center px-2 cursor-pointer"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 mr-1 shrink-0" />
+                    Finalize
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setRevertDialogOpen(true)}
+                    className="text-xs h-9 font-semibold text-amber-700 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/10 justify-center px-2 cursor-pointer"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 mr-1 shrink-0" />
+                    Revert
+                  </Button>
+                )}
               </div>
             </div>
 
-            {/* Back Button (Icon Only) */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (hasUnsavedChanges) {
-                  if (window.confirm('You have unsaved changes. Do you really want to leave?')) {
-                    navigate('/reports/monthly');
-                  }
-                } else {
-                  navigate('/reports/monthly');
-                }
-              }}
-              className="h-8 w-8 p-0 shrink-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
-              title="Back to Monthly Reports"
-              aria-label="Back"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Centered Single Line: Counts + Badges (Unsaved Changes, Draft, Senior) */}
-          <div className="text-xs text-muted-foreground flex items-center justify-center gap-2 flex-wrap text-center py-0.5">
-            <div className="flex items-center gap-1.5 flex-wrap justify-center">
-              <span>
-                <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{completedCount}</strong>/{students.length} done
-              </span>
-              {partialAbsentCount > 0 && (
-                <>
-                  <span>•</span>
-                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                    {partialAbsentCount} partial
+            {/* DESKTOP VIEW (>= sm) */}
+            <div className="hidden sm:flex sm:flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div className="space-y-1.5">
+                <h1 className="text-lg sm:text-2xl font-black tracking-tight text-foreground">
+                  {MONTH_NAMES[period.month] || period.month} {period.academic_year} Marks Entry
+                </h1>
+                <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
+                  <span>
+                    Group <strong className="text-foreground">{period.group_id}</strong>{' '}
+                    {period.group_class ? `(${period.group_class})` : ''}
                   </span>
-                </>
-              )}
-              {fullyAbsentCount > 0 && (
-                <>
                   <span>•</span>
-                  <span className="text-destructive font-semibold">{fullyAbsentCount} absent</span>
-                </>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0 justify-center">
-              {hasUnsavedChanges && (
-                <Badge variant="destructive" className="animate-pulse text-[10px] font-bold px-1.5 py-0.5 shadow-xs">
-                  Unsaved Changes
-                </Badge>
-              )}
-              <Badge
-                variant={isPublished ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'}
-                className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5"
-              >
-                {period.status}
-              </Badge>
-              <Badge variant="outline" className="text-[10px] font-semibold px-1.5 py-0.5">
-                {period.category}
-              </Badge>
-              {period.period_code && (
-                <Badge variant="secondary" className="font-mono text-[10px] px-1.5 py-0.5 font-bold border border-border/60 bg-muted/70 text-foreground">
-                  {period.period_code}
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {/* Mobile Action Buttons in a Single Line: Reset, Marks, Finalize */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full pt-2 border-t border-border/40">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => loadData()}
-              disabled={saving}
-              className="text-xs h-9 font-medium justify-center px-2 cursor-pointer"
-            >
-              <RotateCcw className="h-3.5 w-3.5 mr-1 shrink-0" />
-              Reset
-            </Button>
-
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={saving}
-              className="text-xs h-9 font-bold shadow-xs bg-primary hover:bg-primary/90 text-primary-foreground justify-center px-2 cursor-pointer"
-            >
-              <Save className="h-3.5 w-3.5 mr-1 shrink-0" />
-              {saving ? 'Saving...' : 'Marks'}
-            </Button>
-
-            {!isPublished ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setPublishDialogOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 font-semibold justify-center px-2 cursor-pointer"
-              >
-                <ShieldCheck className="h-3.5 w-3.5 mr-1 shrink-0" />
-                Finalize
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleRevertToDraft}
-                className="text-xs h-9 font-medium justify-center px-2 cursor-pointer"
-              >
-                <Lock className="h-3.5 w-3.5 mr-1 shrink-0" />
-                Revert
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* DESKTOP VIEW (>= sm) */}
-        <div className="hidden sm:flex sm:flex-col md:flex-row md:items-end md:justify-between gap-4">
-          <div className="space-y-1.5">
-            <h1 className="text-lg sm:text-2xl font-black tracking-tight text-foreground">
-              {MONTH_NAMES[period.month] || period.month} {period.academic_year} Marks Entry
-            </h1>
-            <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-              <span>
-                Group <strong className="text-foreground">{period.group_id}</strong>{' '}
-                {period.group_class ? `(${period.group_class})` : ''}
-              </span>
-              <span>•</span>
-              <span>
-                <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{completedCount}</strong> of{' '}
-                {students.length} completed
-              </span>
-              {partialAbsentCount > 0 && (
-                <>
-                  <span>•</span>
-                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                    {partialAbsentCount} partial absent
+                  <span>
+                    <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{completedCount}</strong> of{' '}
+                    {students.length} completed
                   </span>
-                </>
-              )}
-              {fullyAbsentCount > 0 && (
-                <>
-                  <span>•</span>
-                  <span className="text-destructive font-semibold">{fullyAbsentCount} all absent</span>
-                </>
-              )}
+                  {partialAbsentCount > 0 && (
+                    <>
+                      <span>•</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                        {partialAbsentCount} partial absent
+                      </span>
+                    </>
+                  )}
+                  {fullyAbsentCount > 0 && (
+                    <>
+                      <span>•</span>
+                      <span className="text-destructive font-semibold">{fullyAbsentCount} all absent</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Desktop Right Side: Top Badges (from right to left) + Bottom Action Buttons */}
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                {/* Top Badges Row: Unsaved Changes (on left side), Draft status, Senior category */}
+                <div className="flex items-center gap-2 justify-end flex-wrap">
+                  {hasUnsavedChanges && (
+                    <Badge variant="destructive" className="animate-pulse text-xs font-bold px-2.5 py-0.5 shadow-xs">
+                      Unsaved Changes
+                    </Badge>
+                  )}
+                  <Badge
+                    variant={isPublished ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'}
+                    className="text-xs font-semibold uppercase tracking-wider"
+                  >
+                    {period.status}
+                  </Badge>
+                  <Badge
+                    variant={period.category === 'Junior' ? 'junior' : 'senior'}
+                    className="text-xs font-bold px-2 py-0.5"
+                  >
+                    {period.category}
+                  </Badge>
+                  {period.period_code && (
+                    <Badge variant="secondary" className="font-mono text-xs px-2.5 py-0.5 border border-border/60 bg-muted/70 text-foreground font-bold tracking-wide">
+                      {period.period_code}
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Bottom Row: Action Buttons */}
+                <ButtonGroup aria-label="Marks entry actions">
+                  <Button variant="outline" size="sm" onClick={() => loadData()} disabled={saving || isPublished} className="text-xs">
+                    <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                    Reset
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={saving || isPublished}
+                    className="text-xs min-w-[95px] font-bold shadow-xs bg-primary hover:bg-primary/90 cursor-pointer disabled:opacity-50"
+                  >
+                    <Save className="h-3.5 w-3.5 mr-1" />
+                    {saving ? 'Saving...' : 'Save Marks'}
+                  </Button>
+
+                  <ButtonGroupSeparator />
+
+                  {!isPublished ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setPublishDialogOpen(true)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer"
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5 mr-1" />
+                      Finalize
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setRevertDialogOpen(true)}
+                      className="text-xs font-semibold text-amber-700 dark:text-amber-400 border-amber-500/40 hover:bg-amber-500/10 cursor-pointer"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                      Revert to Draft
+                    </Button>
+                  )}
+
+                  <ButtonGroupSeparator />
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (hasUnsavedChanges) {
+                        if (window.confirm('You have unsaved changes. Do you really want to leave?')) {
+                          navigate('/reports/monthly');
+                        }
+                      } else {
+                        navigate('/reports/monthly');
+                      }
+                    }}
+                    className="text-xs"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+                    Back
+                  </Button>
+                </ButtonGroup>
+              </div>
             </div>
           </div>
 
-          {/* Desktop Right Side: Top Badges (from right to left) + Bottom Action Buttons */}
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            {/* Top Badges Row: Unsaved Changes (on left side), Draft status, Senior category */}
-            <div className="flex items-center gap-2 justify-end flex-wrap">
-              {hasUnsavedChanges && (
-                <Badge variant="destructive" className="animate-pulse text-xs font-bold px-2.5 py-0.5 shadow-xs">
-                  Unsaved Changes
-                </Badge>
-              )}
-              <Badge
-                variant={isPublished ? 'default' : period.status === 'Completed' ? 'secondary' : 'outline'}
-                className="text-xs font-semibold uppercase tracking-wider"
-              >
-                {period.status}
-              </Badge>
-              <Badge variant="outline" className="text-xs font-semibold">
-                {period.category}
-              </Badge>
-              {period.period_code && (
-                <Badge variant="secondary" className="font-mono text-xs px-2.5 py-0.5 border border-border/60 bg-muted/70 text-foreground font-bold tracking-wide">
-                  {period.period_code}
-                </Badge>
-              )}
-            </div>
-
-            {/* Bottom Row: Action Buttons */}
-            <ButtonGroup aria-label="Marks entry actions">
-              <Button variant="outline" size="sm" onClick={() => loadData()} disabled={saving} className="text-xs">
-                <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                Reset
-              </Button>
-
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={saving}
-                className="text-xs min-w-[95px] font-bold shadow-xs bg-primary hover:bg-primary/90 cursor-pointer"
-              >
-                <Save className="h-3.5 w-3.5 mr-1" />
-                {saving ? 'Saving...' : 'Save Marks'}
-              </Button>
-
-              <ButtonGroupSeparator />
-
-              {!isPublished ? (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setPublishDialogOpen(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer"
+          {/* Published & Locked Notice Banner */}
+          {isPublished && (
+            <div className="flex items-center gap-2 px-3 py-2 sm:px-3.5 sm:py-2 rounded-lg border border-amber-500/25 bg-amber-500/[0.07] text-amber-900 dark:text-amber-200/90 text-xs shadow-2xs animate-in fade-in duration-150">
+              <Lock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <div className="flex items-center gap-1.5 min-w-0 flex-1 flex-wrap text-[11px] sm:text-xs">
+                <span className="font-semibold text-amber-950 dark:text-amber-200">
+                  Published &amp; Locked:
+                </span>
+                <span className="text-amber-800/85 dark:text-amber-300/80">
+                  Marks and rankings are in read-only mode.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRevertDialogOpen(true)}
+                  className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 underline underline-offset-2 cursor-pointer transition-colors"
                 >
-                  <ShieldCheck className="h-3.5 w-3.5 mr-1" />
-                  Finalize
-                </Button>
-              ) : (
-                <Button size="sm" variant="outline" onClick={handleRevertToDraft} className="text-xs">
-                  <Lock className="h-3.5 w-3.5 mr-1" />
-                  Revert to Draft
-                </Button>
-              )}
-
-              <ButtonGroupSeparator />
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (hasUnsavedChanges) {
-                    if (window.confirm('You have unsaved changes. Do you really want to leave?')) {
-                      navigate('/reports/monthly');
-                    }
-                  } else {
-                    navigate('/reports/monthly');
-                  }
-                }}
-                className="text-xs"
-              >
-                <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-                Back
-              </Button>
-            </ButtonGroup>
-          </div>
-        </div>
-      </div>
+                  <span>Revert to Draft to edit</span>
+                </button>
+              </div>
+            </div>
+          )}
 
       {/* Search, Filter, and View Mode Toolbar */}
       <div className="space-y-2.5">
@@ -2801,7 +2931,7 @@ export default function MarksEntryPage() {
                       )}
 
                       {/* When Expanded: 3 Compact Icon Action Buttons (Right-aligned on mobile where chevron was, and on right before chevron on desktop) */}
-                      {isExpanded && (
+                      {isExpanded && !isPublished && (
                         <div className="flex items-center gap-1 sm:gap-1.5 ml-auto sm:ml-0" onClick={(e) => e.stopPropagation()}>
                           {/* 1. Absent All Icon Button */}
                           <Button
@@ -2920,6 +3050,7 @@ export default function MarksEntryPage() {
                                     colIndex={markIdx}
                                     onNavigate={handleCellNavigate}
                                     inputMode={inputMode}
+                                    disabled={isPublished}
                                     onChange={(obt, abs) =>
                                       updateSubjectValue(originalIndex, markIdx, obt, abs)
                                     }
@@ -2935,6 +3066,7 @@ export default function MarksEntryPage() {
                                     rowIndex={filteredIdx}
                                     colIndex={markIdx}
                                     onNavigate={handleCellNavigate}
+                                    disabled={isPublished}
                                     onChange={(val) =>
                                       updateStudentMaxMark(originalIndex, markIdx, val)
                                     }
@@ -2991,10 +3123,14 @@ export default function MarksEntryPage() {
                             size="sm"
                             variant="secondary"
                             onClick={() => handleDoneStudent(student.studentResultId, filteredIdx)}
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold h-9 px-4 cursor-pointer"
+                            className={
+                              isPublished
+                                ? 'text-xs font-semibold h-9 px-4 cursor-pointer'
+                                : 'bg-primary text-primary-foreground hover:bg-primary/90 text-xs font-semibold h-9 px-4 cursor-pointer'
+                            }
                           >
                             <Check className="h-3.5 w-3.5 mr-1.5" />
-                            Done & Next Student
+                            {isPublished ? 'Close' : 'Done & Next Student'}
                           </Button>
                         </div>
                       </div>
@@ -3246,6 +3382,7 @@ export default function MarksEntryPage() {
                                     colIndex={markIdx}
                                     onNavigate={handleCellNavigate}
                                     inputMode={inputMode}
+                                    disabled={isPublished}
                                     onChange={(obt, abs) =>
                                       updateSubjectValue(originalIndex, markIdx, obt, abs)
                                     }
@@ -3263,6 +3400,7 @@ export default function MarksEntryPage() {
                                     rowIndex={tableRowIdx}
                                     colIndex={markIdx}
                                     onNavigate={handleCellNavigate}
+                                    disabled={isPublished}
                                     className="w-full"
                                     onChange={(val) =>
                                       updateStudentMaxMark(originalIndex, markIdx, val)
@@ -3368,19 +3506,30 @@ export default function MarksEntryPage() {
         onConfirm={handlePublish}
         variant="default"
       />
+
+      {/* Revert to Draft Confirmation Dialog */}
+      <ConfirmDialog
+        open={revertDialogOpen}
+        onOpenChange={setRevertDialogOpen}
+        title="Revert Result Period to Draft?"
+        description="Unlocking this period will switch its status back to Draft, allowing you to edit and update student marks. While in Draft, public view of report cards might reflect unfinalized data until re-published."
+        actionLabel="Revert to Draft"
+        onConfirm={handleRevertToDraft}
+        variant="destructive"
+      />
     </div>
     </ContextMenuTrigger>
 
     {/* Whole-Page Context Menu */}
     <ContextMenuContent className="w-56 shadow-xl">
       {/* Top Actions (All above buttons except Back) */}
-      <ContextMenuItem onClick={handleSave} disabled={saving} className="cursor-pointer font-medium">
+      <ContextMenuItem onClick={handleSave} disabled={saving || isPublished} className="cursor-pointer font-medium">
         <Save className="h-4 w-4 mr-2 text-primary" />
         <span>Save Marks</span>
         <ContextMenuShortcut>Ctrl+S</ContextMenuShortcut>
       </ContextMenuItem>
 
-      <ContextMenuItem onClick={() => loadData()} disabled={saving} className="cursor-pointer">
+      <ContextMenuItem onClick={() => loadData()} disabled={saving || isPublished} className="cursor-pointer">
         <RotateCcw className="h-4 w-4 mr-2" />
         <span>Reset</span>
       </ContextMenuItem>
@@ -3394,8 +3543,11 @@ export default function MarksEntryPage() {
           <span>Finalize</span>
         </ContextMenuItem>
       ) : (
-        <ContextMenuItem onClick={handleRevertToDraft} className="cursor-pointer">
-          <Lock className="h-4 w-4 mr-2" />
+        <ContextMenuItem
+          onClick={() => setRevertDialogOpen(true)}
+          className="cursor-pointer text-amber-600 focus:text-amber-600 font-medium"
+        >
+          <RotateCcw className="h-4 w-4 mr-2 text-amber-600" />
           <span>Revert to Draft</span>
         </ContextMenuItem>
       )}
