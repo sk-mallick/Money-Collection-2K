@@ -1891,25 +1891,25 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
         const titleX = headerCenterX - totalW / 2;
 
         doc.setTextColor(...blackColor);
-        doc.text(part1, titleX, marginTop + 5.8);
+        doc.text(part1, titleX, marginTop + 5.5);
         doc.setTextColor(...redColor);
-        doc.text(part2, titleX + w1, marginTop + 5.8);
+        doc.text(part2, titleX + w1, marginTop + 5.5);
         doc.setTextColor(...blackColor);
-        doc.text(part3, titleX + w1 + w2, marginTop + 5.8);
+        doc.text(part3, titleX + w1 + w2, marginTop + 5.5);
 
         // Title Banner
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.0);
         doc.setTextColor(0, 0, 0);
         const sheetTitle = `WEEKLY ${trackTitle} TRACKING SHEET — ${monthName.toUpperCase()} ${academicYear}`;
-        doc.text(sheetTitle, headerCenterX, marginTop + 9.8, { align: 'center' });
+        doc.text(sheetTitle, headerCenterX, marginTop + 9.5, { align: 'center' });
 
         // Red Divider
         doc.setFillColor(220, 38, 38);
-        doc.rect(marginX + 1.5, marginTop + 11.6, contentWidth - 3, 0.7, 'F');
+        doc.rect(marginX + 1.5, marginTop + 11.2, contentWidth - 3, 0.7, 'F');
 
         // Group & Batch Meta Banner
-        const metaY = marginTop + 13.3;
+        const metaY = marginTop + 12.8;
         const metaH = 5.2;
         const tableLeftX = marginX + 1.5;
         const tableWidth = contentWidth - 3; // 280mm
@@ -1929,10 +1929,10 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
         doc.text(`ENROLLED: ${students.length} Students`, tableLeftX + colSpacing * 4 + 2, metaY + 3.7);
         doc.text(`PAGE: ${pageIdx + 1} OF ${totalPagesForGroup}`, tableLeftX + colSpacing * 5 + 2, metaY + 3.7);
 
-        // 3. Table Column Setup
-        const tableTopY = marginTop + 20.0; // Y = 25.5mm
+        // 3. Table Column Setup (Table perfectly spans to 203.0mm, leaving exactly 1.5mm padding inside the 204.5mm outer border)
+        const tableTopY = 24.7; // Y = 24.7mm
         const headerH = 6.8;
-        const rowH = 6.64; // 25 * 6.64 = 166.0mm, tableBottom = 25.5 + 6.8 + 166.0 = 198.3mm, legend bottom = 203.7mm (inside 204.5mm outer border)
+        const rowH = 6.86; // 25 * 6.86 = 171.5mm; Total table = 6.8 + 171.5 = 178.3mm; ends at 24.7 + 178.3 = 203.0mm
 
         const colIdW = 13;
         const colNameW = 47;
@@ -1995,12 +1995,12 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
             : curColX + 2;
 
           if (col.isDate && col.subTitle) {
-            doc.text(col.title, textX, tableTopY + 3.0, { align: col.align });
+            doc.text(col.title, textX, tableTopY + 2.9, { align: col.align });
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(5.5);
-            doc.text(`(${col.subTitle})`, textX, tableTopY + 5.8, { align: col.align });
+            doc.text(`(${col.subTitle})`, textX, tableTopY + 5.6, { align: col.align });
           } else {
-            doc.text(col.title, textX, tableTopY + 4.6, { align: col.align });
+            doc.text(col.title, textX, tableTopY + 4.5, { align: col.align });
           }
 
           curColX += col.width;
@@ -2024,18 +2024,18 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
               // ID
               if (student) {
                 doc.setFont('courier', 'bold');
-                doc.text(student.id, cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
+                doc.text(student.id, cellX + col.width / 2, curRowY + 4.75, { align: 'center' });
               }
             } else if (c === 1) {
               // Student Name
               if (student) {
                 doc.setFont('helvetica', 'bold');
-                doc.text(student.name, cellX + 2, curRowY + 4.55);
+                doc.text(student.name, cellX + 2, curRowY + 4.75);
               }
             } else if (c === 2) {
               // Class
               if (student) {
-                doc.text(student.class || '—', cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
+                doc.text(student.class || '—', cellX + col.width / 2, curRowY + 4.75, { align: 'center' });
               }
             } else if (col.isDate && col.dateKey) {
               // Evaluation status cell
@@ -2082,7 +2082,7 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
                     fs -= 0.2;
                     doc.setFontSize(fs);
                   }
-                  doc.text(statusText, cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
+                  doc.text(statusText, cellX + col.width / 2, curRowY + 4.75, { align: 'center' });
                 }
               }
             }
@@ -2117,38 +2117,6 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
         doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(0.45);
         doc.rect(tableLeftX, tableTopY, tableWidth, headerH + 25 * rowH, 'S');
-
-        // Draw Status Legend Strip below table
-        const legY = tableBottomY + 1.2;
-        const legH = 4.2;
-        doc.setFillColor(245, 246, 248);
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(0.3);
-        doc.rect(tableLeftX, legY, tableWidth, legH, 'FD');
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.0);
-        doc.setTextColor(0, 0, 0);
-        doc.text('STATUS LEGEND:', tableLeftX + 2.5, legY + 2.8);
-
-        let legendContent = '';
-        if (currentTrack === 'homework') {
-          legendContent = 'H.W. Done = Homework Done  |  H.W. Not Done = Homework Not Done  |  Absent = Student Absent  |  Not Provided = H.W. Not Given';
-        } else if (currentTrack === 'test_prep') {
-          legendContent = 'Test Prep Done = Test Preparation Done  |  Test Prep Not Done = Test Preparation Not Done  |  Absent = Student Absent  |  Not Provided = Test Not Given';
-        } else {
-          legendContent = 'Web Practice Done = Web Practice Done  |  Web Practice Not Done = Web Practice Not Done  |  On Leave = Approved Leave  |  Not Provided = Web Practice Not Given';
-        }
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(5.8);
-        doc.setTextColor(40, 40, 40);
-        doc.text(legendContent, tableLeftX + 23.5, legY + 2.8);
-
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(5.5);
-        doc.setTextColor(100, 100, 100);
-        doc.text('English Jibi Classes · Official Evaluation Sheet', tableLeftX + tableWidth - 2.5, legY + 2.8, { align: 'right' });
       }
     }
   }

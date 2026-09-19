@@ -1159,64 +1159,6 @@ export default function HomeworkReportsPage() {
                           </tbody>
                         </table>
                       </div>
-
-                      {/* ─── 5. Status Legend Strip ─── */}
-                      <div className="flex items-center justify-between px-3 py-1 bg-gray-50 border border-black text-[10px] font-semibold text-gray-700">
-                        <div className="flex items-center gap-3.5 flex-wrap">
-                          <span className="font-bold text-black uppercase text-[9.5px]">STATUS LEGEND:</span>
-                          {track === 'homework' && (
-                            <>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-green-700">✓ Done:</span> H.W. Done
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-red-700">✗ Not Done:</span> H.W. Not Done
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-amber-800">Absent:</span> Student Absent
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-gray-600">Not Provided:</span> H.W. Not Given
-                              </span>
-                            </>
-                          )}
-                          {track === 'test_prep' && (
-                            <>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-green-700">✓ Prepared:</span> Test Preparation Done
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-red-700">✗ Not Prepared:</span> Test Preparation Not Done
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-amber-800">Absent:</span> Student Absent
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-gray-600">Not Provided:</span> Test Not Given
-                              </span>
-                            </>
-                          )}
-                          {track === 'practice' && (
-                            <>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-green-700">✓ Practiced:</span> Web Practice Done
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-red-700">✗ Not Practiced:</span> Web Practice Not Done
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-amber-800">On Leave:</span> Approved Leave
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <span className="font-bold text-gray-600">Not Provided:</span> Web Practice Not Given
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        <span className="text-gray-500 font-mono text-[9px]">
-                          English Jibi Classes · Official Evaluation
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </div>
