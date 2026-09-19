@@ -1186,19 +1186,19 @@ export default function HomeworkRecordPage() {
                     {activeTab === 'homework' && (
                       <>
                         <ClipboardCheck className="h-4 w-4 text-amber-500 shrink-0" />
-                        <span>Homework — H.W. Done or Not Done</span>
+                        <span>Homework</span>
                       </>
                     )}
                     {activeTab === 'test_prep' && (
                       <>
                         <BookOpen className="h-4 w-4 text-blue-500 shrink-0" />
-                        <span>Test Preparation — Done or Not Done</span>
+                        <span>Test Preparation</span>
                       </>
                     )}
                     {activeTab === 'practice' && (
                       <>
                         <Home className="h-4 w-4 text-emerald-500 shrink-0" />
-                        <span>Web Practice — Done or Not Done</span>
+                        <span>Web Practice</span>
                       </>
                     )}
                   </CardTitle>
