@@ -26,23 +26,26 @@ import {
 // ─── Status option configs ──────────────────────────
 
 const HW_OPTIONS: { value: HomeworkStatus; label: string; icon: typeof CheckCircle2; color: string }[] = [
-  { value: 'Done', label: 'Done', icon: CheckCircle2, color: 'text-green-600 dark:text-green-400' },
-  { value: 'Not Done', label: 'Not Done', icon: XCircle, color: 'text-red-500 dark:text-red-400' },
+  { value: 'Done', label: 'H.W. Done', icon: CheckCircle2, color: 'text-green-600 dark:text-green-400' },
+  { value: 'Not Done', label: 'H.W. Not Done', icon: XCircle, color: 'text-red-500 dark:text-red-400' },
   { value: 'Absent', label: 'Absent', icon: UserX, color: 'text-amber-600 dark:text-amber-400' },
+  { value: 'Not Provided', label: 'Not Provided', icon: Ban, color: 'text-muted-foreground' },
   { value: 'N/A', label: 'N/A', icon: Ban, color: 'text-muted-foreground' },
 ];
 
 const TP_OPTIONS: { value: TestPrepStatus; label: string; icon: typeof CheckCircle2; color: string }[] = [
-  { value: 'Prepared', label: 'Prepared', icon: CheckCircle2, color: 'text-green-600 dark:text-green-400' },
-  { value: 'Not Prepared', label: 'Not Prepared', icon: XCircle, color: 'text-red-500 dark:text-red-400' },
+  { value: 'Prepared', label: 'Test Prep Done', icon: CheckCircle2, color: 'text-green-600 dark:text-green-400' },
+  { value: 'Not Prepared', label: 'Test Prep Not Done', icon: XCircle, color: 'text-red-500 dark:text-red-400' },
   { value: 'Absent', label: 'Absent', icon: UserX, color: 'text-amber-600 dark:text-amber-400' },
+  { value: 'Not Provided', label: 'Not Provided', icon: Ban, color: 'text-muted-foreground' },
   { value: 'N/A', label: 'N/A', icon: Ban, color: 'text-muted-foreground' },
 ];
 
 const PR_OPTIONS: { value: PracticeStatus; label: string; icon: typeof CheckCircle2; color: string }[] = [
-  { value: 'Practiced', label: 'Practiced', icon: CheckCircle2, color: 'text-green-600 dark:text-green-400' },
-  { value: 'Not Practiced', label: 'Not Practiced', icon: XCircle, color: 'text-red-500 dark:text-red-400' },
+  { value: 'Practiced', label: 'Web Practice Done', icon: CheckCircle2, color: 'text-green-600 dark:text-green-400' },
+  { value: 'Not Practiced', label: 'Web Practice Not Done', icon: XCircle, color: 'text-red-500 dark:text-red-400' },
   { value: 'On Leave', label: 'On Leave', icon: UserX, color: 'text-amber-600 dark:text-amber-400' },
+  { value: 'Not Provided', label: 'Not Provided', icon: Ban, color: 'text-muted-foreground' },
   { value: 'N/A', label: 'N/A', icon: Ban, color: 'text-muted-foreground' },
 ];
 
@@ -114,10 +117,29 @@ export default function HomeworkRecordPage() {
 
   // Records state
   const [records, setRecords] = useState<HWStudentRecord[]>([]);
+  const [initialRecordsJson, setInitialRecordsJson] = useState<string>('');
   const [sessionInfo, setSessionInfo] = useState<HWClassSession | null>(null);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('homework');
+
+  // Check unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    if (!initialRecordsJson || records.length === 0) return false;
+    return JSON.stringify(records) !== initialRecordsJson;
+  }, [records, initialRecordsJson]);
+
+  // Warn before browser unload if unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   // Map of student details (class, school) for fast lookup
   const studentMap = useMemo(() => {
@@ -246,6 +268,7 @@ export default function HomeworkRecordPage() {
       const { session, records: recs } = await fetchHWSessionRecords(sessionId);
       setSessionInfo(session);
       setRecords(recs);
+      setInitialRecordsJson(JSON.stringify(recs));
       if (session?.group_id) {
         setSelectedGroupId(prev => prev || session.group_id);
       }
@@ -393,6 +416,7 @@ export default function HomeworkRecordPage() {
         practice_status: r.practice_status,
       }));
       const { saved_count } = await saveHWRecords(selectedSessionId, payload);
+      setInitialRecordsJson(JSON.stringify(records));
       toast.success(`Saved ${saved_count} records`);
     } catch (err) {
       const error = err as Error;
@@ -403,10 +427,16 @@ export default function HomeworkRecordPage() {
   };
 
   const handleBack = () => {
+    if (hasUnsavedChanges) {
+      if (!window.confirm('You have unsaved changes. Do you really want to leave?')) {
+        return;
+      }
+    }
     if (selectedSessionId) {
       preserveSessionIdRef.current = null;
       setSelectedSessionId(null);
       setRecords([]);
+      setInitialRecordsJson('');
       setSessionInfo(null);
       setSearchParams(prev => {
         const next = new URLSearchParams(prev);
@@ -417,6 +447,7 @@ export default function HomeworkRecordPage() {
       preserveSessionIdRef.current = null;
       setSelectedGroupId(null);
       setSessions([]);
+      setInitialRecordsJson('');
       setSearchParams({}, { replace: true });
     }
   };
@@ -784,7 +815,7 @@ export default function HomeworkRecordPage() {
       {/* Header */}
       <div className="flex flex-row items-center justify-between gap-3 border-b pb-3.5 sm:pb-4">
         <div className="min-w-0 flex-1">
-          <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground leading-tight truncate flex items-center gap-2">
+          <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground leading-tight truncate flex items-center gap-2 flex-wrap">
             <span className="sm:hidden">
               Group {selectedGroup?.id || sessionInfo?.group_id || selectedGroupId} — {sessionInfo ? formatShortDate(sessionInfo.session_date) : ''}
             </span>
@@ -794,6 +825,14 @@ export default function HomeworkRecordPage() {
             {sessionInfo?.session_code && (
               <Badge variant="outline" className="hidden sm:inline-flex font-mono text-[10px] font-bold text-primary border-primary/30 shrink-0">
                 {sessionInfo.session_code}
+              </Badge>
+            )}
+            {hasUnsavedChanges && (
+              <Badge
+                variant="destructive"
+                className="animate-pulse text-xs font-bold px-2.5 py-0.5 shadow-xs"
+              >
+                Unsaved Changes
               </Badge>
             )}
           </h1>
@@ -845,7 +884,14 @@ export default function HomeworkRecordPage() {
             <Card className="border shadow-xs overflow-hidden">
               <CardHeader className="pb-3 pt-3.5 px-4 sm:px-6 bg-muted/20 border-b flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle className="text-sm sm:text-base font-semibold">Student Evaluations</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-sm sm:text-base font-semibold">Student Evaluations</CardTitle>
+                    {hasUnsavedChanges && (
+                      <Badge variant="destructive" className="animate-pulse text-xs font-bold px-2.5 py-0.5 shadow-xs">
+                        Unsaved Changes
+                      </Badge>
+                    )}
+                  </div>
                   <CardDescription className="text-xs">Record Homework, Test Preparation, and Home Practice simultaneously</CardDescription>
                 </div>
                 <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5">
@@ -1148,30 +1194,37 @@ export default function HomeworkRecordPage() {
                     {activeTab === 'homework' && (
                       <>
                         <ClipboardCheck className="h-4 w-4 text-amber-500 shrink-0" />
-                        <span>Homework — Done or Not Done</span>
+                        <span>Homework — H.W. Done or Not Done</span>
                       </>
                     )}
                     {activeTab === 'test_prep' && (
                       <>
                         <BookOpen className="h-4 w-4 text-blue-500 shrink-0" />
-                        <span>Test Prepared — Prepared or Not</span>
+                        <span>Test Preparation — Done or Not Done</span>
                       </>
                     )}
                     {activeTab === 'practice' && (
                       <>
                         <Home className="h-4 w-4 text-emerald-500 shrink-0" />
-                        <span>Practice at Home — Web & Grammar</span>
+                        <span>Web Practice — Done or Not Done</span>
                       </>
                     )}
                   </CardTitle>
-                  <Badge variant="secondary" className="text-[10px] font-semibold px-2 py-0.5 shrink-0">
-                    {sortedRecords.length}
-                  </Badge>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {hasUnsavedChanges && (
+                      <Badge variant="destructive" className="animate-pulse text-[10px] font-bold px-2 py-0.5 shadow-xs">
+                        Unsaved Changes
+                      </Badge>
+                    )}
+                    <Badge variant="secondary" className="text-[10px] font-semibold px-2 py-0.5 shrink-0">
+                      {sortedRecords.length}
+                    </Badge>
+                  </div>
                 </div>
                 <CardDescription className="text-xs text-muted-foreground">
                   {activeTab === 'homework' && "Mark each student's homework status"}
                   {activeTab === 'test_prep' && "Mark each student's test preparation status"}
-                  {activeTab === 'practice' && "Mark each student's home practice status"}
+                  {activeTab === 'practice' && "Mark each student's web practice status"}
                 </CardDescription>
               </CardHeader>
 
@@ -1194,7 +1247,7 @@ export default function HomeworkRecordPage() {
                           value={rec.homework_status || ''}
                           onValueChange={(v) => updateRecord(rec.student_id, 'homework_status', v)}
                         >
-                          <SelectTrigger className="w-32 sm:w-36 h-8 text-xs shrink-0">
+                          <SelectTrigger className="w-36 sm:w-40 h-8 text-xs shrink-0">
                             <SelectValue placeholder="Select..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1212,7 +1265,7 @@ export default function HomeworkRecordPage() {
                           value={rec.test_prep_status || ''}
                           onValueChange={(v) => updateRecord(rec.student_id, 'test_prep_status', v)}
                         >
-                          <SelectTrigger className="w-32 sm:w-36 h-8 text-xs shrink-0">
+                          <SelectTrigger className="w-36 sm:w-40 h-8 text-xs shrink-0">
                             <SelectValue placeholder="Select..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -1230,7 +1283,7 @@ export default function HomeworkRecordPage() {
                           value={rec.practice_status || ''}
                           onValueChange={(v) => updateRecord(rec.student_id, 'practice_status', v)}
                         >
-                          <SelectTrigger className="w-32 sm:w-36 h-8 text-xs shrink-0">
+                          <SelectTrigger className="w-36 sm:w-40 h-8 text-xs shrink-0">
                             <SelectValue placeholder="Select..." />
                           </SelectTrigger>
                           <SelectContent>

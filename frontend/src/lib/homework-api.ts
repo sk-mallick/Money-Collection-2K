@@ -18,9 +18,9 @@ export interface HWClassSession {
   record_count?: number;
 }
 
-export type HomeworkStatus = 'Done' | 'Not Done' | 'Absent' | 'N/A' | null;
-export type TestPrepStatus = 'Prepared' | 'Not Prepared' | 'Absent' | 'N/A' | null;
-export type PracticeStatus = 'Practiced' | 'Not Practiced' | 'On Leave' | 'N/A' | null;
+export type HomeworkStatus = 'Done' | 'Not Done' | 'Absent' | 'Not Provided' | 'N/A' | null;
+export type TestPrepStatus = 'Prepared' | 'Not Prepared' | 'Absent' | 'Not Provided' | 'N/A' | null;
+export type PracticeStatus = 'Practiced' | 'Not Practiced' | 'On Leave' | 'Not Provided' | 'N/A' | null;
 
 export interface HWStudentRecord {
   id: number | null;

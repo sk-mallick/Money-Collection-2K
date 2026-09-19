@@ -486,12 +486,12 @@ export default function HomeworkReportsPage() {
   };
 
   // Status styling helper
-  const renderStatusCell = (val: string | undefined) => {
+  const renderStatusCell = (val: string | undefined, track?: HWReportTrack) => {
     if (!val) return <span className="opacity-0 select-none">-</span>;
     if (val === 'Done' || val === 'Prepared' || val === 'Practiced') {
       const label = val === 'Done' ? 'Done' : val === 'Prepared' ? 'Prepared' : 'Practiced';
       return (
-        <span className="inline-flex items-center justify-center w-[82px] h-[19px] rounded text-[9.5px] font-bold text-green-700 bg-green-50 border border-green-200/80 leading-none whitespace-nowrap shadow-2xs">
+        <span className="inline-flex items-center justify-center min-w-[76px] px-1.5 h-[19px] rounded text-[9.5px] font-bold text-green-700 bg-green-50 border border-green-200/80 leading-none whitespace-nowrap shadow-2xs">
           ✓ {label}
         </span>
       );
@@ -499,7 +499,7 @@ export default function HomeworkReportsPage() {
     if (val === 'Not Done' || val === 'Not Prepared' || val === 'Not Practiced') {
       const label = val === 'Not Done' ? 'Not Done' : val === 'Not Prepared' ? 'Not Prepared' : 'Not Practiced';
       return (
-        <span className="inline-flex items-center justify-center w-[82px] h-[19px] rounded text-[9px] font-bold text-red-700 bg-red-50 border border-red-200/80 leading-none tracking-tight whitespace-nowrap shadow-2xs">
+        <span className="inline-flex items-center justify-center min-w-[76px] px-1.5 h-[19px] rounded text-[9px] font-bold text-red-700 bg-red-50 border border-red-200/80 leading-none tracking-tight whitespace-nowrap shadow-2xs">
           ✗ {label}
         </span>
       );
@@ -507,13 +507,20 @@ export default function HomeworkReportsPage() {
     if (val === 'Absent' || val === 'On Leave') {
       const label = val === 'Absent' ? 'Absent' : 'On Leave';
       return (
-        <span className="inline-flex items-center justify-center w-[82px] h-[19px] rounded text-[9.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 leading-none whitespace-nowrap shadow-2xs">
+        <span className="inline-flex items-center justify-center min-w-[76px] px-1.5 h-[19px] rounded text-[9.5px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 leading-none whitespace-nowrap shadow-2xs">
           {label}
         </span>
       );
     }
+    if (val === 'Not Provided') {
+      return (
+        <span className="inline-flex items-center justify-center min-w-[76px] px-1.5 h-[19px] rounded text-[8.5px] font-semibold text-gray-600 bg-gray-100 border border-gray-200/80 leading-none whitespace-nowrap shadow-2xs">
+          Not Provided
+        </span>
+      );
+    }
     return (
-      <span className="inline-flex items-center justify-center w-[82px] h-[19px] rounded text-[9px] font-medium text-gray-500 bg-gray-50 leading-none">
+      <span className="inline-flex items-center justify-center min-w-[76px] px-1.5 h-[19px] rounded text-[9px] font-medium text-gray-500 bg-gray-50 leading-none">
         {val}
       </span>
     );
@@ -1132,7 +1139,7 @@ export default function HomeworkReportsPage() {
                                           key={col.date}
                                           className={`p-0.5 text-center ${idx === activeClassColumns.length - 1 ? '' : 'border-r border-gray-300'}`}
                                         >
-                                          {renderStatusCell(val)}
+                                          {renderStatusCell(val, track)}
                                         </td>
                                       );
                                     })
@@ -1160,39 +1167,48 @@ export default function HomeworkReportsPage() {
                           {track === 'homework' && (
                             <>
                               <span className="flex items-center gap-1">
-                                <span className="font-bold text-green-700">✓ Done:</span> Homework Done
+                                <span className="font-bold text-green-700">✓ Done:</span> H.W. Done
                               </span>
                               <span className="flex items-center gap-1">
-                                <span className="font-bold text-red-700">✗ Not Done:</span> Homework Not Done
+                                <span className="font-bold text-red-700">✗ Not Done:</span> H.W. Not Done
                               </span>
                               <span className="flex items-center gap-1">
                                 <span className="font-bold text-amber-800">Absent:</span> Student Absent
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-gray-600">Not Provided:</span> H.W. Not Given
                               </span>
                             </>
                           )}
                           {track === 'test_prep' && (
                             <>
                               <span className="flex items-center gap-1">
-                                <span className="font-bold text-green-700">✓ Prepared:</span> Test Prepared
+                                <span className="font-bold text-green-700">✓ Prepared:</span> Test Preparation Done
                               </span>
                               <span className="flex items-center gap-1">
-                                <span className="font-bold text-red-700">✗ Not Prepared:</span> Test Not Prepared
+                                <span className="font-bold text-red-700">✗ Not Prepared:</span> Test Preparation Not Done
                               </span>
                               <span className="flex items-center gap-1">
                                 <span className="font-bold text-amber-800">Absent:</span> Student Absent
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-gray-600">Not Provided:</span> Test Not Given
                               </span>
                             </>
                           )}
                           {track === 'practice' && (
                             <>
                               <span className="flex items-center gap-1">
-                                <span className="font-bold text-green-700">✓ Practiced:</span> Home Practice Done
+                                <span className="font-bold text-green-700">✓ Practiced:</span> Web Practice Done
                               </span>
                               <span className="flex items-center gap-1">
-                                <span className="font-bold text-red-700">✗ Not Practiced:</span> Home Practice Not Done
+                                <span className="font-bold text-red-700">✗ Not Practiced:</span> Web Practice Not Done
                               </span>
                               <span className="flex items-center gap-1">
                                 <span className="font-bold text-amber-800">On Leave:</span> Approved Leave
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <span className="font-bold text-gray-600">Not Provided:</span> Web Practice Not Given
                               </span>
                             </>
                           )}

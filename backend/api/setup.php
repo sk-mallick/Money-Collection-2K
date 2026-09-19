@@ -178,12 +178,15 @@ if ($pdo && $actionTriggered && !$isLocked) {
                     }
                 } catch (Throwable $ignoreHw) {}
 
-                // Auto-ensure session_code exists on hw_student_records
+                // Auto-ensure session_code exists on hw_student_records and update ENUMs to include 'Not Provided'
                 try {
                     $colCheck2 = $pdo->query("SHOW COLUMNS FROM `hw_student_records` LIKE 'session_code'");
                     if ($colCheck2->rowCount() === 0) {
                         $pdo->exec("ALTER TABLE `hw_student_records` ADD COLUMN `session_code` VARCHAR(30) NULL AFTER `session_id`");
                     }
+                    $pdo->exec("ALTER TABLE `hw_student_records` MODIFY COLUMN `homework_status` ENUM('Done','Not Done','Absent','Not Provided','N/A') DEFAULT NULL");
+                    $pdo->exec("ALTER TABLE `hw_student_records` MODIFY COLUMN `test_prep_status` ENUM('Prepared','Not Prepared','Absent','Not Provided','N/A') DEFAULT NULL");
+                    $pdo->exec("ALTER TABLE `hw_student_records` MODIFY COLUMN `practice_status` ENUM('Practiced','Not Practiced','On Leave','Not Provided','N/A') DEFAULT NULL");
                 } catch (Throwable $ignoreHw2) {}
 
                 $migrationSuccess = true;

@@ -291,9 +291,9 @@ function saveRecords(PDO $pdo): void {
     $realId = $session['id'];
     $sCode = $session['session_code'];
 
-    $validHW = ['Done', 'Not Done', 'Absent', 'N/A', null, ''];
-    $validTP = ['Prepared', 'Not Prepared', 'Absent', 'N/A', null, ''];
-    $validPR = ['Practiced', 'Not Practiced', 'On Leave', 'N/A', null, ''];
+    $validHW = ['Done', 'Not Done', 'Absent', 'Not Provided', 'N/A', null, ''];
+    $validTP = ['Prepared', 'Not Prepared', 'Absent', 'Not Provided', 'N/A', null, ''];
+    $validPR = ['Practiced', 'Not Practiced', 'On Leave', 'Not Provided', 'N/A', null, ''];
 
     $upsertStmt = $pdo->prepare('
         INSERT INTO hw_student_records (session_id, session_code, student_id, homework_status, test_prep_status, practice_status)

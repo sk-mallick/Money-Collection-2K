@@ -2046,15 +2046,31 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
                   if (val === 'Done' || val === 'Prepared' || val === 'Practiced') {
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(22, 101, 52); // Green
-                    statusText = val === 'Done' ? 'Done' : val === 'Prepared' ? 'Prepared' : 'Practiced';
+                    if (currentTrack === 'homework') {
+                      statusText = 'H.W. Done';
+                    } else if (currentTrack === 'test_prep') {
+                      statusText = 'Test Prep Done';
+                    } else {
+                      statusText = 'Web Practice Done';
+                    }
                   } else if (val === 'Not Done' || val === 'Not Prepared' || val === 'Not Practiced') {
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(185, 28, 28); // Red
-                    statusText = val === 'Not Done' ? 'Not Done' : val === 'Not Prepared' ? 'Not Prepared' : 'Not Practiced';
+                    if (currentTrack === 'homework') {
+                      statusText = 'H.W. Not Done';
+                    } else if (currentTrack === 'test_prep') {
+                      statusText = 'Test Prep Not Done';
+                    } else {
+                      statusText = 'Web Practice Not Done';
+                    }
                   } else if (val === 'Absent' || val === 'On Leave') {
                     doc.setFont('helvetica', 'bold');
                     doc.setTextColor(180, 83, 9); // Amber
                     statusText = val === 'Absent' ? 'Absent' : 'On Leave';
+                  } else if (val === 'Not Provided') {
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(107, 114, 128); // Gray
+                    statusText = 'Not Provided';
                   } else {
                     doc.setTextColor(107, 114, 128); // Gray
                   }
@@ -2062,8 +2078,8 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
                   doc.setFont('helvetica', 'bold');
                   let fs = 6.2;
                   doc.setFontSize(fs);
-                  while (doc.getTextWidth(statusText) > col.width - 1.5 && fs > 4.5) {
-                    fs -= 0.3;
+                  while (doc.getTextWidth(statusText) > col.width - 1.2 && fs > 3.6) {
+                    fs -= 0.2;
                     doc.setFontSize(fs);
                   }
                   doc.text(statusText, cellX + col.width / 2, curRowY + 4.55, { align: 'center' });
@@ -2116,12 +2132,12 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
         doc.text('STATUS LEGEND:', tableLeftX + 2.5, legY + 2.8);
 
         let legendContent = '';
-        if (track === 'homework') {
-          legendContent = 'Done = Homework Done  |  Not Done = Homework Not Done  |  Absent = Student Absent';
-        } else if (track === 'test_prep') {
-          legendContent = 'Prepared = Test Prepared  |  Not Prepared = Test Not Prepared  |  Absent = Student Absent';
+        if (currentTrack === 'homework') {
+          legendContent = 'H.W. Done = Homework Done  |  H.W. Not Done = Homework Not Done  |  Absent = Student Absent  |  Not Provided = H.W. Not Given';
+        } else if (currentTrack === 'test_prep') {
+          legendContent = 'Test Prep Done = Test Preparation Done  |  Test Prep Not Done = Test Preparation Not Done  |  Absent = Student Absent  |  Not Provided = Test Not Given';
         } else {
-          legendContent = 'Practiced = Home Practice Done  |  Not Practiced = Home Practice Not Done  |  On Leave = Approved Leave';
+          legendContent = 'Web Practice Done = Web Practice Done  |  Web Practice Not Done = Web Practice Not Done  |  On Leave = Approved Leave  |  Not Provided = Web Practice Not Given';
         }
 
         doc.setFont('helvetica', 'normal');
