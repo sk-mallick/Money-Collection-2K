@@ -827,14 +827,6 @@ export default function HomeworkRecordPage() {
                 {sessionInfo.session_code}
               </Badge>
             )}
-            {hasUnsavedChanges && (
-              <Badge
-                variant="destructive"
-                className="animate-pulse text-xs font-bold px-2.5 py-0.5 shadow-xs"
-              >
-                Unsaved Changes
-              </Badge>
-            )}
           </h1>
           <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 truncate">
             <Users className="h-3 w-3 shrink-0" />
@@ -892,7 +884,7 @@ export default function HomeworkRecordPage() {
                       </Badge>
                     )}
                   </div>
-                  <CardDescription className="text-xs">Record Homework, Test Preparation, and Home Practice simultaneously</CardDescription>
+                  <CardDescription className="text-xs">Record Homework, Test Preparation, and Website Practice simultaneously</CardDescription>
                 </div>
                 <Badge variant="secondary" className="text-xs font-semibold px-2.5 py-0.5">
                   {records.length} Students
@@ -1014,17 +1006,17 @@ export default function HomeworkRecordPage() {
                           </button>
                         </th>
 
-                        {/* Practice at Home */}
+                        {/* Website Practice */}
                         <th className="p-3 font-semibold text-muted-foreground min-w-[180px] sm:min-w-[200px] text-center border-r">
                           <button
                             type="button"
                             onClick={() => handleSort('practice')}
                             className="inline-flex flex-col items-center justify-center cursor-pointer select-none hover:text-foreground transition-colors group/sub mx-auto"
-                            title="Sort by Practice status"
+                            title="Sort by Website Practice status"
                           >
                             <div className="flex items-center gap-1 font-bold text-foreground text-sm tracking-tight">
                               <Home className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                              <span>Practice at Home</span>
+                              <span>Website Practice</span>
                               {sortColumn === 'practice' ? (
                                 sortDirection === 'asc' ? (
                                   <ArrowUp className="h-3 w-3 text-primary shrink-0" />
@@ -1104,7 +1096,7 @@ export default function HomeworkRecordPage() {
                             </div>
                           </td>
 
-                          {/* Practice at Home Select */}
+                          {/* Website Practice Select */}
                           <td className="p-2 sm:p-2.5 border-r text-center">
                             <div className="w-[156px] sm:w-[166px] mx-auto">
                               <Select

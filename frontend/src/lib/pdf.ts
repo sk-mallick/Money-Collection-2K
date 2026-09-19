@@ -1860,8 +1860,8 @@ async function buildHomeworkReportDoc(options: HomeworkReportPDFOptions): Promis
         trackTitle = 'TEST PREPARATION';
         trackBadge = 'TRACK: TEST PREPARATION';
       } else if (currentTrack === 'practice') {
-        trackTitle = 'HOME PRACTICE';
-        trackBadge = 'TRACK: HOME PRACTICE';
+        trackTitle = 'WEBSITE PRACTICE';
+        trackBadge = 'TRACK: WEBSITE PRACTICE';
       }
 
       for (let pageIdx = 0; pageIdx < totalPagesForGroup; pageIdx++) {
@@ -2168,7 +2168,7 @@ export async function generateHomeworkReportPDF(options: HomeworkReportPDFOption
     ? 'Homework'
     : track === 'test_prep'
     ? 'Test_Prep'
-    : 'Home_Practice';
+    : 'Website_Practice';
 
   const fileName = groupsData.length === 1
     ? `Group_${groupsData[0].group.id}_${month}_${academicYear}_${trackLabel}_Report.pdf`

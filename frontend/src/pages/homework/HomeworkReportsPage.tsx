@@ -424,7 +424,7 @@ export default function HomeworkReportsPage() {
         settings,
       });
 
-      const label = trackMode === 'all' ? 'All 3 Tracks' : trackMode === 'homework' ? 'Homework' : trackMode === 'test_prep' ? 'Test Prep' : 'Home Practice';
+      const label = trackMode === 'all' ? 'All 3 Tracks' : trackMode === 'homework' ? 'Homework' : trackMode === 'test_prep' ? 'Test Prep' : 'Website Practice';
       toast.success(`Downloaded ${label} Report PDF for ${groupsData.length} group${groupsData.length > 1 ? 's' : ''}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to download report';
@@ -539,7 +539,7 @@ export default function HomeworkReportsPage() {
     switch (t) {
       case 'homework': return 'HOMEWORK';
       case 'test_prep': return 'TEST PREPARATION';
-      case 'practice': return 'HOME PRACTICE';
+      case 'practice': return 'WEBSITE PRACTICE';
     }
   };
 
@@ -560,7 +560,7 @@ export default function HomeworkReportsPage() {
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
               <span className="hidden sm:inline">
-                A4 Landscape printable sheets for Homework, Test Preparation, and Home Practice with exact monthly classes
+                A4 Landscape printable sheets for Homework, Test Preparation, and Website Practice with exact monthly classes
               </span>
               <span className="sm:hidden">
                 A4 printable homework tracking sheets
