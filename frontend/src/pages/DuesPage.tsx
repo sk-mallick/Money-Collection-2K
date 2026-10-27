@@ -11,12 +11,20 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ButtonGroup } from '@/components/ui/button-group';
 import { MONTH_CODES, MONTH_NAMES, formatCurrency, getCurrentMonthCode } from '@/lib/constants';
 import type { MonthCode } from '@/lib/constants';
-import { AlertTriangle, Users, IndianRupee, Calendar } from 'lucide-react';
+import { AlertTriangle, Users, IndianRupee, Calendar, BellRing } from 'lucide-react';
+import { FeeReminderModal } from '@/components/dues/FeeReminderModal';
 
 export default function DuesPage() {
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState<MonthCode>(getCurrentMonthCode());
   const { dues, loading } = useDues(selectedMonth);
+  const [reminderStudent, setReminderStudent] = useState<(typeof dues)[number] | null>(null);
+  const [reminderOpen, setReminderOpen] = useState(false);
+
+  const handleOpenReminder = (student: (typeof dues)[number]) => {
+    setReminderStudent(student);
+    setReminderOpen(true);
+  };
 
   const totalOutstanding = dues.reduce((sum, d) => sum + d.outstandingDue, 0);
 
@@ -108,6 +116,19 @@ export default function DuesPage() {
                           <Button 
                             variant="outline" 
                             size="icon" 
+                            className="size-9 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 active:scale-95 transition-transform" 
+                            onClick={() => handleOpenReminder(student)}
+                          >
+                            <BellRing className="size-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Notice & Reminder</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
                             className="size-9 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 active:scale-95 transition-transform" 
                             onClick={() => navigate(`/mcms/collect?studentId=${student.id}`)}
                           >
@@ -171,6 +192,19 @@ export default function DuesPage() {
                                 <Button 
                                   variant="outline" 
                                   size="icon" 
+                                  className="size-8 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 active:scale-95 transition-transform" 
+                                  onClick={() => handleOpenReminder(student)}
+                                >
+                                  <BellRing className="size-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Notice & Reminder</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="icon" 
                                   className="size-8 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20" 
                                   onClick={() => navigate(`/mcms/collect?studentId=${student.id}`)}
                                 >
@@ -190,6 +224,14 @@ export default function DuesPage() {
           </div>
         </div>
       )}
+
+      {/* Fee Reminder Modal */}
+      <FeeReminderModal
+        open={reminderOpen}
+        onOpenChange={setReminderOpen}
+        student={reminderStudent}
+        selectedMonth={selectedMonth}
+      />
     </div>
   );
 }

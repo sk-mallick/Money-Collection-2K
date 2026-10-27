@@ -1,21 +1,27 @@
 RewriteEngine On
 
 # ─── HTTPS Enforcement ────────────────────────────────
-# Skip HTTPS redirect and HSTS variable assignment for localhost / local testing
-RewriteCond %{HTTP_HOST} ^localhost$ [NC,OR]
-RewriteCond %{HTTP_HOST} ^127\.0\.0\.1$ [NC]
+# Skip HTTPS redirect and HSTS variable assignment for localhost / local LAN testing
+RewriteCond %{HTTP_HOST} ^localhost(:[0-9]+)?$ [NC,OR]
+RewriteCond %{HTTP_HOST} ^127\.0\.0\.1(:[0-9]+)?$ [NC,OR]
+RewriteCond %{HTTP_HOST} ^192\.168\.[0-9]+\.[0-9]+(:[0-9]+)?$ [NC,OR]
+RewriteCond %{HTTP_HOST} ^10\.[0-9]+\.[0-9]+\.[0-9]+(:[0-9]+)?$ [NC,OR]
+RewriteCond %{HTTP_HOST} ^172\.(1[6-9]|2[0-9]|3[0-1])\.[0-9]+\.[0-9]+(:[0-9]+)?$ [NC]
 RewriteRule ^ - [S=2]
 
-# Redirect all HTTP traffic to HTTPS (supports reverse proxies / InfinityFree)
-RewriteCond %{HTTPS} off [OR]
+# Redirect all HTTP traffic to HTTPS (supports reverse proxies / Cloudflare / localtunnel / InfinityFree)
+RewriteCond %{HTTPS} !=on
 RewriteCond %{HTTP:X-Forwarded-Proto} !https
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Set SET_HSTS environment variable if HTTPS is active and not on localhost/127.0.0.1
+# Set SET_HSTS environment variable if HTTPS is active and not on local network
 RewriteCond %{HTTPS} on [OR]
 RewriteCond %{HTTP:X-Forwarded-Proto} https
-RewriteCond %{HTTP_HOST} !^localhost$ [NC]
-RewriteCond %{HTTP_HOST} !^127\.0\.0\.1$ [NC]
+RewriteCond %{HTTP_HOST} !^localhost(:[0-9]+)?$ [NC]
+RewriteCond %{HTTP_HOST} !^127\.0\.0\.1(:[0-9]+)?$ [NC]
+RewriteCond %{HTTP_HOST} !^192\.168\.[0-9]+\.[0-9]+(:[0-9]+)?$ [NC]
+RewriteCond %{HTTP_HOST} !^10\.[0-9]+\.[0-9]+\.[0-9]+(:[0-9]+)?$ [NC]
+RewriteCond %{HTTP_HOST} !^172\.(1[6-9]|2[0-9]|3[0-1])\.[0-9]+\.[0-9]+(:[0-9]+)?$ [NC]
 RewriteRule ^ - [E=SET_HSTS:1]
 
 # ─── Security Headers ────────────────────────────────
