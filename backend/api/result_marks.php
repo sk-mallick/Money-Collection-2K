@@ -68,9 +68,10 @@ function ensurePeriodMarks(PDO $pdo, int $periodId): void {
         $studentResultIds = $srStmt->fetchAll(PDO::FETCH_COLUMN);
         
         if (empty($studentResultIds) && !empty($period['group_id'])) {
-            $stStmt = $pdo->prepare('SELECT id, name, category, class, group_id, school FROM students WHERE group_id = ? ORDER BY name ASC');
+            $stStmt = $pdo->prepare('SELECT id, name, category, class, group_id, school FROM students WHERE group_id = ? ORDER BY LEFT(id, 1) ASC, CAST(SUBSTRING(id, 2) AS UNSIGNED) ASC, id ASC');
             $stStmt->execute([$period['group_id']]);
             $stList = $stStmt->fetchAll();
+            usort($stList, static fn(array $a, array $b): int => strnatcasecmp((string)($a['id'] ?? ''), (string)($b['id'] ?? '')));
             $insSrStmt = $pdo->prepare('INSERT INTO rc_student_results (result_period_id, student_id, snapshot_name, snapshot_class, snapshot_group_id, snapshot_school, snapshot_category) VALUES (?, ?, ?, ?, ?, ?, ?)');
             foreach ($stList as $st) {
                 $insSrStmt->execute([$periodId, $st['id'], $st['name'], $st['class'] ?? '', $st['group_id'], $st['school'] ?? '', $st['category'] ?? $category]);
@@ -120,7 +121,7 @@ function getMarks(PDO $pdo): void {
         LEFT JOIN rc_student_marks sm ON sm.student_result_id = sr.id
         LEFT JOIN rc_subjects s ON sm.subject_id = s.id
         WHERE sr.result_period_id = ?
-        ORDER BY sr.snapshot_name ASC, s.display_order ASC
+        ORDER BY LEFT(sr.student_id, 1) ASC, CAST(SUBSTRING(sr.student_id, 2) AS UNSIGNED) ASC, sr.student_id ASC, s.display_order ASC
     ");
     $stmt->execute([$periodId]);
     $rows = $stmt->fetchAll();

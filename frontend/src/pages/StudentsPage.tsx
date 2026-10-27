@@ -39,11 +39,11 @@ export default function StudentsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Filter & Sorting state
+  // Filter & Sorting state (Default: Student ID ascending)
   const [groupFilter, setGroupFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [classFilter, setClassFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('name');
+  const [sortBy, setSortBy] = useState('id');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Synchronize Group filter with URL query parameter
@@ -167,7 +167,7 @@ export default function StudentsPage() {
     groupFilter !== 'all' ||
     categoryFilter !== 'all' ||
     classFilter !== 'all' ||
-    sortBy !== 'name' ||
+    sortBy !== 'id' ||
     sortOrder !== 'asc'
   );
 
@@ -176,7 +176,7 @@ export default function StudentsPage() {
     setGroupFilter('all');
     setCategoryFilter('all');
     setClassFilter('all');
-    setSortBy('name');
+    setSortBy('id');
     setSortOrder('asc');
     searchParams.delete('group');
     setSearchParams(searchParams);
@@ -191,6 +191,9 @@ export default function StudentsPage() {
     if (index !== -1) return index;
     return 999;
   };
+
+  const compareStudentIds = (idA: string, idB: string) =>
+    idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
 
   const filtered = useMemo(() => {
     // 1. Filtering
@@ -221,10 +224,12 @@ export default function StudentsPage() {
       return matchesSearch && matchesGroup && matchesCategory && matchesClass;
     });
 
-    // 2. Sorting
+    // 2. Sorting (Default: Student ID natural order)
     list.sort((a, b) => {
       let comparison = 0;
-      if (sortBy === 'name') {
+      if (sortBy === 'id') {
+        comparison = compareStudentIds(a.id, b.id);
+      } else if (sortBy === 'name') {
         comparison = a.name.localeCompare(b.name);
       } else if (sortBy === 'group') {
         const groupA = a.group || '';
@@ -249,7 +254,7 @@ export default function StudentsPage() {
       }
 
       if (comparison === 0) {
-        return a.name.localeCompare(b.name);
+        return compareStudentIds(a.id, b.id);
       }
 
       return sortOrder === 'asc' ? comparison : -comparison;
@@ -483,18 +488,19 @@ export default function StudentsPage() {
                     Sort By
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="grid grid-cols-3 gap-1 p-0.5 rounded-lg bg-muted/40 border border-border/50 text-xs flex-1">
+                    <div className="grid grid-cols-4 gap-1 p-0.5 rounded-lg bg-muted/40 border border-border/50 text-xs flex-1">
                       {[
+                        { id: 'id', label: 'ID' },
+                        { id: 'name', label: 'Name' },
                         { id: 'group', label: 'Group' },
                         { id: 'class', label: 'Class' },
-                        { id: 'admDate', label: 'Adm. Date' },
                       ].map((item) => {
                         const isSelected = sortBy === item.id;
                         return (
                           <button
                             key={item.id}
                             type="button"
-                            onClick={() => setSortBy(isSelected ? 'name' : item.id)}
+                            onClick={() => setSortBy(isSelected ? 'id' : item.id)}
                             className={`py-1.5 px-1 text-xs font-semibold rounded-md transition-all cursor-pointer text-center truncate ${
                               isSelected
                                 ? 'bg-primary text-primary-foreground shadow-2xs font-bold'
@@ -582,6 +588,7 @@ export default function StudentsPage() {
                   </span>
                 </SelectTrigger>
                 <SelectContent position="popper" align="end">
+                  <SelectItem value="id">Student ID</SelectItem>
                   <SelectItem value="name">Name</SelectItem>
                   <SelectItem value="group">Group</SelectItem>
                   <SelectItem value="class">Class</SelectItem>
@@ -688,21 +695,21 @@ export default function StudentsPage() {
             )}
 
             {/* Sort chip (Direct: Adm Date (Desc) / Asc / Desc) */}
-            {(sortBy !== 'name' || sortOrder !== 'asc') && (
+            {(sortBy !== 'id' || sortOrder !== 'asc') && (
               <Badge
                 variant="secondary"
                 className="h-6 gap-1 pl-2 pr-1 text-[11px] font-medium bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20"
               >
                 <span>
-                  {sortBy !== 'name'
-                    ? `${sortBy === 'group' ? 'Group' : sortBy === 'class' ? 'Class' : sortBy === 'admDate' ? 'Adm Date' : 'Fee'} (${sortOrder === 'asc' ? 'Asc' : 'Desc'})`
+                  {sortBy !== 'id'
+                    ? `${sortBy === 'name' ? 'Name' : sortBy === 'group' ? 'Group' : sortBy === 'class' ? 'Class' : sortBy === 'admDate' ? 'Adm Date' : 'Fee'} (${sortOrder === 'asc' ? 'Asc' : 'Desc'})`
                     : sortOrder === 'desc'
-                    ? 'Desc'
-                    : 'Asc'}
+                    ? 'ID (Desc)'
+                    : 'ID (Asc)'}
                 </span>
                 <button
                   type="button"
-                  onClick={() => { setSortBy('name'); setSortOrder('asc'); }}
+                  onClick={() => { setSortBy('id'); setSortOrder('asc'); }}
                   className="rounded-full p-0.5 hover:bg-indigo-500/20 cursor-pointer"
                   title="Reset sort"
                 >

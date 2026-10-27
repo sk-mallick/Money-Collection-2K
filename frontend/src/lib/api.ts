@@ -220,11 +220,13 @@ export const api = {
 
 // ─── High-Level Data Fetchers ───────────────────────
 
-/** Fetch all students (mapped to frontend types) */
+/** Fetch all students (mapped to frontend types, ordered naturally by Student ID) */
 export async function fetchStudents(): Promise<Student[]> {
   const res = await api.getStudents();
   if (!res.success || !Array.isArray(res.students)) return [];
-  return res.students.map(mapServerStudent);
+  return res.students
+    .map(mapServerStudent)
+    .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' }));
 }
 
 /** Fetch payments for a student (mapped to frontend types) */

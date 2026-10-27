@@ -343,6 +343,10 @@ export function useDues(month?: MonthCode) {
         }
       }
 
+      duesList.sort((a, b) =>
+        a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: 'base' })
+      );
+
       setDues(duesList);
     } catch (err) {
       console.error('[useDues] Failed to fetch:', err);

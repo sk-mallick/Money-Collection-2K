@@ -32,9 +32,10 @@ switch ($method) {
 }
 
 function getStudents(PDO $pdo): void {
-    // 1. Fetch all students (explicit columns, excluding soft-deleted ones)
-    $stmt = $pdo->query('SELECT id, name, category, class, school, contact_no, father_no, mother_no, adm_date, dob, fee_per_month, admission_fee_paid, notes, group_id, created_at, updated_at FROM students ORDER BY name ASC');
+    // 1. Fetch all students ordered naturally by Student ID (explicit columns, excluding soft-deleted ones)
+    $stmt = $pdo->query('SELECT id, name, category, class, school, contact_no, father_no, mother_no, adm_date, dob, fee_per_month, admission_fee_paid, notes, group_id, created_at, updated_at FROM students ORDER BY LEFT(id, 1) ASC, CAST(SUBSTRING(id, 2) AS UNSIGNED) ASC, id ASC');
     $students = $stmt->fetchAll();
+    usort($students, static fn(array $a, array $b): int => strnatcasecmp((string)($a['id'] ?? ''), (string)($b['id'] ?? '')));
 
     // 2. Fetch active academic year from settings
     $yearStmt = $pdo->prepare('SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1');
