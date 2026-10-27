@@ -20,7 +20,7 @@ import type { Group } from '@/lib/constants';
 import { toast } from 'sonner';
 import {
   ArrowLeft, Calendar, ClipboardCheck, BookOpen, Home, Plus, Save, Loader2, Trash2, Users,
-  CheckCircle2, XCircle, UserX, Ban, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown,
+  CheckCircle2, XCircle, UserX, Ban, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown, RefreshCw,
 } from 'lucide-react';
 
 // ─── Status option configs ──────────────────────────
@@ -48,6 +48,15 @@ const PR_OPTIONS: { value: PracticeStatus; label: string; icon: typeof CheckCirc
   { value: 'Not Provided', label: 'Not Provided', icon: Ban, color: 'text-muted-foreground' },
   { value: 'N/A', label: 'N/A', icon: Ban, color: 'text-muted-foreground' },
 ];
+
+// 1-to-1 status mapper from Homework -> Website Practice
+const HW_TO_PRACTICE_MAP: Record<Exclude<HomeworkStatus, null>, Exclude<PracticeStatus, null>> = {
+  'Done': 'Practiced',
+  'Not Done': 'Not Practiced',
+  'Absent': 'On Leave',
+  'Not Provided': 'Not Provided',
+  'N/A': 'N/A',
+};
 
 // Day name mapper
 const DAY_MAP: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
@@ -122,6 +131,7 @@ export default function HomeworkRecordPage() {
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('homework');
+  const [syncingPractice, setSyncingPractice] = useState(false);
 
   // Check unsaved changes
   const hasUnsavedChanges = useMemo(() => {
@@ -403,6 +413,26 @@ export default function HomeworkRecordPage() {
         r.student_id === studentId ? { ...r, [field]: value || null } : r
       )
     );
+  };
+
+  const handleSyncHomeworkToPractice = () => {
+    const hasAnyHwSelected = records.some(r => Boolean(r.homework_status));
+    if (!hasAnyHwSelected) {
+      toast.info('Select Homework first');
+      return;
+    }
+
+    setSyncingPractice(true);
+
+    setRecords(prev =>
+      prev.map(r => ({
+        ...r,
+        practice_status: r.homework_status ? (HW_TO_PRACTICE_MAP[r.homework_status] ?? null) : null,
+      }))
+    );
+
+    toast.success('Synced');
+    setTimeout(() => setSyncingPractice(false), 450);
   };
 
   const handleSave = async () => {
@@ -1007,7 +1037,7 @@ export default function HomeworkRecordPage() {
                         </th>
 
                         {/* Website Practice */}
-                        <th className="p-3 font-semibold text-muted-foreground min-w-[180px] sm:min-w-[200px] text-center border-r">
+                        <th className="relative p-3 font-semibold text-muted-foreground min-w-[180px] sm:min-w-[200px] text-center border-r">
                           <button
                             type="button"
                             onClick={() => handleSort('practice')}
@@ -1027,6 +1057,16 @@ export default function HomeworkRecordPage() {
                                 <ArrowUpDown className="h-3 w-3 opacity-0 group-hover/sub:opacity-60 transition-opacity shrink-0" />
                               )}
                             </div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleSyncHomeworkToPractice}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center p-1 rounded-md text-foreground dark:text-white hover:bg-accent/70 active:scale-95 transition-all cursor-pointer"
+                            title="Sync Website Practice from Homework selections"
+                            aria-label="Sync Website Practice from Homework selections"
+                          >
+                            <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${syncingPractice ? 'animate-spin' : ''}`} />
                           </button>
                         </th>
                       </tr>
@@ -1296,14 +1336,29 @@ export default function HomeworkRecordPage() {
         </>
       )}
 
-      {/* Floating Save Button (mobile) */}
+      {/* Floating Sync + Save Buttons (Responsive / Mobile < md) */}
       {!recordsLoading && records.length > 0 && (
-        <div className="fixed bottom-4 right-4 sm:hidden z-50">
+        <div className="fixed bottom-4 right-4 md:hidden z-50 flex flex-col items-center gap-2.5">
+          {(activeTab === 'homework' || activeTab === 'practice') && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleSyncHomeworkToPractice}
+              size="lg"
+              className="rounded-full shadow-lg h-12 w-12 p-0 bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-500/40 active:scale-95 transition-all cursor-pointer"
+              title="Sync Website Practice with Homework"
+              aria-label="Sync Website Practice with Homework"
+            >
+              <RefreshCw className={`h-5 w-5 ${syncingPractice ? 'animate-spin' : ''}`} />
+            </Button>
+          )}
           <Button
             onClick={handleSave}
             disabled={saving}
             size="lg"
-            className="rounded-full shadow-lg h-12 w-12 p-0"
+            className="rounded-full shadow-lg h-12 w-12 p-0 active:scale-95 transition-all cursor-pointer"
+            title="Save All"
+            aria-label="Save All"
           >
             {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
           </Button>
