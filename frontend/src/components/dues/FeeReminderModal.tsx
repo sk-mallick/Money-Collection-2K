@@ -155,7 +155,7 @@ export function buildFeeReminderMessage(params: {
     `Kindly pay the tuition fees for *${params.student.name}* as the next quarter is due.`,
     ``,
     `• *Last Paid:* ${info.lastPaidMonthsStr}`,
-    `• *Paid Date:* ${info.lastPaidDateStr}`,
+    `• *Last Paid Date:* ${info.lastPaidDateStr}`,
     `• *Next Due:* ${info.nextDueMonthsStr}`,
     ``,
     `Regards,`,
