@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDues } from '@/hooks/useStudents';
+import { useDues, useSettings } from '@/hooks/useStudents';
 import { DuesPageLoading } from '@/components/loading-skeletons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,18 +12,156 @@ import { ButtonGroup } from '@/components/ui/button-group';
 import { MONTH_CODES, MONTH_NAMES, formatCurrency, getCurrentMonthCode } from '@/lib/constants';
 import type { MonthCode } from '@/lib/constants';
 import { AlertTriangle, Users, IndianRupee, Calendar, BellRing } from 'lucide-react';
-import { FeeReminderModal } from '@/components/dues/FeeReminderModal';
+import { toast } from 'sonner';
+import { 
+  FeeReminderModal, 
+  renderNoticeBanner, 
+  getHeaderImage, 
+  getCachedHeaderImage,
+  buildFeeReminderMessage
+} from '@/components/dues/FeeReminderModal';
+
+function WhatsAppIcon({ className = "size-4" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M11.42 9.49c-.19-.09-1.1-.54-1.27-.61s-.29-.09-.42.1-.48.6-.59.73-.21.14-.4 0a5.13 5.13 0 0 1-1.49-.92 5.25 5.25 0 0 1-1-1.29c-.11-.18 0-.28.08-.38s.18-.21.28-.32a1.39 1.39 0 0 0 .18-.31.38.38 0 0 0 0-.33c0-.09-.42-1-.58-1.37s-.3-.32-.41-.32h-.4a.72.72 0 0 0-.5.23 2.1 2.1 0 0 0-.65 1.55A3.59 3.59 0 0 0 5 8.2 8.32 8.32 0 0 0 8.19 11c.44.19.78.3 1.05.39a2.53 2.53 0 0 0 1.17.07 1.93 1.93 0 0 0 1.26-.88 1.67 1.67 0 0 0 .11-.88c-.05-.07-.17-.12-.36-.21z" />
+      <path d="M13.29 2.68A7.36 7.36 0 0 0 8 .5a7.44 7.44 0 0 0-6.41 11.15l-1 3.85 3.94-1a7.4 7.4 0 0 0 3.55.9H8a7.44 7.44 0 0 0 5.29-12.72zM8 14.12a6.12 6.12 0 0 1-3.15-.87l-.22-.13-2.34.61.62-2.28-.14-.23a6.18 6.18 0 0 1 9.6-7.65 6.12 6.12 0 0 1 1.81 4.37A6.19 6.19 0 0 1 8 14.12z" />
+    </svg>
+  );
+}
+
+// Convert base64 dataURL to Blob synchronously
+function dataUrlToBlob(dataUrl: string): Blob {
+  const parts = dataUrl.split(',');
+  const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/png';
+  const bstr = atob(parts[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+}
 
 export default function DuesPage() {
   const navigate = useNavigate();
+  const { settings } = useSettings();
   const [selectedMonth, setSelectedMonth] = useState<MonthCode>(getCurrentMonthCode());
   const { dues, loading } = useDues(selectedMonth);
   const [reminderStudent, setReminderStudent] = useState<(typeof dues)[number] | null>(null);
   const [reminderOpen, setReminderOpen] = useState(false);
 
+  // Preload announcement header graphic for instant share rendering
+  useEffect(() => {
+    getHeaderImage();
+  }, []);
+
   const handleOpenReminder = (student: (typeof dues)[number]) => {
     setReminderStudent(student);
     setReminderOpen(true);
+  };
+
+  const handleDirectWhatsAppShare = async (student: (typeof dues)[number]) => {
+    const selectedMonthName = MONTH_NAMES[selectedMonth] || selectedMonth;
+    const instituteName = settings.instituteName || 'ENGLISHJIBI CLASSES';
+    const academicYear = settings.academicYear || '2026-27';
+
+    const message = buildFeeReminderMessage({
+      student,
+      instituteName,
+      selectedMonth,
+      academicYear,
+      lastReceipt: null,
+    });
+
+    // Generate notice banner image synchronously
+    let imageBlob: Blob | null = null;
+    let imageFile: File | null = null;
+    try {
+      const canvas = document.createElement('canvas');
+      const headerImg = getCachedHeaderImage();
+      renderNoticeBanner(canvas, {
+        student,
+        instituteName,
+        phone1: settings.phone1 || '',
+        phone2: settings.phone2 || '',
+        selectedMonthName,
+        selectedMonth,
+        academicYear,
+        lastReceipt: null,
+        headerImg,
+      });
+
+      const dataUrl = canvas.toDataURL('image/png');
+      imageBlob = dataUrlToBlob(dataUrl);
+      imageFile = new File(
+        [imageBlob],
+        `Fee_Reminder_${student.id}_${student.name.replace(/\s+/g, '_')}.png`,
+        { type: 'image/png' }
+      );
+    } catch (e) {
+      console.warn('Notice banner generation failed:', e);
+    }
+
+    // 1. Copy BOTH Image and Text to clipboard first so it's always ready in clipboard
+    if (imageBlob && navigator.clipboard && window.ClipboardItem) {
+      try {
+        const textBlob = new Blob([message], { type: 'text/plain' });
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'image/png': imageBlob,
+            'text/plain': textBlob,
+          }),
+        ]);
+      } catch {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': imageBlob }),
+          ]);
+        } catch {
+          // ignore
+        }
+      }
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(message);
+      } catch {
+        // ignore
+      }
+    }
+
+    // 2. On Mobile (Android / iOS): Use Web Share API Level 2 to share both image and text directly into WhatsApp!
+    if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+      try {
+        await navigator.share({
+          files: [imageFile],
+          text: message,
+          title: 'Fee Reminder Notice',
+        });
+        toast.success('Notice shared with image and text!');
+        return;
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return;
+        console.warn('Mobile Web Share failed, falling back:', err);
+      }
+    }
+
+    // 3. Fallback: Open WhatsApp Share (manual picker) with text pre-filled and image ready in clipboard
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    const win = window.open(waUrl, '_blank', 'noopener,noreferrer');
+    if (!win || win.closed || typeof win.closed === 'undefined') {
+      window.location.href = waUrl;
+    }
+
+    toast.success('Opening WhatsApp share!', {
+      description: 'Notice image & text are copied — in WhatsApp, select chat and press Paste to attach notice image!',
+      duration: 5000,
+    });
   };
 
   const totalOutstanding = dues.reduce((sum, d) => sum + d.outstandingDue, 0);
@@ -116,13 +254,14 @@ export default function DuesPage() {
                           <Button 
                             variant="outline" 
                             size="icon" 
-                            className="size-9 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 active:scale-95 transition-transform" 
-                            onClick={() => handleOpenReminder(student)}
+                            className="size-9 bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 active:scale-95 transition-all shadow-2xs" 
+                            onClick={() => handleDirectWhatsAppShare(student)}
+                            title="Share fee reminder on WhatsApp"
                           >
-                            <BellRing className="size-4" />
+                            <WhatsAppIcon className="size-4.5" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Notice & Reminder</TooltipContent>
+                        <TooltipContent>Share on WhatsApp</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>

@@ -21,21 +21,170 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { fetchStudentReceipts } from '@/lib/api';
-import { useSettings } from '@/hooks/useStudents';
-import { MONTH_NAMES, formatCurrency, formatDate } from '@/lib/constants';
-import type { Student, Receipt, MonthCode } from '@/lib/constants';
+import { useSettings, getAdmAcademicIndex } from '@/hooks/useStudents';
+import { MONTH_NAMES, MONTH_CODES, MONTH_SHORT, formatCurrency, formatDate } from '@/lib/constants';
+import type { Student, Receipt, Payment, MonthCode } from '@/lib/constants';
 import noticeHeaderUrl from '@/assets/important-notice-header.jpg';
+
+export type DueStudent = Student & {
+  pendingMonths: number;
+  outstandingDue: number;
+  payments?: Payment[];
+};
 
 interface FeeReminderModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  student: (Student & { pendingMonths: number; outstandingDue: number }) | null;
+  student: DueStudent | null;
   selectedMonth: MonthCode;
+}
+
+export function computeQuarterlyReminderDetails(
+  student: DueStudent,
+  lastReceipt: Receipt | null,
+  selectedMonth: MonthCode,
+  academicYear: string = '2026-27'
+) {
+  let lastPaidCodes: string[] = [];
+  let lastPaidDate = '';
+
+  if (lastReceipt && lastReceipt.months && lastReceipt.months.length > 0) {
+    lastPaidCodes = [...lastReceipt.months].sort(
+      (a, b) => MONTH_CODES.indexOf(a as MonthCode) - MONTH_CODES.indexOf(b as MonthCode)
+    );
+    lastPaidDate = lastReceipt.generatedOn;
+  } else if (student.payments && student.payments.length > 0) {
+    const paidPayments = student.payments.filter(
+      (p) => p.paid && (p.amount === 0 || p.amount >= student.feePerMonth)
+    );
+    if (paidPayments.length > 0) {
+      const sortedByMonth = [...paidPayments].sort(
+        (a, b) => MONTH_CODES.indexOf(a.month as MonthCode) - MONTH_CODES.indexOf(b.month as MonthCode)
+      );
+      const dates = sortedByMonth.map((p) => p.date).filter(Boolean).sort();
+      const latestDate = dates.length > 0 ? dates[dates.length - 1] : '';
+      const latestBatch = latestDate
+        ? sortedByMonth.filter((p) => p.date === latestDate)
+        : sortedByMonth.slice(-3);
+      lastPaidCodes = latestBatch.map((p) => p.month);
+      lastPaidDate = latestDate;
+    }
+  }
+
+  const allPaidCodes: string[] = [];
+  if (lastReceipt && lastReceipt.months && lastReceipt.months.length > 0) {
+    allPaidCodes.push(...lastReceipt.months);
+  }
+  if (student.payments && student.payments.length > 0) {
+    student.payments
+      .filter((p) => p.paid && (p.amount === 0 || p.amount >= student.feePerMonth))
+      .forEach((p) => {
+        if (!allPaidCodes.includes(p.month)) allPaidCodes.push(p.month);
+      });
+  }
+
+  let nextStartIdx = 0;
+  if (allPaidCodes.length > 0) {
+    const validIndices = allPaidCodes
+      .map((m) => MONTH_CODES.indexOf(m as MonthCode))
+      .filter((i) => i >= 0);
+    const maxPaidIdx = validIndices.length > 0 ? Math.max(...validIndices) : 0;
+    nextStartIdx = (maxPaidIdx + 1) % 12;
+  } else {
+    const admIdx = getAdmAcademicIndex(student.admDate, academicYear);
+    nextStartIdx = admIdx >= 0 && admIdx < 12 ? admIdx : Math.max(0, MONTH_CODES.indexOf(selectedMonth));
+  }
+
+  const nextDueCodes = [0, 1, 2].map((offset) => MONTH_CODES[(nextStartIdx + offset) % 12]);
+
+  const lastPaidMonthsStr =
+    lastPaidCodes.length > 0
+      ? lastPaidCodes.map((c) => MONTH_NAMES[c] || c).join(', ')
+      : 'None (New Admission)';
+
+  const lastPaidDateStr =
+    lastPaidCodes.length > 0 && lastPaidDate
+      ? formatDate(lastPaidDate)
+      : 'N/A';
+
+  const nextDueMonthsStr = nextDueCodes.map((c) => MONTH_NAMES[c] || c).join(', ');
+
+  const bannerLastPaidLine1 =
+    lastPaidCodes.length > 0
+      ? `${lastPaidCodes.map((c) => MONTH_SHORT[c] || c).join(', ')} (${lastPaidCodes.length} Month${
+          lastPaidCodes.length > 1 ? 's' : ''
+        })`
+      : 'None (New Admission)';
+
+  const bannerLastPaidLine2 =
+    lastPaidCodes.length > 0 && lastPaidDate
+      ? `Paid on: ${formatDate(lastPaidDate)}`
+      : 'No prior payment recorded';
+
+  const bannerNextDueLine1 = `${nextDueCodes.map((c) => MONTH_SHORT[c] || c).join(', ')} (3 Months)`;
+
+  return {
+    lastPaidCodes,
+    lastPaidDate,
+    nextDueCodes,
+    lastPaidMonthsStr,
+    lastPaidDateStr,
+    nextDueMonthsStr,
+    bannerLastPaidLine1,
+    bannerLastPaidLine2,
+    bannerNextDueLine1,
+  };
+}
+
+export function buildFeeReminderMessage(params: {
+  student: DueStudent;
+  instituteName: string;
+  selectedMonth: MonthCode;
+  academicYear?: string;
+  lastReceipt?: Receipt | null;
+}): string {
+  const info = computeQuarterlyReminderDetails(
+    params.student,
+    params.lastReceipt || null,
+    params.selectedMonth,
+    params.academicYear || '2026-27'
+  );
+
+  return [
+    `Dear parents,`,
+    `Kindly pay the tuition fees for *${params.student.name}* as the next quarter of 3 months is due.`,
+    ``,
+    `• *Last Paid:* ${info.lastPaidMonthsStr}`,
+    `• *Paid Date:* ${info.lastPaidDateStr}`,
+    `• *Next Due:* ${info.nextDueMonthsStr}`,
+    ``,
+    `Regards,`,
+    `${params.instituteName.toUpperCase()}`,
+  ].join('\n');
+}
+
+function WhatsAppIcon({ className = "size-4" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M11.42 9.49c-.19-.09-1.1-.54-1.27-.61s-.29-.09-.42.1-.48.6-.59.73-.21.14-.4 0a5.13 5.13 0 0 1-1.49-.92 5.25 5.25 0 0 1-1-1.29c-.11-.18 0-.28.08-.38s.18-.21.28-.32a1.39 1.39 0 0 0 .18-.31.38.38 0 0 0 0-.33c0-.09-.42-1-.58-1.37s-.3-.32-.41-.32h-.4a.72.72 0 0 0-.5.23 2.1 2.1 0 0 0-.65 1.55A3.59 3.59 0 0 0 5 8.2 8.32 8.32 0 0 0 8.19 11c.44.19.78.3 1.05.39a2.53 2.53 0 0 0 1.17.07 1.93 1.93 0 0 0 1.26-.88 1.67 1.67 0 0 0 .11-.88c-.05-.07-.17-.12-.36-.21z" />
+      <path d="M13.29 2.68A7.36 7.36 0 0 0 8 .5a7.44 7.44 0 0 0-6.41 11.15l-1 3.85 3.94-1a7.4 7.4 0 0 0 3.55.9H8a7.44 7.44 0 0 0 5.29-12.72zM8 14.12a6.12 6.12 0 0 1-3.15-.87l-.22-.13-2.34.61.62-2.28-.14-.23a6.18 6.18 0 0 1 9.6-7.65 6.12 6.12 0 0 1 1.81 4.37A6.19 6.19 0 0 1 8 14.12z" />
+    </svg>
+  );
 }
 
 // Preload and cache header image
 let cachedHeaderImage: HTMLImageElement | null = null;
-function getHeaderImage(): Promise<HTMLImageElement> {
+export function getCachedHeaderImage(): HTMLImageElement | null {
+  return (cachedHeaderImage && cachedHeaderImage.complete && cachedHeaderImage.naturalWidth > 0)
+    ? cachedHeaderImage
+    : null;
+}
+export function getHeaderImage(): Promise<HTMLImageElement> {
   if (cachedHeaderImage && cachedHeaderImage.complete && cachedHeaderImage.naturalWidth > 0) {
     return Promise.resolve(cachedHeaderImage);
   }
@@ -78,33 +227,17 @@ export function FeeReminderModal({
     });
   }, []);
 
-  // Short, professional, simple worded draft (no excessive context)
+  // Build new quarterly message format
   const generateMessage = useCallback((receipt: Receipt | null) => {
     if (!student) return '';
-
-    let lastPaymentStr = 'None';
-    if (receipt) {
-      const amt = formatCurrency(receipt.totalRecv || receipt.amtPaid);
-      const date = formatDate(receipt.generatedOn);
-      lastPaymentStr = `${amt} (${date})`;
-    }
-
-    const nextDueStr = receipt?.nextDue && receipt.nextDue !== 'N/A' && receipt.nextDue !== 'NONE'
-      ? receipt.nextDue.toUpperCase()
-      : selectedMonthName.toUpperCase();
-
-    return [
-      `Dear parents,`,
-      `Kindly pay the tuition fees for *${student.name}* as the period of ${student.pendingMonths} month${student.pendingMonths > 1 ? 's' : ''} is pending.`,
-      ``,
-      `• *Total Due:* ${formatCurrency(student.outstandingDue)}`,
-      `• *Last Payment:* ${lastPaymentStr}`,
-      `• *Next Due:* ${nextDueStr}`,
-      ``,
-      `Regards,`,
-      `*${instituteName.toUpperCase()}*`,
-    ].join('\n');
-  }, [student, instituteName, selectedMonthName]);
+    return buildFeeReminderMessage({
+      student,
+      instituteName,
+      selectedMonth,
+      academicYear: settings.academicYear || '2026-27',
+      lastReceipt: receipt,
+    });
+  }, [student, instituteName, selectedMonth, settings.academicYear]);
 
   // Fetch receipts when opened
   useEffect(() => {
@@ -151,6 +284,8 @@ export function FeeReminderModal({
       phone1: settings.phone1 || '',
       phone2: settings.phone2 || '',
       selectedMonthName,
+      selectedMonth,
+      academicYear: settings.academicYear || '2026-27',
       lastReceipt,
       headerImg,
     });
@@ -510,7 +645,7 @@ export function FeeReminderModal({
             className="w-full sm:w-auto h-9 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs rounded-xl shadow-xs transition-all active:scale-95 border-none flex items-center justify-center gap-1.5"
             onClick={handleShareWhatsApp}
           >
-            <Share2 className="size-3.5 shrink-0" />
+            <WhatsAppIcon className="size-4 shrink-0" />
             <span>WhatsApp</span>
             <ExternalLink className="size-3 ml-0.5 opacity-75 shrink-0" />
           </Button>
@@ -521,14 +656,16 @@ export function FeeReminderModal({
 }
 
 // ─── Crisp Notice Banner Generator with Full Required Details ───────────────────────────
-function renderNoticeBanner(
+export function renderNoticeBanner(
   canvas: HTMLCanvasElement,
   data: {
-    student: Student & { pendingMonths: number; outstandingDue: number };
+    student: DueStudent;
     instituteName: string;
     phone1?: string;
     phone2?: string;
     selectedMonthName: string;
+    selectedMonth?: MonthCode;
+    academicYear?: string;
     lastReceipt: Receipt | null;
     headerImg: HTMLImageElement | null;
   }
@@ -576,29 +713,29 @@ function renderNoticeBanner(
     ctx.textAlign = 'left';
   }
 
-  // ─── 2. Institution Ribbon Bar (Y = 328) ───
+  // ─── 2. Institution Ribbon Bar (Y = 326, H = 48 -> ends at 374) ───
   ctx.fillStyle = '#0F172A';
-  ctx.fillRect(35, 328, width - 70, 48);
+  ctx.fillRect(35, 326, width - 70, 48);
 
   ctx.fillStyle = '#FEF08A';
   ctx.font = 'bold 21px system-ui, -apple-system, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(`TUITION FEE REMINDER  •  ${data.instituteName.toUpperCase()}`, width / 2, 359);
+  ctx.fillText(`TUITION FEE REMINDER  •  ${data.instituteName.toUpperCase()}`, width / 2, 357);
   ctx.textAlign = 'left';
 
-  // ─── 3. Student Profile & Dues Card (Y = 388) ───
+  // ─── 3. Student Profile Card (Y = 390, H = 116 -> ends at 506, 16px gap) ───
   ctx.fillStyle = '#F8FAFC';
   ctx.strokeStyle = '#CBD5E1';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.roundRect(35, 388, width - 70, 118, 12);
+  ctx.roundRect(35, 390, width - 70, 116, 12);
   ctx.fill();
   ctx.stroke();
 
-  // Student Name
+  // Student Name (vertically balanced with right column)
   ctx.fillStyle = '#0F172A';
   ctx.font = '800 30px system-ui, -apple-system, sans-serif';
-  ctx.fillText(data.student.name.toUpperCase(), 60, 432);
+  ctx.fillText(data.student.name.toUpperCase(), 60, 436);
 
   // Badges: ID, Category, Class, School
   let badgeX = 60;
@@ -617,103 +754,117 @@ function renderNoticeBanner(
     ctx.strokeStyle = b.border;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(badgeX, 450, textWidth + pad * 2, 26, 6);
+    ctx.roundRect(badgeX, 452, textWidth + pad * 2, 28, 6);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = b.text;
-    ctx.fillText(b.label, badgeX + pad, 468);
+    ctx.fillText(b.label, badgeX + pad, 471);
     badgeX += textWidth + pad * 2 + 10;
   });
 
-  // Right Side: Due Amount & Overdue Badge
+  // Right Side: Quarter reminder label (vertically centered in 390..506)
   ctx.textAlign = 'right';
   ctx.fillStyle = '#991B1B';
   ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
-  ctx.fillText('TOTAL OUTSTANDING DUE', width - 60, 422);
+  ctx.fillText('NEXT QUARTER DUE', width - 60, 422);
 
   ctx.fillStyle = '#DC2626';
-  ctx.font = '900 46px system-ui, -apple-system, sans-serif';
-  ctx.fillText(formatCurrency(data.student.outstandingDue), width - 60, 468);
+  ctx.font = '900 40px system-ui, -apple-system, sans-serif';
+  ctx.fillText('3 MONTHS', width - 60, 460);
 
   ctx.fillStyle = '#64748B';
   ctx.font = '600 14px system-ui, -apple-system, sans-serif';
-  ctx.fillText(`${data.student.pendingMonths} Month(s) Pending   •   Monthly Fee: ${formatCurrency(data.student.feePerMonth)}/m`, width - 60, 492);
+  ctx.fillText(`Monthly Fee: ${formatCurrency(data.student.feePerMonth)}/m`, width - 60, 484);
   ctx.textAlign = 'left';
 
-  // ─── 4. Structured Payment & Due Detail Grid (Y = 518) ───
-  const gridW = (width - 100) / 4; // 4 columns
-  const gridH = 82;
-  const gridY = 518;
+  // ─── 4. Last Paid & Next Due Info Grid (Y = 522, H = 96 -> ends at 618, 16px gap) ───
+  const gridH = 96;
+  const gridY = 522;
+  const cardGap = 16;
+  const halfW = (width - 70 - cardGap) / 2;
 
-  let lastPaymentText = 'No prior payment';
-  if (data.lastReceipt) {
-    const amt = formatCurrency(data.lastReceipt.totalRecv || data.lastReceipt.amtPaid);
-    const date = formatDate(data.lastReceipt.generatedOn);
-    lastPaymentText = `${amt} (${date})`;
-  }
-  const nextDueText = data.lastReceipt?.nextDue && data.lastReceipt.nextDue !== 'N/A' && data.lastReceipt.nextDue !== 'NONE'
-    ? data.lastReceipt.nextDue.toUpperCase()
-    : `${data.selectedMonthName.toUpperCase()} 2026`;
+  const fallbackMonthCode = (data.selectedMonth ||
+    (data.selectedMonthName.toUpperCase().substring(0, 3) as MonthCode)) as MonthCode;
 
-  const details = [
-    { label: 'LAST PAYMENT', val: lastPaymentText, color: '#0284C7' },
-    { label: 'NEXT DUE PERIOD', val: nextDueText, color: '#D97706' },
-    { label: 'INTIMATION MONTH', val: `${data.selectedMonthName} 2026`, color: '#7C3AED' },
-    { label: 'NOTICE DATE', val: formatDate(new Date().toISOString()), color: '#059669' },
+  const qInfo = computeQuarterlyReminderDetails(
+    data.student,
+    data.lastReceipt,
+    fallbackMonthCode,
+    data.academicYear || '2026-27'
+  );
+
+  const twoCards = [
+    {
+      label: 'LAST PAYMENT RECEIVED',
+      line1: qInfo.bannerLastPaidLine1,
+      line2: qInfo.bannerLastPaidLine2,
+      color: '#0284C7',
+    },
+    {
+      label: 'NEXT DUE (3-MONTH QUARTER)',
+      line1: qInfo.bannerNextDueLine1,
+      line2: `Fee: ${formatCurrency(data.student.feePerMonth)}/m  •  Advance Cycle`,
+      color: '#D97706',
+    },
   ];
 
-  details.forEach((item, idx) => {
-    const x = 35 + idx * (gridW + 10);
+  twoCards.forEach((card, idx) => {
+    const x = 35 + idx * (halfW + cardGap);
     ctx.fillStyle = '#FFFFFF';
     ctx.strokeStyle = '#E2E8F0';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(x, gridY, gridW, gridH, 8);
+    ctx.roundRect(x, gridY, halfW, gridH, 10);
     ctx.fill();
     ctx.stroke();
 
-    // Color Indicator Dot
-    ctx.fillStyle = item.color;
+    // Color dot
+    ctx.fillStyle = card.color;
     ctx.beginPath();
-    ctx.arc(x + 18, gridY + 24, 4, 0, Math.PI * 2);
+    ctx.arc(x + 24, gridY + 24, 5, 0, Math.PI * 2);
     ctx.fill();
 
     // Label
     ctx.fillStyle = '#64748B';
     ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
-    ctx.fillText(item.label, x + 30, gridY + 28);
+    ctx.fillText(card.label, x + 36, gridY + 28);
 
-    // Value
+    // Line 1 (months)
     ctx.fillStyle = '#0F172A';
-    ctx.font = 'bold 15px system-ui, -apple-system, sans-serif';
-    ctx.fillText(item.val, x + 18, gridY + 58);
+    ctx.font = 'bold 17px system-ui, -apple-system, sans-serif';
+    ctx.fillText(card.line1, x + 20, gridY + 56);
+
+    // Line 2 (date or fee)
+    ctx.fillStyle = '#64748B';
+    ctx.font = '600 13px system-ui, -apple-system, sans-serif';
+    ctx.fillText(card.line2, x + 20, gridY + 78);
   });
 
-  // ─── 5. Bottom Notice & Contact Strip (Y = 612) ───
+  // ─── 5. Bottom Notice & Contact Strip (Y = 634, H = 90 -> ends at 724, 16px gap, 36px bottom margin) ───
   ctx.fillStyle = '#FEF2F2';
   ctx.strokeStyle = '#FECACA';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.roundRect(35, 612, width - 70, 95, 10);
+  ctx.roundRect(35, 634, width - 70, 90, 10);
   ctx.fill();
   ctx.stroke();
 
   ctx.fillStyle = '#991B1B';
   ctx.font = '600 15px system-ui, -apple-system, sans-serif';
-  ctx.fillText('Kindly arrange for the clearance of pending fees at your earliest convenience.', 55, 650);
+  ctx.fillText('Kindly arrange for the clearance of pending fees at your earliest convenience.', 58, 672);
   ctx.fillStyle = '#7F1D1D';
   ctx.font = 'italic 13px system-ui, -apple-system, sans-serif';
-  ctx.fillText('If already paid, kindly ignore this notice or share the receipt with us.', 55, 674);
+  ctx.fillText('If already paid, kindly ignore this notice or share the receipt with us.', 58, 696);
 
   // Contact info right aligned
   const phoneList = [data.phone1, data.phone2].filter(Boolean).join('  /  ');
   ctx.textAlign = 'right';
   ctx.fillStyle = '#0F172A';
   ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
-  ctx.fillText(phoneList ? `📞 Contact: ${phoneList}` : data.instituteName, width - 55, 652);
+  ctx.fillText(phoneList ? `📞 Contact: ${phoneList}` : data.instituteName, width - 58, 672);
   ctx.fillStyle = '#64748B';
   ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
-  ctx.fillText(data.instituteName.toUpperCase(), width - 55, 676);
+  ctx.fillText(data.instituteName.toUpperCase(), width - 58, 696);
   ctx.textAlign = 'left';
 }

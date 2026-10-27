@@ -264,7 +264,7 @@ export function getAdmAcademicIndex(admDateStr: string | undefined, academicYear
  * Compute dues list — students who haven't paid for a given month
  */
 export function useDues(month?: MonthCode) {
-  const [dues, setDues] = useState<Array<Student & { pendingMonths: number; outstandingDue: number }>>([]);
+  const [dues, setDues] = useState<Array<Student & { pendingMonths: number; outstandingDue: number; payments?: Payment[] }>>([]);
   const [loading, setLoading] = useState(true);
   const selectedMonth = month || getCurrentMonthCode();
 
@@ -279,7 +279,7 @@ export function useDues(month?: MonthCode) {
 
       const settings = await fetchSettings();
       const activeAcademicYear = settings.academicYear || '2026-27';
-      const duesList: Array<Student & { pendingMonths: number; outstandingDue: number }> = [];
+      const duesList: Array<Student & { pendingMonths: number; outstandingDue: number; payments?: Payment[] }> = [];
       const selectedMonthIndex = MONTH_CODES.indexOf(selectedMonth);
 
       const paymentsMap = new Map<string, Payment[]>();
@@ -338,7 +338,7 @@ export function useDues(month?: MonthCode) {
               }
             });
 
-            duesList.push({ ...student, pendingMonths, outstandingDue });
+            duesList.push({ ...student, pendingMonths, outstandingDue, payments });
           }
         }
       }
