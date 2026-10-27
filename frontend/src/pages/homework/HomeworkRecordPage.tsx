@@ -139,6 +139,16 @@ export default function HomeworkRecordPage() {
     return JSON.stringify(records) !== initialRecordsJson;
   }, [records, initialRecordsJson]);
 
+  // Check whether Website Practice is already synced with Homework selections
+  const isPracticeSynced = useMemo(() => {
+    const hasAnyHw = records.some(r => Boolean(r.homework_status));
+    if (!hasAnyHw) return true;
+    return records.every(r => {
+      const expectedPractice = r.homework_status ? (HW_TO_PRACTICE_MAP[r.homework_status] ?? null) : null;
+      return (r.practice_status || null) === expectedPractice;
+    });
+  }, [records]);
+
   // Warn before browser unload if unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -1062,7 +1072,7 @@ export default function HomeworkRecordPage() {
                           <button
                             type="button"
                             onClick={handleSyncHomeworkToPractice}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center p-1 rounded-md text-foreground dark:text-white hover:bg-accent/70 active:scale-95 transition-all cursor-pointer"
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center h-6 w-6 rounded-md bg-white text-slate-900 border border-slate-200 shadow-xs hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
                             title="Sync Website Practice from Homework selections"
                             aria-label="Sync Website Practice from Homework selections"
                           >
@@ -1339,7 +1349,7 @@ export default function HomeworkRecordPage() {
       {/* Floating Sync + Save Buttons (Responsive / Mobile < md) */}
       {!recordsLoading && records.length > 0 && (
         <div className="fixed bottom-4 right-4 md:hidden z-50 flex flex-col items-center gap-2.5">
-          {(activeTab === 'homework' || activeTab === 'practice') && (
+          {(activeTab === 'homework' || activeTab === 'practice') && !isPracticeSynced && (
             <Button
               type="button"
               variant="secondary"
@@ -1352,16 +1362,18 @@ export default function HomeworkRecordPage() {
               <RefreshCw className={`h-5 w-5 ${syncingPractice ? 'animate-spin' : ''}`} />
             </Button>
           )}
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            size="lg"
-            className="rounded-full shadow-lg h-12 w-12 p-0 active:scale-95 transition-all cursor-pointer"
-            title="Save All"
-            aria-label="Save All"
-          >
-            {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-          </Button>
+          {(hasUnsavedChanges || saving) && (
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              size="lg"
+              className="rounded-full shadow-lg h-12 w-12 p-0 active:scale-95 transition-all cursor-pointer"
+              title="Save All"
+              aria-label="Save All"
+            >
+              {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+            </Button>
+          )}
         </div>
       )}
     </div>
