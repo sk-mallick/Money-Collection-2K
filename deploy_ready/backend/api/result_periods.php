@@ -94,10 +94,11 @@ function getResultPeriod(PDO $pdo, $identifier): void {
     // Return empty array for backward compatibility with frontend
     $period['default_max_marks'] = [];
     
-    // Get student results
-    $srStmt = $pdo->prepare("SELECT sr.* FROM rc_student_results sr WHERE sr.result_period_id = ? ORDER BY sr.snapshot_name ASC");
+    // Get student results ordered naturally by Student ID
+    $srStmt = $pdo->prepare("SELECT sr.* FROM rc_student_results sr WHERE sr.result_period_id = ? ORDER BY LEFT(sr.student_id, 1) ASC, CAST(SUBSTRING(sr.student_id, 2) AS UNSIGNED) ASC, sr.student_id ASC");
     $srStmt->execute([$id]);
     $studentResults = $srStmt->fetchAll();
+    usort($studentResults, static fn(array $a, array $b): int => strnatcasecmp((string)($a['student_id'] ?? ''), (string)($b['student_id'] ?? '')));
     
     // Get marks for each student result
     foreach ($studentResults as &$sr) {
@@ -165,10 +166,11 @@ function createResultPeriod(PDO $pdo): void {
             }
         }
         
-        // Load students from the group
-        $studentStmt = $pdo->prepare('SELECT id, name, category, class, group_id, school FROM students WHERE group_id = ? ORDER BY name ASC');
+        // Load students from the group ordered naturally by Student ID
+        $studentStmt = $pdo->prepare('SELECT id, name, category, class, group_id, school FROM students WHERE group_id = ? ORDER BY LEFT(id, 1) ASC, CAST(SUBSTRING(id, 2) AS UNSIGNED) ASC, id ASC');
         $studentStmt->execute([$groupId]);
         $students = $studentStmt->fetchAll();
+        usort($students, static fn(array $a, array $b): int => strnatcasecmp((string)($a['id'] ?? ''), (string)($b['id'] ?? '')));
         
         // Get applicable subjects for this category
         $subjectStmt = $pdo->prepare("SELECT id FROM rc_subjects WHERE (category = ? OR category = 'Both') AND is_active = 1 ORDER BY display_order ASC");

@@ -145,10 +145,11 @@ function getSessionRecords(PDO $pdo): void {
         SELECT id, name, category, class, school
         FROM students
         WHERE group_id = ?
-        ORDER BY name ASC
+        ORDER BY LEFT(id, 1) ASC, CAST(SUBSTRING(id, 2) AS UNSIGNED) ASC, id ASC
     ');
     $studentsStmt->execute([$session['group_id']]);
     $students = $studentsStmt->fetchAll();
+    usort($students, static fn(array $a, array $b): int => strnatcasecmp((string)($a['id'] ?? ''), (string)($b['id'] ?? '')));
 
     $recordsStmt = $pdo->prepare('
         SELECT r.*, st.name as student_name, st.class as student_class, st.school as student_school
@@ -415,9 +416,10 @@ function exportMonthly(PDO $pdo): void {
 
     $sessionIds = array_column($sessions, 'id');
 
-    $studentsStmt = $pdo->prepare('SELECT id, name, class, school FROM students WHERE group_id = ? ORDER BY name ASC');
+    $studentsStmt = $pdo->prepare('SELECT id, name, class, school FROM students WHERE group_id = ? ORDER BY LEFT(id, 1) ASC, CAST(SUBSTRING(id, 2) AS UNSIGNED) ASC, id ASC');
     $studentsStmt->execute([$groupId]);
     $students = $studentsStmt->fetchAll();
+    usort($students, static fn(array $a, array $b): int => strnatcasecmp((string)($a['id'] ?? ''), (string)($b['id'] ?? '')));
 
     $placeholders = implode(',', array_fill(0, count($sessionIds), '?'));
     $recStmt = $pdo->prepare("
@@ -425,7 +427,7 @@ function exportMonthly(PDO $pdo): void {
         FROM hw_student_records r
         LEFT JOIN students st ON st.id = r.student_id
         WHERE r.session_id IN ($placeholders)
-        ORDER BY st.name ASC, r.session_id ASC
+        ORDER BY LEFT(r.student_id, 1) ASC, CAST(SUBSTRING(r.student_id, 2) AS UNSIGNED) ASC, r.student_id ASC, r.session_id ASC
     ");
     $recStmt->execute($sessionIds);
     $records = $recStmt->fetchAll();

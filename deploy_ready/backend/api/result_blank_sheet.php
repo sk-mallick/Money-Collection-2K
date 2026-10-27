@@ -30,10 +30,11 @@ if (empty($category) || !in_array($category, ['Junior', 'Senior'])) {
     $category = $group ? $group['category'] : 'Senior';
 }
 
-// Get students in the group
-$studentStmt = $pdo->prepare('SELECT id, name, class, school FROM students WHERE group_id = ? ORDER BY name ASC');
+// Get students in the group ordered naturally by Student ID
+$studentStmt = $pdo->prepare('SELECT id, name, class, school FROM students WHERE group_id = ? ORDER BY LEFT(id, 1) ASC, CAST(SUBSTRING(id, 2) AS UNSIGNED) ASC, id ASC');
 $studentStmt->execute([$groupId]);
 $students = $studentStmt->fetchAll();
+usort($students, static fn(array $a, array $b): int => strnatcasecmp((string)($a['id'] ?? ''), (string)($b['id'] ?? '')));
 
 // Get applicable subjects
 $subjectStmt = $pdo->prepare("SELECT id, name, display_order FROM rc_subjects WHERE (category = ? OR category = 'Both') AND is_active = 1 ORDER BY display_order ASC");
