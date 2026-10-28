@@ -208,8 +208,11 @@ function get_db(): PDO {
         exit;
     }
 
-    // Self-healing: ensure remaining_months column and composite index exist in receipts table
-    try {
+    // Self-healing: cached check to avoid 10+ DDL queries and table locks on every request
+    $schemaFlagFile = dirname(__DIR__) . '/data/.schema_verified';
+    if (!file_exists($schemaFlagFile)) {
+        // Self-healing: ensure remaining_months column and composite index exist in receipts table
+        try {
         $tblCheck = $pdo->query("SHOW TABLES LIKE 'receipts'");
         if ($tblCheck->rowCount() > 0) {
             $stmtCol = $pdo->query("SHOW COLUMNS FROM `receipts` LIKE 'remaining_months'");
@@ -311,6 +314,9 @@ function get_db(): PDO {
         }
     } catch (Throwable $afEx) {
         // Suppress
+    }
+
+        @file_put_contents($schemaFlagFile, (string)time());
     }
 
     return $pdo;

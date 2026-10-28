@@ -1,0 +1,110 @@
+{
+    "unit": {
+        "passed": 10,
+        "failed": 0,
+        "details": [
+            {
+                "status": "PASS",
+                "test": "JWT: Generate valid token"
+            },
+            {
+                "status": "PASS",
+                "test": "JWT: Decode valid token payload"
+            },
+            {
+                "status": "PASS",
+                "test": "JWT: Reject tampered signature"
+            },
+            {
+                "status": "PASS",
+                "test": "JWT: Reject wrong secret key"
+            },
+            {
+                "status": "PASS",
+                "test": "JWT: Reject expired token"
+            },
+            {
+                "status": "PASS",
+                "test": "Period Code: SEP26-A"
+            },
+            {
+                "status": "PASS",
+                "test": "Period Code: JAN27-B (academic roll over)"
+            },
+            {
+                "status": "PASS",
+                "test": "Sanitize String trims whitespace"
+            },
+            {
+                "status": "PASS",
+                "test": "Validate Required detects empty strings & missing keys"
+            },
+            {
+                "status": "PASS",
+                "test": "Performance: 1000 receipt allocation < 50ms"
+            }
+        ]
+    },
+    "security": {
+        "passed": 6,
+        "failed": 0,
+        "details": [
+            {
+                "status": "PASS",
+                "test": "Vulnerability Fixed: setup.php has authentication guards"
+            },
+            {
+                "status": "PASS",
+                "test": "Vulnerability Fixed: login.php enforces dual IP + Username brute-force lockout"
+            },
+            {
+                "status": "PASS",
+                "test": "Vulnerability Fixed: Database SQL zip dump removed from public root"
+            },
+            {
+                "status": "PASS",
+                "test": "Code Quality: settings.php updateSettings has $user scope"
+            },
+            {
+                "status": "PASS",
+                "test": "Security Hardening: .htaccess blocks archive and backup file downloads"
+            },
+            {
+                "status": "PASS",
+                "test": "Performance Bottleneck: db.php self-healing DDL checks cached"
+            }
+        ]
+    },
+    "monkey": {
+        "passed": 5,
+        "failed": 0,
+        "details": [
+            {
+                "status": "PASS",
+                "test": "Allocate receipts: zero payment does not throw"
+            },
+            {
+                "status": "PASS",
+                "test": "Allocate receipts: huge payment overflow absorbed safely"
+            },
+            {
+                "status": "PASS",
+                "test": "Allocate receipts: malformed months JSON handled gracefully"
+            },
+            {
+                "status": "PASS",
+                "test": "Allocate receipts: unknown month keys handled without crashing"
+            },
+            {
+                "status": "PASS",
+                "test": "Bcrypt DoS: length check prevents hashing 10k chars"
+            }
+        ]
+    },
+    "performance": {
+        "metrics": {
+            "receipt_allocation_1000_items_ms": 2.91,
+            "db_connection_with_healing_ms": 0
+        }
+    }
+}

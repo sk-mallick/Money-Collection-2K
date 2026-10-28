@@ -23,6 +23,48 @@ $rootDir = dirname(__DIR__, 2);
 $envPath = $rootDir . '/.env';
 $prodEnvPath = $rootDir . '/.env.production';
 
+
+// Security: Check if setup actions are authorized
+function is_setup_authorized(?PDO $pdo): bool {
+    // 1. CLI is always authorized
+    if (PHP_SAPI === 'cli') return true;
+
+    // 2. Direct localhost IP is authorized
+    $remoteIp = $_SERVER['REMOTE_ADDR'] ?? '';
+    if ($remoteIp === '127.0.0.1' || $remoteIp === '::1') return true;
+
+    // 3. If database is not configured or no admins exist, permit initial onboarding
+    if (!$pdo) return true;
+    try {
+        $count = (int)$pdo->query("SELECT COUNT(*) FROM admins")->fetchColumn();
+        if ($count === 0) return true;
+    } catch (Throwable $e) {
+        return true;
+    }
+
+    // 4. Verify admin credentials provided in POST request
+    $authUser = trim($_POST['auth_username'] ?? '');
+    $authPass = (string)($_POST['auth_password'] ?? '');
+    if (!empty($authUser) && !empty($authPass)) {
+        try {
+            $stmt = $pdo->prepare("SELECT password_hash FROM admins WHERE username = ? LIMIT 1");
+            $stmt->execute([$authUser]);
+            $row = $stmt->fetch();
+            if ($row) {
+                $stored = (string)($row['password_hash'] ?? '');
+                $hashInfo = password_get_info($stored);
+                if (!empty($hashInfo['algo'])) {
+                    if (password_verify($authPass, $stored)) return true;
+                } else {
+                    if (hash_equals($stored, $authPass) || hash_equals(trim($stored), trim($authPass))) return true;
+                }
+            }
+        } catch (Throwable $authEx) {}
+    }
+
+    return false;
+}
+
 // Handle Actions (Lock, Unlock, Migrate, Purge, Save Env, Adopt Prod Env)
 $actionTriggered = $_POST['action'] ?? null;
 
@@ -32,6 +74,17 @@ if ($actionTriggered) {
         header('Location: setup.php?locked=1');
         exit;
     } elseif ($actionTriggered === 'unlock') {
+        // Require authorization to unlock in production
+        $isLocalReq = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1']) || PHP_SAPI === 'cli';
+        if (!$isLocalReq && file_exists($lockFile)) {
+            // Check if admin password provided
+            require_once __DIR__ . '/../includes/db.php';
+            try { $checkPdo = get_db(); } catch (Throwable $e) { $checkPdo = null; }
+            if (!is_setup_authorized($checkPdo)) {
+                header('Location: setup.php?auth_error=1');
+                exit;
+            }
+        }
         if (file_exists($lockFile)) {
             @unlink($lockFile);
         }
@@ -116,6 +169,16 @@ $migrationSuccess = false;
 
 $migrationMessage = '';
 
+if ($pdo && $actionTriggered && !$isLocked) {
+    // Enforce authorization for destructive operations in production
+    if (in_array($actionTriggered, ['purge_transactional', 'reset_admin_credentials', 'save_env'], true)) {
+        if (!is_setup_authorized($pdo)) {
+            $migrationSuccess = false;
+            $migrationMessage = "Security Restriction: Administrative credentials or local access required to execute destructive operations in production.";
+            $actionTriggered = null;
+        }
+    }
+}
 if ($pdo && $actionTriggered && !$isLocked) {
     if ($actionTriggered === 'migrate') {
         $sqlFile = __DIR__ . '/../database/migrate.sql';

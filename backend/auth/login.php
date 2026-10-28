@@ -47,8 +47,8 @@ try {
     $pdo->exec('DELETE FROM login_attempts WHERE attempted_at < NOW() - INTERVAL 24 HOUR');
 
     // 1. Rate limiting check (max 5 failed attempts per 15 minutes)
-    $rateLimitStmt = $pdo->prepare('SELECT COUNT(*) FROM login_attempts WHERE ip_address = ? AND attempted_at > NOW() - INTERVAL 15 MINUTE');
-    $rateLimitStmt->execute([$ipAddress]);
+    $rateLimitStmt = $pdo->prepare('SELECT COUNT(*) FROM login_attempts WHERE (ip_address = ? OR username = ?) AND attempted_at > NOW() - INTERVAL 15 MINUTE');
+    $rateLimitStmt->execute([$ipAddress, $username]);
     $failedAttempts = (int)$rateLimitStmt->fetchColumn();
 
     if ($failedAttempts >= 5) {

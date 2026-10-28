@@ -36,6 +36,7 @@ function getSettings(PDO $pdo): void {
 }
 
 function updateSettings(PDO $pdo): void {
+    global $user;
     $input = get_input();
 
     $allowedKeys = ['instituteName', 'address', 'phone1', 'phone2', 'academicYear', 'adminName', 'activeMonths', 'feeJunior', 'feeSenior', 'admissionFee'];
