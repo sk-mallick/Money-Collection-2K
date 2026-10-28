@@ -5,6 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { McmsSidebar } from '@/components/mcms-sidebar';
 import { ReportsSidebar } from '@/components/reports-sidebar';
 import { HomeworkSidebar } from '@/components/homework-sidebar';
+import { ErrorBoundary } from '@/components/error-boundary';
 import { useAuth } from '@/hooks/useAuth';
 import { isMcmsPasskeyAuthenticated } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
@@ -176,9 +177,11 @@ function McmsLayout() {
           </div>
         </header>
         <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
-          <Suspense fallback={<DynamicSuspenseFallback />}>
-            <Outlet />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<DynamicSuspenseFallback />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </SidebarInset>
     </SidebarProvider>
@@ -204,9 +207,11 @@ function ReportsLayout() {
           </div>
         </header>
         <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
-          <Suspense fallback={<DynamicSuspenseFallback />}>
-            <Outlet />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<DynamicSuspenseFallback />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </SidebarInset>
     </SidebarProvider>
@@ -232,9 +237,11 @@ function HomeworkLayout() {
           </div>
         </header>
         <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
-          <Suspense fallback={<DynamicSuspenseFallback />}>
-            <Outlet />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<DynamicSuspenseFallback />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </SidebarInset>
     </SidebarProvider>

@@ -238,10 +238,10 @@ export default function CollectPage() {
     }
   }, [studentIdParam, students]);
 
-  const filteredStudents = search.length >= 1
+  const filteredStudents = search.trim().length >= 1
     ? students.filter(s =>
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.id.toLowerCase().includes(search.toLowerCase())
+      String(s.name || '').toLowerCase().includes(search.trim().toLowerCase()) ||
+      String(s.id || '').toLowerCase().includes(search.trim().toLowerCase())
     ).slice(0, 8)
     : [];
 

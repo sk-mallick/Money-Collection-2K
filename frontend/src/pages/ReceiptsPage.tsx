@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useReceipts, useSettings } from '@/hooks/useStudents';
 import { ReceiptsPageLoading } from '@/components/loading-skeletons';
 import { Button } from '@/components/ui/button';
@@ -52,19 +52,31 @@ export default function ReceiptsPage() {
     return Array.from(years).sort();
   };
 
-  const filtered = receipts.filter(r => {
-    const matchesSearch =
-      r.studentName.toLowerCase().includes(search.toLowerCase()) ||
-      r.id.toLowerCase().includes(search.toLowerCase()) ||
-      r.studentId.toLowerCase().includes(search.toLowerCase());
+  const query = (search || '').trim().toLowerCase();
+
+  const filtered = useMemo(() => {
+    if (!Array.isArray(receipts)) return [];
+
+    return receipts.filter(r => {
+      if (!r) return false;
+
+      const sName = String(r.studentName || '').toLowerCase();
+      const rId = String(r.id || '').toLowerCase();
+      const sId = String(r.studentId || '').toLowerCase();
+
+      const matchesSearch = !query ||
+        sName.includes(query) ||
+        rId.includes(query) ||
+        sId.includes(query);
+        
+      if (!matchesSearch) return false;
       
-    if (!matchesSearch) return false;
-    
-    if (selectedYearFilter === 'all') return true;
-    
-    const rYear = r.academicYear || '2026-27';
-    return rYear === selectedYearFilter;
-  });
+      if (selectedYearFilter === 'all') return true;
+      
+      const rYear = r.academicYear || '2026-27';
+      return rYear === selectedYearFilter;
+    });
+  }, [receipts, query, selectedYearFilter]);
 
   const handleDownload = async (receipt: Receipt) => {
     try {
@@ -153,11 +165,11 @@ export default function ReceiptsPage() {
                 <CardContent className="p-3 flex items-center justify-between gap-4 px-3">
                   {/* Student Info Details */}
                   <div className="min-w-0 flex-1 space-y-1">
-                    <h3 className="font-semibold text-sm text-foreground leading-none truncate">{receipt.studentName}</h3>
+                    <h3 className="font-semibold text-sm text-foreground leading-none truncate">{receipt.studentName || 'Student'}</h3>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap leading-none">
                       <span className="text-[11px] font-medium">{formatReceiptPeriod(receipt)}</span>
                       <span className="text-[10px] text-muted-foreground">•</span>
-                      <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(receipt.totalRecv)}</span>
+                      <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(receipt.totalRecv || 0)}</span>
                       <span className="text-[10px] text-muted-foreground">•</span>
                       <span className="text-[10px] text-muted-foreground/80">{formatDate(receipt.generatedOn)}</span>
                     </div>
@@ -232,12 +244,12 @@ export default function ReceiptsPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-semibold text-foreground">{receipt.studentName}</p>
-                          <p className="text-xs text-muted-foreground sm:hidden">{formatReceiptPeriod(receipt)} · {formatCurrency(receipt.totalRecv)}</p>
+                          <p className="font-semibold text-foreground">{receipt.studentName || 'Student'}</p>
+                          <p className="text-xs text-muted-foreground sm:hidden">{formatReceiptPeriod(receipt)} · {formatCurrency(receipt.totalRecv || 0)}</p>
                         </div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">{formatReceiptPeriod(receipt)}</TableCell>
-                      <TableCell className="hidden md:table-cell font-medium text-foreground">{formatCurrency(receipt.totalRecv)}</TableCell>
+                      <TableCell className="hidden md:table-cell font-medium text-foreground">{formatCurrency(receipt.totalRecv || 0)}</TableCell>
                       <TableCell className="hidden lg:table-cell text-muted-foreground text-xs">{formatDate(receipt.generatedOn)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end">
