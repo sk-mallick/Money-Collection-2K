@@ -32,10 +32,19 @@ RewriteRule ^ - [E=SET_HSTS:1]
     Header always set X-XSS-Protection "1; mode=block"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
-    <FilesMatch "^(sw\.js|manifest\.json)$">
+    <FilesMatch "^(sw\.js|manifest\.json|pwa-.*\.png)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate"
         Header set Service-Worker-Allowed "/"
+        Header set Access-Control-Allow-Origin "*"
     </FilesMatch>
+</IfModule>
+
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddType application/manifest+json .json
+    AddType image/png .png
+    AddType image/svg+xml .svg
+    AddType image/webp .webp
 </IfModule>
 
 # ─── Security ────────────────────────────────────────
@@ -64,6 +73,8 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule (.*/)?favicon\.(svg|png)$ dist/favicon.$2 [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule (.*/)?icons\.svg$ dist/icons.svg [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule (.*/)?pwa-(.*)\.png$ dist/pwa-$2.png [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule (.*/)?manifest\.json$ dist/manifest.json [L]
 RewriteCond %{REQUEST_FILENAME} !-f

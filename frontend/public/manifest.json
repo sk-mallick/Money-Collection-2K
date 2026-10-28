@@ -1,38 +1,38 @@
 {
-  "id": "./",
   "name": "Money Collection Management System",
   "short_name": "MCMS",
-  "description": "Online-only student fee collection and receipt management",
+  "description": "Student fee collection, receipts, dues and report management",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#6366f1",
   "orientation": "any",
+  "theme_color": "#6366f1",
+  "background_color": "#09090b",
   "icons": [
     {
-      "src": "./favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "./favicon.png",
+      "src": "./pwa-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./favicon.png",
+      "src": "./pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./favicon.png",
+      "src": "./pwa-maskable-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "./favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

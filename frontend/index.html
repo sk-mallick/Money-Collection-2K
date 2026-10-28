@@ -3,12 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Money Collection Management System - Offline-first student fee collection and receipt management PWA" />
+    <meta name="description" content="Money Collection Management System - Student fee collection and receipt management PWA" />
     <meta name="theme-color" content="#6366f1" />
     <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="apple-touch-icon" href="./pwa-192x192.png" />
     <link rel="preload" as="image" href="./login-bg-desktop.webp" type="image/webp" media="(min-width: 641px)" />
     <link rel="preload" as="image" href="./login-bg-mobile.webp" type="image/webp" media="(max-width: 640px)" />
-    <link rel="manifest" href="./manifest.json" />
+    <link rel="manifest" href="./manifest.json" crossorigin="use-credentials" />
+    <script>
+      (function() {
+        try {
+          var base = document.querySelector('base') ? document.querySelector('base').getAttribute('href') : './';
+          var manifest = {
+            "name": "Money Collection Management System",
+            "short_name": "MCMS",
+            "description": "Student fee collection, receipts, dues and report management",
+            "id": base,
+            "start_url": base,
+            "scope": base,
+            "display": "standalone",
+            "orientation": "any",
+            "theme_color": "#6366f1",
+            "background_color": "#09090b",
+            "icons": [
+              { "src": new URL("pwa-192x192.png", document.baseURI).href, "sizes": "192x192", "type": "image/png", "purpose": "any" },
+              { "src": new URL("pwa-512x512.png", document.baseURI).href, "sizes": "512x512", "type": "image/png", "purpose": "any" },
+              { "src": new URL("pwa-maskable-512x512.png", document.baseURI).href, "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+            ]
+          };
+          var blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+          var blobUrl = URL.createObjectURL(blob);
+          var link = document.querySelector('link[rel="manifest"]');
+          if (link) {
+            link.href = blobUrl;
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
