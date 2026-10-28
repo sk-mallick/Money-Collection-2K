@@ -3,15 +3,19 @@ import { createRoot } from 'react-dom/client'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/hooks/useAuth'
+import { getApiBase } from '@/lib/constants'
 import App from './App'
 import './index.css'
 
-// Unregister any existing Service Worker (cleanup from previous offline-first version)
+// Register minimal pass-through Service Worker so Chrome enables WebAPK / App Installation (Online-Only)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const registration of registrations) {
-      registration.unregister();
-    }
+  window.addEventListener('load', () => {
+    const base = getApiBase();
+    const swUrl = `${base}/sw.js`;
+    const scope = `${base}/`;
+    navigator.serviceWorker.register(swUrl, { scope }).catch(() => {
+      // Ignore registration errors in unsupported environments
+    });
   });
 }
 
