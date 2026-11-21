@@ -528,7 +528,7 @@ export function FeeReminderModal({
                 </DialogTitle>
               </div>
               <DialogDescription className="text-xs text-muted-foreground mt-0.5 truncate">
-                <span className="font-semibold text-foreground">{student.name}</span> ({student.id}) • {student.pendingMonths} month{student.pendingMonths > 1 ? 's' : ''} due
+                <span className="font-semibold text-foreground">{student.name}</span> • {student.pendingMonths} month{student.pendingMonths > 1 ? 's' : ''} due
               </DialogDescription>
             </div>
             <Badge className="bg-red-600 hover:bg-red-600 text-white font-mono text-xs font-bold px-2.5 py-1 shadow-xs border-none shrink-0 whitespace-nowrap">
@@ -655,6 +655,28 @@ export function FeeReminderModal({
   );
 }
 
+// ─── Format phone number into clean +91 XXXXX XXXXX ─────────────────────────
+export function formatContactNumber(phone?: string | null): string {
+  if (!phone) return '';
+  const trimmed = String(phone).trim();
+  if (!trimmed) return '';
+  
+  const digits = trimmed.replace(/\D/g, '');
+  if (digits.length === 10) {
+    return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+  }
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
+  }
+  if (trimmed.startsWith('+91')) {
+    const rest = trimmed.slice(3).trim().replace(/\D/g, '');
+    if (rest.length === 10) {
+      return `+91 ${rest.slice(0, 5)} ${rest.slice(5)}`;
+    }
+  }
+  return trimmed;
+}
+
 // ─── Crisp Notice Banner Generator with Full Required Details ───────────────────────────
 export function renderNoticeBanner(
   canvas: HTMLCanvasElement,
@@ -732,36 +754,127 @@ export function renderNoticeBanner(
   ctx.fill();
   ctx.stroke();
 
-  // Student Name (vertically balanced with right column)
+  // Student Name
+  const studentName = data.student.name.toUpperCase();
   ctx.fillStyle = '#0F172A';
   ctx.font = '800 30px system-ui, -apple-system, sans-serif';
-  ctx.fillText(data.student.name.toUpperCase(), 60, 436);
+  if (ctx.measureText(studentName).width > 780) {
+    ctx.font = '800 24px system-ui, -apple-system, sans-serif';
+  }
+  ctx.fillText(studentName, 60, 436);
 
-  // Badges: ID, Category, Class, School
+  // Student Info Row: Class, School, Divider, Phone Icon, Father (D), Divider, Mother (M)
   let badgeX = 60;
-  const badges = [
-    { label: `ID: ${data.student.id}`, bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE' },
-    { label: `Category: ${data.student.category}`, bg: '#FEF2F2', text: '#B91C1C', border: '#FECACA' },
-    { label: `Class: ${data.student.class || 'N/A'}`, bg: '#F1F5F9', text: '#334155', border: '#CBD5E1' },
-    ...(data.student.school ? [{ label: `School: ${data.student.school}`, bg: '#F0FDF4', text: '#15803D', border: '#BBF7D0' }] : []),
-  ];
+  const badgePad = 12;
 
+  // 1. Class Badge
+  const classLabel = `Class: ${data.student.class || 'N/A'}`;
   ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
-  badges.forEach((b) => {
-    const textWidth = ctx.measureText(b.label).width;
-    const pad = 12;
-    ctx.fillStyle = b.bg;
-    ctx.strokeStyle = b.border;
+  const classTextWidth = ctx.measureText(classLabel).width;
+  const classBadgeW = classTextWidth + badgePad * 2;
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = '#CBD5E1';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(badgeX, 452, classBadgeW, 28, 6);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#0F172A';
+  ctx.fillText(classLabel, badgeX + badgePad, 471);
+  badgeX += classBadgeW + 10;
+
+  // 2. School Badge
+  if (data.student.school) {
+    const schoolLabel = `School: ${data.student.school}`;
+    const schoolTextWidth = ctx.measureText(schoolLabel).width;
+    const schoolBadgeW = schoolTextWidth + badgePad * 2;
+
+    ctx.fillStyle = '#F0FDF4';
+    ctx.strokeStyle = '#BBF7D0';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(badgeX, 452, textWidth + pad * 2, 28, 6);
+    ctx.roundRect(badgeX, 452, schoolBadgeW, 28, 6);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = b.text;
-    ctx.fillText(b.label, badgeX + pad, 471);
-    badgeX += textWidth + pad * 2 + 10;
-  });
+    ctx.fillStyle = '#15803D';
+    ctx.fillText(schoolLabel, badgeX + badgePad, 471);
+    badgeX += schoolBadgeW + 14;
+  }
+
+  // 3. Parent Contact Numbers (Father D, Mother M)
+  const rawFather = data.student.fatherNo || (data.student as any).father_no;
+  const rawMother = data.student.motherNo || (data.student as any).mother_no;
+  const rawContact = data.student.contactNo || (data.student as any).contact_no;
+
+  const fatherPhone = formatContactNumber(rawFather || (!rawMother ? rawContact : ''));
+  const motherPhone = formatContactNumber(rawMother);
+  const hasFather = Boolean(fatherPhone);
+  const hasMother = Boolean(motherPhone);
+
+  if (hasFather || hasMother) {
+    // Subtle Vertical Divider after School
+    ctx.strokeStyle = '#CBD5E1';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(badgeX, 454);
+    ctx.lineTo(badgeX, 478);
+    ctx.stroke();
+    badgeX += 14;
+
+    // Single Phone Handset Icon
+    ctx.save();
+    ctx.translate(badgeX, 457);
+    const phoneScale = 18 / 24;
+    ctx.scale(phoneScale, phoneScale);
+    ctx.fillStyle = '#0F172A';
+    const phonePath = new Path2D(
+      'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z'
+    );
+    ctx.fill(phonePath);
+    ctx.restore();
+    badgeX += 18 + 10;
+
+    // Contact Numbers typography
+    ctx.font = 'bold 15px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#0F172A';
+
+    // Father's Contact (D)
+    if (hasFather) {
+      const dText = `D: ${fatherPhone}`;
+      ctx.fillText(dText, badgeX, 472);
+      badgeX += ctx.measureText(dText).width;
+    }
+
+    // Subtle Vertical Divider between Father and Mother
+    if (hasFather && hasMother) {
+      badgeX += 14;
+      ctx.strokeStyle = '#CBD5E1';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(badgeX, 454);
+      ctx.lineTo(badgeX, 478);
+      ctx.stroke();
+      badgeX += 14;
+    }
+
+    // Mother's Contact (M)
+    if (hasMother) {
+      const mText = `M: ${motherPhone}`;
+      ctx.fillText(mText, badgeX, 472);
+      badgeX += ctx.measureText(mText).width;
+    }
+  }
+
+  // 4. Subtle Vertical Divider separating student profile from right fee column (matching reference)
+  ctx.strokeStyle = '#E2E8F0';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(880, 405);
+  ctx.lineTo(880, 495);
+  ctx.stroke();
 
   // Right Side: Quarter reminder label (vertically centered in 390..506)
   ctx.textAlign = 'right';
